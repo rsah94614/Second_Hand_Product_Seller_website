@@ -7,6 +7,7 @@ import ProductCard from '../components/ProductCard';
 import { Plus, Edit, Trash2, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 
 const MyProducts = () => {
   const { user } = useAuth();
@@ -49,7 +50,7 @@ const { data: products, isLoading, refetch } = useQuery({
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-800 mb-4">Please log in to view your products</h1>
-          <Link to="/login" className="btn btn-primary">
+          <Link to="/login" className="px-6 py-3 rounded-lg font-semibold text-center transition-all duration-300 inline-block">
             Login
           </Link>
         </div>
@@ -97,14 +98,14 @@ const { data: products, isLoading, refetch } = useQuery({
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {products?.map((product) => (
-              <div key={product._id} className="card group">
+              <div key={product._id} className="bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
                 <div className="relative">
                   <img
                     src={product.images[0] || '/placeholder-image.jpg'}
                     alt={product.title}
-                    className="w-full h-48 object-cover"
+                    className="w-full h-48 lg:h-80 object-contain"
                     onError={(e) => {
                       e.target.src = 'https://via.placeholder.com/300x200?text=No+Image';
                     }}
@@ -177,6 +178,7 @@ const { data: products, isLoading, refetch } = useQuery({
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 };

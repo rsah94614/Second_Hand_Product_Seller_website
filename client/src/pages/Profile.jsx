@@ -4,6 +4,7 @@ import { User, Mail, Phone, MapPin, Edit, Save, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Header from '../components/Header';
 import axios from 'axios';
+import Footer from '../components/Footer';
 
 const Profile = () => {
   const { user, logout } = useAuth();
@@ -193,6 +194,7 @@ const Profile = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

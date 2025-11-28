@@ -5,6 +5,7 @@ import axios from 'axios';
 import ProductCard from '../components/ProductCard';
 import { Search, Filter, SortAsc, SortDesc } from 'lucide-react';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 
 const ProductList = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -136,9 +137,9 @@ const { data, isLoading, error } = useQuery({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-100">
       <Header/>
-      <div className="container py-8">
+      <div className="py-8 px-4 w-full">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Filters Sidebar */}
           <div className="lg:w-1/4">
@@ -250,7 +251,7 @@ const { data, isLoading, error } = useQuery({
           </div>
 
           {/* Products Grid */}
-          <div className="lg:w-3/4">
+          <div className="w-full max-auto">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-800">
                 {data?.total ? `${data.total} Products Found` : 'Products'}
@@ -265,7 +266,7 @@ const { data, isLoading, error } = useQuery({
             </div>
 
             {isLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {[...Array(9)].map((_, i) => (
                   <div key={i} className="card animate-pulse">
                     <div className="h-48 bg-gray-200"></div>
@@ -293,7 +294,7 @@ const { data, isLoading, error } = useQuery({
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {data?.products?.map((product) => (
                     <ProductCard key={product._id} product={product} />
                   ))}
@@ -304,6 +305,7 @@ const { data, isLoading, error } = useQuery({
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

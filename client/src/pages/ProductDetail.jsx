@@ -7,6 +7,7 @@ import { MapPin, Eye, Calendar, Phone, Mail, User, Edit, Trash2, Share2 } from '
 import toast from 'react-hot-toast';
 import { assets } from '../assets/assets'
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -121,7 +122,7 @@ const ProductDetail = () => {
                   src={product.images[currentImageIndex] || '/placeholder-image.jpg'}
                   // src={assets.react}
                   alt={product.title}
-                  className="w-full h-96 object-cover rounded-lg"
+                  className="object-cover rounded-lg"
                   onError={(e) => {
                     e.target.src = assets.img;
                   }}
@@ -259,6 +260,7 @@ const ProductDetail = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

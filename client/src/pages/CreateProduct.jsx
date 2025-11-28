@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Upload, X, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 
 const CreateProduct = () => {
   const [formData, setFormData] = useState({
@@ -26,7 +27,7 @@ const CreateProduct = () => {
 
   const categories = [
     'Electronics', 'Fashion', 'Home & Garden', 'Sports',
-    'Books', 'Vehicles', 'Real Estate', 'Services', 'Other'
+    'Books', 'Vehicles', 'Tools', 'Services', 'Other'
   ];
 
   const conditions = ['New', 'Like New', 'Good', 'Fair', 'Poor'];
@@ -376,6 +377,7 @@ const CreateProduct = () => {
           </div>
         </div>
       </div>
+      <Footer/>
     </div>
   );
 };

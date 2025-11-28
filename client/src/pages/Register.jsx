@@ -16,7 +16,7 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const { register } = useAuth();
   const navigate = useNavigate();
 
@@ -29,39 +29,39 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (formData.password !== formData.confirmPassword) {
       toast.error('Passwords do not match');
       return;
     }
-    
+
     if (formData.password.length < 6) {
       toast.error('Password must be at least 6 characters long');
       return;
     }
-    
+
     setIsLoading(true);
 
     const { confirmPassword, ...userData } = formData;
     const result = await register(userData);
-    
+
     if (result.success) {
       toast.success('Registration successful!');
       navigate('/');
     } else {
       toast.error(result.message);
     }
-    
+
     setIsLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 shadow-2xl rounded-3xl p-5">
+    <div className="min-h-screen bg-gray-200 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 shadow-2xl rounded-3xl p-5 bg-white">
         <div>
-          <div className="mx-auto h-12 w-12 bg-blue-600 rounded-lg flex items-center justify-center">
+          {/* <div className="mx-auto h-12 w-12 bg-blue-600 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-xl">OLX</span>
-          </div>
+          </div> */}
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Create your account
           </h2>
@@ -75,7 +75,7 @@ const Register = () => {
             </Link>
           </p>
         </div>
-        
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
@@ -97,7 +97,7 @@ const Register = () => {
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               </div>
             </div>
-            
+
             <div>
               <label htmlFor="email" className="form-label">
                 Email address
@@ -117,7 +117,7 @@ const Register = () => {
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               </div>
             </div>
-            
+
             <div>
               <label htmlFor="phone" className="form-label">
                 Phone Number (Optional)
@@ -136,7 +136,7 @@ const Register = () => {
                 <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               </div>
             </div>
-            
+
             <div>
               <label htmlFor="location" className="form-label">
                 Location (Optional)
@@ -154,7 +154,7 @@ const Register = () => {
                 <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               </div>
             </div>
-            
+
             <div>
               <label htmlFor="password" className="form-label">
                 Password
@@ -181,7 +181,7 @@ const Register = () => {
                 </button>
               </div>
             </div>
-            
+
             <div>
               <label htmlFor="confirmPassword" className="form-label">
                 Confirm Password
@@ -221,12 +221,12 @@ const Register = () => {
           </div>
 
           <div className="text-center">
-            <Link
+            {/* <Link
               to="/"
               className="text-sm text-blue-600 hover:text-blue-500"
             >
               ← Back to home
-            </Link>
+            </Link> */}
           </div>
         </form>
       </div>

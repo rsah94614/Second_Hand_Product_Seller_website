@@ -21,12 +21,12 @@ const ProductCard = ({ product }) => {
 
   return (
     <Link to={`/products/${product._id}`} className="block group">
-      <div className="card">
+      <div className="card bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
         <div className="relative overflow-hidden">
           <img
             src={product.images[0] || '/placeholder-image.jpg'}
             alt={product.title}
-            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-40 object-contain group-hover:scale-105 transition-transform duration-300"
             onError={(e) => {
               e.target.src = 'https://via.placeholder.com/300x200?text=No+Image';
             }}

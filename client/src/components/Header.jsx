@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Search, Plus, User, LogOut, Menu, X } from 'lucide-react';
+import { Search, Plus, User, LogOut, Menu, X, Briefcase } from 'lucide-react';
 
 const Header = () => {
   const { user, logout } = useAuth();
@@ -26,18 +26,15 @@ const Header = () => {
 
   return (
     <header className="bg-white shadow-lg sticky top-0 z-50">
-      <div className="container">
+      <div className="w-full mx-auto sm:px-6 lg:px-4">
         <div className="flex items-center justify-between py-4">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">O</span>
-            </div>
-            <span className="text-2xl font-bold text-gray-800">OLX</span>
+            <span className="text-3xl lg:pl-7 font-bold text-gray-800">Beachदे.com</span>
           </Link>
 
           {/* Search Bar */}
-          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-lg mx-8">
+          <form onSubmit={handleSearch} className="hidden md:flex grow flex-1 max-w-lg mx-8">
             <div className="relative w-full">
               <input
                 type="text"
@@ -56,28 +53,28 @@ const Header = () => {
               <>
                 <Link
                   to="/create-product"
-                  className="flex items-center space-x-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
+                  className="flex items-center font-bold space-x-2 text-white bg-blue-500 border rounded-3xl px-3 py-2 hover:bg-blue-600 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Sell</span>
                 </Link>
                 <Link
                   to="/my-products"
-                  className="flex items-center space-x-2 text-gray-700 hover:text-primary-600 transition-colors"
+                  className="flex items-center font-bold space-x-2 text-white bg-blue-500 border rounded-3xl px-3 py-2 hover:bg-blue-600 transition-colors"
                 >
-                  <User className="w-4 h-4" />
+                  <Briefcase className="w-4 h-4" />
                   <span>My Products</span>
                 </Link>
                 <Link
                   to="/profile"
-                  className="flex items-center space-x-2 text-gray-700 hover:text-primary-600 transition-colors"
+                  className="flex items-center font-bold space-x-2 text-white bg-blue-500 border rounded-3xl px-3 py-2 hover:bg-blue-600 transition-colors"
                 >
                   <User className="w-4 h-4" />
                   <span>Profile</span>
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center space-x-2 text-gray-700 hover:text-red-600 transition-colors"
+                  className="flex items-center font-bold space-x-2 text-white bg-blue-500 border rounded-3xl px-3 py-2 hover:bg-blue-600 transition-colors"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>Logout</span>
@@ -87,13 +84,13 @@ const Header = () => {
               <>
                 <Link
                   to="/login"
-                  className="text-gray-700 hover:text-blue-600 transition-colors"
+                  className="text-white font-bold px-4 py-2 rounded bg-blue-600 hover:bg-blue-800 transition-colors"
                 >
                   Login
                 </Link>
                 <Link
                   to="/register"
-                  className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                  className="text-white font-bold px-4 py-2 rounded bg-blue-600 hover:bg-blue-800 transition-colors"
                 >
                   Register
                 </Link>

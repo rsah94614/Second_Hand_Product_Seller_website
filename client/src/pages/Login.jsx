@@ -120,12 +120,12 @@ const Login = () => {
           </div>
 
           <div className="text-center">
-            <Link
+            {/* <Link
               to="/"
               className="text-sm text-primary-600 hover:text-primary-500 transition-colors"
             >
               ← Back to home
-            </Link>
+            </Link> */}
           </div>
         </form>
       </div>
