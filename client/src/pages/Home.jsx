@@ -42,39 +42,39 @@ const Home = () => {
   return (
     <div className="min-h-screen">
       <Header />
-        {/* Hero Section */}
-        <section className="flex justify-center items-center bg-linear-to-r from-pink-600 to-purple-600 text-white py-20">
-          <div className="container px-4">
-            <div className="text-center max-w-4xl mx-auto">
-              <h1 className="text-5xl font-bold mb-6 animate-fade-in">
-                Buy & Sell Anything
-              </h1>
-              <p className="text-xl mb-8 opacity-90 animate-slide-up">
-                Find great deals on everything you need, or sell your unused items to make some extra cash.
-              </p>
+      {/* Hero Section */}
+      <section className="flex justify-center items-center bg-gradient-to-r from-primary-600 to-primary-800 text-white py-20">
+        <div className="container px-4">
+          <div className="text-center max-w-4xl mx-auto">
+            <h1 className="text-5xl font-bold mb-6 animate-fade-in font-display">
+              Buy & Sell Anything
+            </h1>
+            <p className="text-xl mb-8 opacity-90 animate-slide-up">
+              Find great deals on everything you need, or sell your unused items to make some extra cash.
+            </p>
 
-              {/* Search Bar */}
-              <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="What are you looking for?"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-6 py-4 pl-12 pr-4 text-gray-800 rounded-lg text-lg focus:outline-none focus:ring-4 focus:ring-primary-300 shadow-lg bg-white"
-                  />
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-6 h-6" />
-                </div>
-              </form>
-            </div>
+            {/* Search Bar */}
+            <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="What are you looking for?"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-6 py-4 pl-12 pr-4 text-gray-900 rounded-lg text-lg focus:outline-none focus:ring-4 focus:ring-white/20 shadow-lg bg-white placeholder:text-gray-500"
+                />
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-6 h-6" />
+              </div>
+            </form>
           </div>
-        </section>
+        </div>
+      </section>
       <div className="flex flex-col justify-center items-center">
 
         {/* Categories Section */}
         <section className="flex justify-center items-center py-16 w-full lg:px-20 bg-white">
           <div className="container px-4">
-            <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">
+            <h2 className="text-3xl font-bold text-center mb-12 text-gray-900 font-display">
               Browse by Category
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -82,13 +82,13 @@ const Home = () => {
                 <button
                   key={category}
                   onClick={() => handleCategoryClick(category)}
-                  className="p-6 bg-gray-200 rounded-lg hover:bg-primary-50 hover:border-primary-200 border-2 border-transparent transition-all duration-300 group hover:shadow-md"
+                  className="p-6 bg-gray-50 rounded-xl hover:bg-primary-50 hover:ring-2 hover:ring-primary-200 transition-all duration-300 group hover:shadow-md"
                 >
                   <div className="text-center">
-                    <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-primary-200 transition-colors animate-bounce-gentle">
+                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm group-hover:scale-110 transition-transform">
                       <Package className="w-6 h-6 text-primary-600" />
                     </div>
-                    <span className="font-semibold text-gray-700 group-hover:text-primary-600 transition-colors">
+                    <span className="font-semibold text-gray-700 group-hover:text-primary-700 transition-colors">
                       {category}
                     </span>
                   </div>

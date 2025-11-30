@@ -5,7 +5,6 @@ const upload = require('../middleware/upload');
 const { v2: cloudinary } = require('cloudinary');
 const fs = require('fs');
 
-
 const router = express.Router();
 
 // Get all products with pagination and filters
@@ -73,9 +72,26 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    // Increment view count
-    product.views += 1;
-    await product.save();
+    // Check for user authentication (token in header)
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+
+    if (token) {
+      try {
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decoded.userId;
+
+        // If user hasn't viewed the product yet
+        if (!product.viewedBy.includes(userId)) {
+          product.views += 1;
+          product.viewedBy.push(userId);
+          await product.save();
+        }
+      } catch (err) {
+        // Invalid token, treat as guest
+        console.log("Invalid token for view tracking", err.message);
+      }
+    }
 
     res.json(product);
   } catch (error) {
@@ -86,9 +102,6 @@ router.get('/:id', async (req, res) => {
 // Create new product
 router.post('/', auth, upload.array('images', 5), async (req, res) => {
   try {
-    // console.log("Incoming data:", req.body);
-    // console.log("Files:", req.files);
-
     const { title, description, category, condition, price, location, contactInfo } = req.body;
 
     if (!req.files || req.files.length === 0) {

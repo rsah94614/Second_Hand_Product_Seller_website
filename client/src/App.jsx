@@ -11,6 +11,11 @@ import Profile from './pages/Profile';
 import CreateProduct from './pages/CreateProduct';
 import EditProduct from './pages/EditProduct';
 import MyProducts from './pages/MyProducts';
+import Cart from './pages/Cart';
+import OrderHistory from './pages/OrderHistory';
+import PlaceOrder from './pages/Order';
+
+import Chat from './pages/Chat';
 
 function App() {
   return (
@@ -27,6 +32,10 @@ function App() {
             <Route path="/create-product" element={<CreateProduct />} />
             <Route path="/edit-product/:id" element={<EditProduct />} />
             <Route path="/my-products" element={<MyProducts />} />
+            <Route path="/order/:id" element={<PlaceOrder />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/orders" element={<OrderHistory />} />
+            <Route path="/chat" element={<Chat />} />
           </Routes>
         </main>
       </div>

@@ -3,9 +3,10 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import ProductCard from '../components/ProductCard';
-import { Search, Filter, SortAsc, SortDesc } from 'lucide-react';
+import { Search, Filter, SortAsc, SortDesc, MapPin } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { Input } from '../components/ui/Input';
 
 const ProductList = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -22,28 +23,28 @@ const ProductList = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   const categories = [
-    'Electronics', 'Fashion', 'Home & Garden', 'Sports', 
+    'Electronics', 'Fashion', 'Home & Garden', 'Sports',
     'Books', 'Vehicles', 'Real Estate', 'Services', 'Other'
   ];
 
-const { data, isLoading, error } = useQuery({
-  queryKey: ['products', filters],
-  queryFn: async () => {
-    const params = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value) params.append(key, value);
-    });
-    const res = await axios.get(import.meta.env.VITE_BACKEND_URL + `/api/products?${params.toString()}`);
-    return res.data;
-  },
-  keepPreviousData: true,
-});
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['products', filters],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) params.append(key, value);
+      });
+      const res = await axios.get(import.meta.env.VITE_BACKEND_URL + `/api/products?${params.toString()}`);
+      return res.data;
+    },
+    keepPreviousData: true,
+  });
 
 
   const handleFilterChange = (key, value) => {
     const newFilters = { ...filters, [key]: value, page: 1 };
     setFilters(newFilters);
-    
+
     const newSearchParams = new URLSearchParams();
     Object.entries(newFilters).forEach(([k, v]) => {
       if (v) newSearchParams.set(k, v);
@@ -54,7 +55,7 @@ const { data, isLoading, error } = useQuery({
   const handlePageChange = (newPage) => {
     const newFilters = { ...filters, page: newPage };
     setFilters(newFilters);
-    
+
     const newSearchParams = new URLSearchParams();
     Object.entries(newFilters).forEach(([k, v]) => {
       if (v) newSearchParams.set(k, v);
@@ -109,22 +110,21 @@ const { data, isLoading, error } = useQuery({
         >
           Previous
         </button>
-        
+
         {pages.map((page, index) => (
           <button
             key={index}
             onClick={() => typeof page === 'number' && handlePageChange(page)}
             disabled={page === '...'}
-            className={`px-3 py-2 border rounded transition-colors ${
-              page === currentPage
-                ? 'bg-primary-600 text-white border-primary-600'
-                : 'border-gray-300 hover:bg-gray-50'
-            } ${page === '...' ? 'cursor-default' : ''}`}
+            className={`px-3 py-2 border rounded transition-colors ${page === currentPage
+              ? 'bg-primary-600 text-white border-primary-600'
+              : 'border-gray-300 hover:bg-gray-50'
+              } ${page === '...' ? 'cursor-default' : ''}`}
           >
             {page}
           </button>
         ))}
-        
+
         <button
           onClick={() => handlePageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
@@ -138,48 +138,48 @@ const { data, isLoading, error } = useQuery({
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Header/>
+      <Header />
       <div className="py-8 px-4 w-full">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Filters Sidebar */}
           <div className="lg:w-1/4">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Filters</h3>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-4">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold font-display">Filters</h3>
                 <button
                   onClick={clearFilters}
-                  className="text-sm text-primary-600 hover:text-primary-700 transition-colors"
+                  className="text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
                 >
                   Clear All
                 </button>
               </div>
 
               {/* Search */}
-              <div className="mb-4">
+              <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Search
                 </label>
                 <div className="relative">
-                  <input
+                  <Input
                     type="text"
                     value={filters.search}
                     onChange={(e) => handleFilterChange('search', e.target.value)}
                     placeholder="Search products..."
-                    className="form-input border border-black rounded px-2 text-gray-400 py-1"
+                    className="pl-9"
                   />
-                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 </div>
               </div>
 
               {/* Category */}
-              <div className="mb-4">
+              <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Category
                 </label>
                 <select
                   value={filters.category}
                   onChange={(e) => handleFilterChange('category', e.target.value)}
-                  className="form-select border rounded"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2"
                 >
                   <option value="">All Categories</option>
                   {categories.map(category => (
@@ -189,44 +189,47 @@ const { data, isLoading, error } = useQuery({
               </div>
 
               {/* Price Range */}
-              <div className="mb-4">
+              <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Price Range
                 </label>
                 <div className="flex space-x-2">
-                  <input
+                  <Input
                     type="number"
                     value={filters.minPrice}
                     onChange={(e) => handleFilterChange('minPrice', e.target.value)}
                     placeholder="Min"
-                    className="form-input w-1/3 border rounded px-1"
+                    className="w-full"
                   />
-                  <input
+                  <Input
                     type="number"
                     value={filters.maxPrice}
                     onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
                     placeholder="Max"
-                    className="form-input w-1/3 border rounded px-1"
+                    className="w-full"
                   />
                 </div>
               </div>
 
               {/* Location */}
-              <div className="mb-4">
+              <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Location
                 </label>
-                <input
-                  type="text"
-                  value={filters.location}
-                  onChange={(e) => handleFilterChange('location', e.target.value)}
-                  placeholder="Enter location..."
-                  className="form-input border rounded px-2 py-1 text-gray-500 border-black"
-                />
+                <div className="relative">
+                  <Input
+                    type="text"
+                    value={filters.location}
+                    onChange={(e) => handleFilterChange('location', e.target.value)}
+                    placeholder="Enter location..."
+                    className="pl-9"
+                  />
+                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                </div>
               </div>
 
               {/* Sort */}
-              <div className="mb-4">
+              <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Sort By
                 </label>
@@ -237,7 +240,7 @@ const { data, isLoading, error } = useQuery({
                     handleFilterChange('sortBy', sortBy);
                     handleFilterChange('sortOrder', sortOrder);
                   }}
-                  className="form-select border border-black rounded"
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2"
                 >
                   <option value="createdAt-desc">Newest First</option>
                   <option value="createdAt-asc">Oldest First</option>
