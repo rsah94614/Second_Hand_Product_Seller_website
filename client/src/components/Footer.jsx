@@ -10,7 +10,7 @@ const Footer = () => {
           {/* Brand */}
           <div>
             <div className="flex items-center space-x-2 mb-4">
-              <span className="text-2xl font-bold text-gray-800">Beachदे.com</span>
+              <span className="text-2xl font-bold text-gray-800">Bechदे.com</span>
             </div>
             <p className="text-gray-600 mb-4">
               Buy and sell anything with ease. Discover great deals nearby and turn your items into cash.

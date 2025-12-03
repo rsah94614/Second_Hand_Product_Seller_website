@@ -5,8 +5,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
-import { Send, User, MessageSquare } from 'lucide-react';
+import { Send, User, MessageSquare, MoreVertical, Phone, MapPin } from 'lucide-react';
 import axios from 'axios';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
 
 const ENDPOINT = 'http://localhost:5000';
 
@@ -26,7 +28,7 @@ function Chat() {
         if (user) {
             const newSocket = io(ENDPOINT);
             setSocket(newSocket);
-            newSocket.emit('join_room', user._id);
+            newSocket.emit('join_room', user.id);
 
             return () => newSocket.close();
         }
@@ -39,23 +41,28 @@ function Chat() {
                 const res = await axios.get('http://localhost:5000/api/chat/conversations/all', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
+                console.log('Conversations fetched:', res.data);
                 setConversations(res.data);
             } catch (err) {
-                console.error(err);
+                console.error('Error fetching conversations:', err);
             }
         };
         if (token) fetchConversations();
-    }, [token]);
+    }, [token, messages]); // Refresh when messages change
 
     // Handle incoming messages
     useEffect(() => {
         if (socket) {
             socket.on('receive_message', (message) => {
-                if (currentChat && (message.sender === currentChat._id || message.sender === user._id)) {
-                    setMessages((prev) => [...prev, message]);
+                console.log('Received message:', message);
+                if (currentChat && (message.sender === currentChat._id || message.sender === user.id)) {
+                    setMessages((prev) => {
+                        // Check for duplicates
+                        const exists = prev.some(m => m._id === message._id);
+                        if (exists) return prev;
+                        return [...prev, message];
+                    });
                 }
-                // Refresh conversations to update last message/timestamp
-                // In a real app, you'd update the state locally to avoid a fetch
             });
         }
     }, [socket, currentChat, user]);
@@ -68,9 +75,10 @@ function Chat() {
                     const res = await axios.get(`http://localhost:5000/api/chat/${currentChat._id}`, {
                         headers: { Authorization: `Bearer ${token}` }
                     });
+                    console.log('Messages fetched:', res.data);
                     setMessages(res.data);
                 } catch (err) {
-                    console.error(err);
+                    console.error('Error fetching messages:', err);
                 }
             }
         };
@@ -85,12 +93,10 @@ function Chat() {
     // Check if navigated from ProductDetail with a seller
     useEffect(() => {
         if (location.state?.sellerId && location.state?.sellerName) {
-            // Check if conversation already exists
             const existing = conversations.find(c => c._id === location.state.sellerId);
             if (existing) {
                 setCurrentChat(existing);
             } else {
-                // Create temporary chat object
                 setCurrentChat({
                     _id: location.state.sellerId,
                     name: location.state.sellerName
@@ -99,107 +105,167 @@ function Chat() {
         }
     }, [location.state, conversations]);
 
-
     const sendMessage = async (e) => {
         e.preventDefault();
         if (!newMessage.trim() || !currentChat) return;
 
         const messageData = {
-            sender: user._id,
+            sender: user.id,
             receiver: currentChat._id,
             content: newMessage,
             timestamp: new Date(),
         };
 
-        // Emit to socket
+        console.log('Sending message:', messageData);
         socket.emit('send_message', messageData);
-
-        // Optimistically update UI
-        setMessages((prev) => [...prev, messageData]);
         setNewMessage('');
     };
 
     return (
-        <div className="container mx-auto p-4 h-[calc(100vh-80px)]">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 h-full">
-                {/* Sidebar */}
-                <Card className="md:col-span-1 p-4 overflow-y-auto">
-                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                        <MessageSquare className="w-5 h-5" /> Chats
-                    </h2>
-                    <div className="space-y-2">
-                        {conversations.map((conv) => (
-                            <div
-                                key={conv._id}
-                                onClick={() => setCurrentChat(conv)}
-                                className={`p-3 rounded-lg cursor-pointer flex items-center gap-3 hover:bg-gray-100 transition-colors ${currentChat?._id === conv._id ? 'bg-primary-50 border-primary-200 border' : ''
-                                    }`}
-                            >
-                                <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold">
-                                    {conv.name[0].toUpperCase()}
-                                </div>
-                                <div className="overflow-hidden">
-                                    <p className="font-semibold truncate">{conv.name}</p>
-                                    <p className="text-xs text-gray-500 truncate">{conv.lastMessage}</p>
-                                </div>
-                            </div>
-                        ))}
-                        {conversations.length === 0 && (
-                            <p className="text-gray-500 text-center py-4">No conversations yet.</p>
-                        )}
-                    </div>
-                </Card>
+        <div className="flex flex-col h-screen bg-gray-50 overflow-hidden">
+            <div className="flex-none">
+                <Header />
+            </div>
 
-                {/* Chat Area */}
-                <Card className="md:col-span-3 flex flex-col h-full">
-                    {currentChat ? (
-                        <>
-                            <div className="p-4 border-b flex items-center gap-3 bg-gray-50 rounded-t-lg">
-                                <div className="w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold">
-                                    {currentChat.name[0].toUpperCase()}
-                                </div>
-                                <h3 className="font-bold text-lg">{currentChat.name}</h3>
-                            </div>
+            <div className="flex-1 container mx-auto p-4 overflow-hidden min-h-0">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 h-full bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
 
-                            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50">
-                                {messages.map((msg, idx) => {
-                                    const isMe = msg.sender === user._id;
-                                    return (
-                                        <div key={idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                                            <div className={`max-w-[70%] p-3 rounded-2xl ${isMe
-                                                    ? 'bg-primary-600 text-white rounded-br-none'
-                                                    : 'bg-white border border-gray-200 rounded-bl-none'
-                                                }`}>
-                                                <p>{msg.content}</p>
-                                                <span className={`text-[10px] block mt-1 ${isMe ? 'text-primary-100' : 'text-gray-400'}`}>
-                                                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {/* Sidebar */}
+                    <div className="md:col-span-1 border-r border-gray-100 flex flex-col h-full bg-gray-50/30 overflow-hidden">
+                        <div className="p-4 border-b border-gray-100 bg-white flex-none">
+                            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <MessageSquare className="w-6 h-6 text-primary-600" />
+                                Messages
+                            </h2>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                            {conversations.map((conv) => (
+                                <div
+                                    key={conv._id}
+                                    onClick={() => setCurrentChat(conv)}
+                                    className={`p-3 rounded-xl cursor-pointer flex items-center gap-3 transition-all duration-200 group ${currentChat?._id === conv._id
+                                            ? 'bg-primary-50 shadow-sm border border-primary-100'
+                                            : 'hover:bg-white hover:shadow-sm border border-transparent'
+                                        }`}
+                                >
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold shadow-sm transition-colors ${currentChat?._id === conv._id
+                                            ? 'bg-primary-600 text-white'
+                                            : 'bg-white text-primary-600 border border-primary-100 group-hover:border-primary-200'
+                                        }`}>
+                                        {conv.name ? conv.name[0].toUpperCase() : '?'}
+                                    </div>
+                                    <div className="overflow-hidden flex-1">
+                                        <div className="flex justify-between items-center">
+                                            <p className={`font-semibold truncate ${currentChat?._id === conv._id ? 'text-primary-900' : 'text-gray-700'}`}>
+                                                {conv.name}
+                                            </p>
+                                            {conv.timestamp && (
+                                                <span className="text-[10px] text-gray-400">
+                                                    {new Date(conv.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </span>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-gray-500 truncate">
+                                            {conv.lastMessage || 'Click to start chatting'}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                            {conversations.length === 0 && (
+                                <div className="text-center py-10 px-4">
+                                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 text-gray-400">
+                                        <MessageSquare className="w-8 h-8" />
+                                    </div>
+                                    <p className="text-gray-500 font-medium">No conversations yet</p>
+                                    <p className="text-xs text-gray-400 mt-1">Start chatting with sellers!</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Chat Area */}
+                    <div className="md:col-span-3 flex flex-col h-full bg-white min-h-0 overflow-hidden">
+                        {currentChat ? (
+                            <>
+                                {/* Chat Header */}
+                                <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white shadow-sm z-10 flex-none">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white flex items-center justify-center font-bold shadow-md">
+                                            {currentChat.name ? currentChat.name[0].toUpperCase() : '?'}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-gray-800">{currentChat.name}</h3>
+                                            <div className="flex items-center gap-1 text-xs text-green-500">
+                                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                                Online
                                             </div>
                                         </div>
-                                    )
-                                })}
-                                <div ref={scrollRef} />
-                            </div>
+                                    </div>
+                                    <div className="flex gap-2 text-gray-400">
+                                        <Button variant="ghost" size="icon" className="hover:text-primary-600 hover:bg-primary-50">
+                                            <Phone className="w-5 h-5" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="hover:text-primary-600 hover:bg-primary-50">
+                                            <MoreVertical className="w-5 h-5" />
+                                        </Button>
+                                    </div>
+                                </div>
 
-                            <form onSubmit={sendMessage} className="p-4 border-t flex gap-2">
-                                <Input
-                                    value={newMessage}
-                                    onChange={(e) => setNewMessage(e.target.value)}
-                                    placeholder="Type a message..."
-                                    className="flex-1"
-                                />
-                                <Button type="submit" size="icon">
-                                    <Send className="w-5 h-5" />
-                                </Button>
-                            </form>
-                        </>
-                    ) : (
-                        <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
-                            <MessageSquare className="w-16 h-16 mb-4 opacity-20" />
-                            <p>Select a conversation to start chatting</p>
-                        </div>
-                    )}
-                </Card>
+                                {/* Messages Area */}
+                                <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50 scroll-smooth">
+                                    {messages.map((msg, idx) => {
+                                        const isMe = msg.sender === user.id;
+                                        return (
+                                            <div key={msg._id || idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'} group`}>
+                                                <div className={`max-w-[75%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                                                    <div className={`px-5 py-3 rounded-2xl shadow-sm text-sm leading-relaxed relative ${isMe
+                                                            ? 'bg-primary-600 text-white rounded-br-none'
+                                                            : 'bg-white text-gray-700 border border-gray-100 rounded-bl-none'
+                                                        }`}>
+                                                        {msg.content}
+                                                    </div>
+                                                    <span className="text-[10px] text-gray-400 mt-1 px-1">
+                                                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                    <div ref={scrollRef} />
+                                </div>
+
+                                {/* Input Area */}
+                                <div className="p-4 bg-white border-t border-gray-100 flex-none">
+                                    <form onSubmit={sendMessage} className="flex gap-3 items-center max-w-4xl mx-auto">
+                                        <Input
+                                            value={newMessage}
+                                            onChange={(e) => setNewMessage(e.target.value)}
+                                            placeholder="Type your message..."
+                                            className="flex-1 bg-gray-50 border-gray-200 focus:bg-white transition-all rounded-full px-6 py-6 shadow-inner"
+                                        />
+                                        <Button
+                                            type="submit"
+                                            size="lg"
+                                            className="rounded-full w-12 h-12 p-0 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 transition-all bg-primary-600 hover:bg-primary-700"
+                                            disabled={!newMessage.trim()}
+                                        >
+                                            <Send className="w-5 h-5" />
+                                        </Button>
+                                    </form>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="flex-1 flex flex-col items-center justify-center text-gray-300 bg-gray-50/30">
+                                <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6 animate-bounce-slow">
+                                    <MessageSquare className="w-10 h-10 text-gray-400" />
+                                </div>
+                                <h3 className="text-xl font-bold text-gray-600 mb-2">Your Messages</h3>
+                                <p className="text-gray-400 max-w-xs text-center">Select a conversation from the sidebar to start chatting with buyers or sellers.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     );

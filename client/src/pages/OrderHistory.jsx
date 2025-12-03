@@ -13,6 +13,8 @@ import {
   X,
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import Footer from '../components/Footer';
+import Header from '../components/Header';
 
 const statusStyles = {
   processing: 'bg-yellow-100 text-yellow-700',
@@ -112,7 +114,9 @@ const OrderHistory = () => {
   const orders = data || [];
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+   <div>
+    <Header />
+     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-800 flex items-center">
@@ -262,6 +266,8 @@ const OrderHistory = () => {
         )}
       </div>
     </div>
+    <Footer />
+   </div>
   );
 };
 

@@ -30,12 +30,12 @@ const Header = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex-shrink-0 flex items-center gap-2 group">
+          <Link to="/" className="shrink-0 flex items-center gap-2 group">
             <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold text-xl group-hover:bg-primary-700 transition-colors">
               B
             </div>
             <span className="text-2xl font-display font-bold text-gray-900 tracking-tight">
-              Beach<span className="text-primary-600">दे</span>.com
+              Bech<span className="text-primary-600">दे</span>.com
             </span>
           </Link>
 
@@ -67,7 +67,7 @@ const Header = () => {
 
                 <Link to="/create-product">
                   <Button
-                    className="gap-2 rounded-full bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 text-white shadow-md hover:shadow-lg transition-all border-none"
+                    className="gap-2 rounded-full bg-linear-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 text-white shadow-md hover:shadow-lg transition-all border-none"
                     size="sm"
                   >
                     <Plus className="w-4 h-4" />
