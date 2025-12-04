@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Search, Plus, User, LogOut, Menu, X, Briefcase, ShoppingCart, History } from 'lucide-react';
+import { Search, Plus, User, LogOut, Menu, X, Briefcase, ShoppingCart, History, MessageCircle } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 
@@ -62,6 +62,11 @@ const Header = () => {
                     <ShoppingCart className="w-5 h-5" />
                   </Button>
                 </Link>
+                <Link to="/chat">
+                  <Button variant="ghost" size="icon" className="relative text-gray-600 hover:text-primary-600">
+                    <MessageCircle className="w-5 h-5" />
+                  </Button>
+                </Link>
 
                 <div className="h-6 w-px bg-gray-200 mx-1"></div>
 
@@ -120,11 +125,18 @@ const Header = () => {
           {/* Mobile Menu Button */}
           <div className="flex md:hidden items-center gap-4">
             {user && (
-              <Link to="/cart">
-                <Button variant="ghost" size="icon" className="text-gray-600">
-                  <ShoppingCart className="w-5 h-5" />
-                </Button>
-              </Link>
+              <>
+                <Link to="/cart">
+                  <Button variant="ghost" size="icon" className="text-gray-600">
+                    <ShoppingCart className="w-5 h-5" />
+                  </Button>
+                </Link>
+                <Link to="/chat">
+                  <Button variant="ghost" size="icon" className="text-gray-600">
+                    <MessageCircle className="w-5 h-5" />
+                  </Button>
+                </Link>
+              </>
             )}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
