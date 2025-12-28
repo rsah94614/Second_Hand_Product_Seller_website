@@ -13,7 +13,7 @@ const Home = () => {
 
   const categories = [
     'Electronics', 'Fashion', 'Home & Garden', 'Sports', 'Books',
-    'Vehicles', 'Tools', 'Services', 'Furniture', 'Other'
+    'Vehicles', 'Tools', 'FreeZone', 'Furniture', 'Other'
   ];
 
   const { data: featuredProducts, isLoading } = useQuery({
@@ -147,21 +147,21 @@ const Home = () => {
                   <Users className="w-8 h-8" />
                 </div>
                 <h3 className="text-3xl font-bold mb-2">100+</h3>
-                <p className="text-primary-100">Active Users</p>
+                <p className="text-black">Active Users</p>
               </div>
               <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
                 <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Package className="w-8 h-8" />
                 </div>
                 <h3 className="text-3xl font-bold mb-2">50+</h3>
-                <p className="text-primary-100">Products Listed</p>
+                <p className="text-black">Products Listed</p>
               </div>
               <div className="animate-fade-in" style={{ animationDelay: '0.4s' }}>
                 <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Star className="w-8 h-8" />
                 </div>
                 <h3 className="text-3xl font-bold mb-2">4.8/5</h3>
-                <p className="text-primary-100">User Rating</p>
+                <p className="text-black">User Rating</p>
               </div>
             </div>
           </div>

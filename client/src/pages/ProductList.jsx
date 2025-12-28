@@ -23,8 +23,8 @@ const ProductList = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   const categories = [
-    'Electronics', 'Fashion', 'Home & Garden', 'Sports',
-    'Books', 'Vehicles', 'Real Estate', 'Services', 'Other'
+    'Electronics', 'Fashion', 'Home & Garden', 'Sports', 'Books',
+    'Vehicles', 'Tools', 'FreeZone', 'Furniture', 'Other'
   ];
 
   const { data, isLoading, error } = useQuery({
@@ -237,8 +237,14 @@ const ProductList = () => {
                   value={`${filters.sortBy}-${filters.sortOrder}`}
                   onChange={(e) => {
                     const [sortBy, sortOrder] = e.target.value.split('-');
-                    handleFilterChange('sortBy', sortBy);
-                    handleFilterChange('sortOrder', sortOrder);
+                    const newFilters = { ...filters, sortBy, sortOrder, page: 1 };
+                    setFilters(newFilters);
+
+                    const newSearchParams = new URLSearchParams();
+                    Object.entries(newFilters).forEach(([k, v]) => {
+                      if (v) newSearchParams.set(k, v);
+                    });
+                    setSearchParams(newSearchParams);
                   }}
                   className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2"
                 >
@@ -246,8 +252,6 @@ const ProductList = () => {
                   <option value="createdAt-asc">Oldest First</option>
                   <option value="price-asc">Price: Low to High</option>
                   <option value="price-desc">Price: High to Low</option>
-                  <option value="title-asc">Name: A to Z</option>
-                  <option value="title-desc">Name: Z to A</option>
                 </select>
               </div>
             </div>

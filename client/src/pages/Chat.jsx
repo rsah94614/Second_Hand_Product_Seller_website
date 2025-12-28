@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
-import { Send, User, MessageSquare, MoreVertical, Phone, MapPin } from 'lucide-react';
+import { Send, User, MessageSquare, MoreVertical, Phone, MapPin, ArrowLeft, Menu } from 'lucide-react';
 import axios from 'axios';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -21,6 +21,7 @@ function Chat() {
     const [currentChat, setCurrentChat] = useState(null);
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
+    const [showMobileChat, setShowMobileChat] = useState(false); // Mobile view state
     const scrollRef = useRef();
 
     // Initialize Socket
@@ -193,17 +194,31 @@ function Chat() {
         }
     };
 
+    // Handle chat selection on mobile
+    const handleChatSelect = (conv) => {
+        setCurrentChat(conv);
+        setShowMobileChat(true); // Show chat view on mobile
+    };
+
+    // Handle back to conversations on mobile
+    const handleBackToConversations = () => {
+        setShowMobileChat(false);
+        setCurrentChat(null);
+    };
+
     return (
         <div className="flex flex-col h-screen bg-gray-50 overflow-hidden">
-            <div className="flex-none">
+            {/* Hide Header on mobile when in chat view */}
+            <div className={`flex-none ${showMobileChat ? 'hidden md:block' : ''}`}>
                 <Header />
             </div>
 
-            <div className="flex-1 container mx-auto p-4 overflow-hidden min-h-0">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 h-full bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+            <div className="flex-1 container mx-auto md:p-4 overflow-hidden min-h-0">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-0 md:gap-6 h-full bg-white md:rounded-2xl md:shadow-xl overflow-hidden md:border border-gray-100">
 
-                    {/* Sidebar */}
-                    <div className="md:col-span-1 border-r border-gray-100 flex flex-col h-full bg-gray-50/30 overflow-hidden">
+                    {/* Sidebar - Hide on mobile when chat is open */}
+                    <div className={`md:col-span-1 border-r border-gray-100 flex flex-col h-full bg-gray-50/30 overflow-hidden ${showMobileChat ? 'hidden md:flex' : 'flex'
+                        }`}>
                         <div className="p-4 border-b border-gray-100 bg-white flex-none">
                             <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                                 <MessageSquare className="w-6 h-6 text-primary-600" />
@@ -215,7 +230,7 @@ function Chat() {
                             {conversations.map((conv) => (
                                 <div
                                     key={conv._id}
-                                    onClick={() => setCurrentChat(conv)}
+                                    onClick={() => handleChatSelect(conv)}
                                     className={`p-3 rounded-xl cursor-pointer flex items-center gap-3 transition-all duration-200 group ${currentChat?._id === conv._id
                                         ? 'bg-primary-50 shadow-sm border border-primary-100'
                                         : 'hover:bg-white hover:shadow-sm border border-transparent'
@@ -256,14 +271,23 @@ function Chat() {
                         </div>
                     </div>
 
-                    {/* Chat Area */}
-                    <div className="md:col-span-3 flex flex-col h-full bg-white min-h-0 overflow-hidden">
+                    {/* Chat Area - Show on mobile when chat is selected */}
+                    <div className={`md:col-span-3 flex flex-col h-full bg-white min-h-0 overflow-hidden ${showMobileChat ? 'flex' : 'hidden md:flex'
+                        }`}>
                         {currentChat ? (
                             <>
                                 {/* Chat Header */}
-                                <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white shadow-sm z-10 flex-none">
+                                <div className="p-3 md:p-4 border-b border-gray-100 flex items-center justify-between bg-white shadow-sm z-10 flex-none">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-linear-to-br from-primary-500 to-primary-600 text-white flex items-center justify-center font-bold shadow-md">
+                                        {/* Back button - only on mobile */}
+                                        <button
+                                            onClick={handleBackToConversations}
+                                            className="md:hidden p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                        >
+                                            <ArrowLeft className="w-5 h-5 text-gray-700" />
+                                        </button>
+
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white flex items-center justify-center font-bold shadow-md">
                                             {currentChat.name ? currentChat.name[0].toUpperCase() : '?'}
                                         </div>
                                         <div>
@@ -274,7 +298,7 @@ function Chat() {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex gap-2 text-gray-400">
+                                    <div className="hidden md:flex gap-2 text-gray-400">
                                         <Button variant="ghost" size="icon" className="hover:text-primary-600 hover:bg-primary-50">
                                             <Phone className="w-5 h-5" />
                                         </Button>
@@ -285,15 +309,15 @@ function Chat() {
                                 </div>
 
                                 {/* Messages Area */}
-                                <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50 scroll-smooth">
+                                <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 bg-gray-50/50 scroll-smooth">
                                     {messages.map((msg, idx) => {
                                         // Handle both populated and direct ID formats
                                         const msgSenderId = typeof msg.sender === 'object' ? msg.sender._id : msg.sender;
                                         const isMe = msgSenderId === user.id;
                                         return (
                                             <div key={msg._id || idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'} group`}>
-                                                <div className={`max-w-[75%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                                                    <div className={`px-5 py-3 rounded-2xl shadow-sm text-sm leading-relaxed relative ${isMe
+                                                <div className={`max-w-[85%] md:max-w-[75%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                                                    <div className={`px-4 md:px-5 py-2.5 md:py-3 rounded-2xl shadow-sm text-sm leading-relaxed relative ${isMe
                                                         ? 'bg-primary-600 text-white rounded-br-none'
                                                         : 'bg-white text-gray-700 border border-gray-100 rounded-bl-none'
                                                         }`}>
@@ -310,13 +334,13 @@ function Chat() {
                                 </div>
 
                                 {/* Input Area */}
-                                <div className="p-4 bg-white border-t border-gray-100 flex-none">
-                                    <form onSubmit={sendMessage} className="flex gap-3 items-center max-w-4xl mx-auto">
+                                <div className="p-3 md:p-4 bg-white border-t border-gray-100 flex-none">
+                                    <form onSubmit={sendMessage} className="flex gap-2 md:gap-3 items-center max-w-4xl mx-auto">
                                         <Input
                                             value={newMessage}
                                             onChange={(e) => setNewMessage(e.target.value)}
-                                            placeholder="Type your message..."
-                                            className="flex-1 bg-gray-50 border-gray-200 focus:bg-white transition-all rounded-full px-6 py-6 shadow-inner"
+                                            placeholder="Type a message"
+                                            className="flex-1 bg-gray-50 border-gray-200 focus:bg-white transition-all rounded-full px-4 md:px-6 py-3 md:py-6 shadow-inner text-sm md:text-base"
                                         />
                                         <Button
                                             type="submit"
