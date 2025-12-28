@@ -8,8 +8,8 @@ router.get('/:userId', auth, async (req, res) => {
     try {
         const messages = await Message.find({
             $or: [
-                { sender: req.user.id, receiver: req.params.userId },
-                { sender: req.params.userId, receiver: req.user.id }
+                { sender: req.user._id, receiver: req.params.userId },
+                { sender: req.params.userId, receiver: req.user._id }
             ]
         }).sort({ timestamp: 1 });
         res.json(messages);
@@ -25,15 +25,15 @@ router.get('/conversations/all', auth, async (req, res) => {
         // Find all messages where the current user is sender or receiver
         const messages = await Message.find({
             $or: [
-                { sender: req.user.id },
-                { receiver: req.user.id }
+                { sender: req.user._id },
+                { receiver: req.user._id }
             ]
         }).populate('sender', 'name email').populate('receiver', 'name email');
 
         const users = new Map();
 
         messages.forEach(msg => {
-            const otherUser = msg.sender._id.toString() === req.user.id
+            const otherUser = msg.sender._id.toString() === req.user._id.toString()
                 ? msg.receiver
                 : msg.sender;
 

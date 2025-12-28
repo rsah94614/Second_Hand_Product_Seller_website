@@ -13,7 +13,7 @@ import Footer from '../components/Footer';
 const ENDPOINT = 'http://localhost:5000';
 
 function Chat() {
-    const { user, token } = useAuth();
+    const { user } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
     const [socket, setSocket] = useState(null);
@@ -27,43 +27,93 @@ function Chat() {
     useEffect(() => {
         if (user) {
             const newSocket = io(ENDPOINT);
+            console.log('🔌 Socket connecting to:', ENDPOINT);
             setSocket(newSocket);
-            newSocket.emit('join_room', user.id);
+
+            newSocket.on('connect', () => {
+                console.log('✅ Socket connected successfully, ID:', newSocket.id);
+                newSocket.emit('join_room', user.id);
+                console.log('🚪 Joined room:', user.id);
+            });
+
+            // Handle socket errors
+            newSocket.on('error', (error) => {
+                console.error('Socket error:', error);
+            });
+
+            newSocket.on('connect_error', (error) => {
+                console.error('Socket connection error:', error);
+            });
 
             return () => newSocket.close();
         }
     }, [user]);
 
     // Fetch Conversations
-    useEffect(() => {
-        const fetchConversations = async () => {
-            try {
-                const res = await axios.get('http://localhost:5000/api/chat/conversations/all', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                console.log('Conversations fetched:', res.data);
-                setConversations(res.data);
-            } catch (err) {
-                console.error('Error fetching conversations:', err);
+    const fetchConversations = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                console.log('⚠️ No token found, skipping conversation fetch');
+                return;
             }
-        };
-        if (token) fetchConversations();
-    }, [token, messages]); // Refresh when messages change
+            const res = await axios.get('http://localhost:5000/api/chat/conversations/all', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            console.log('Conversations fetched:', res.data);
+            setConversations(res.data);
+        } catch (err) {
+            console.error('Error fetching conversations:', err);
+        }
+    };
+
+    useEffect(() => {
+        if (user) fetchConversations();
+    }, [user]); // Fetch when user is available
 
     // Handle incoming messages
     useEffect(() => {
         if (socket) {
-            socket.on('receive_message', (message) => {
+            const handleReceiveMessage = (message) => {
                 console.log('Received message:', message);
-                if (currentChat && (message.sender === currentChat._id || message.sender === user.id)) {
+
+                // Extract IDs from message (handle both populated objects and direct IDs)
+                const messageSenderId = typeof message.sender === 'object' ? message.sender._id : message.sender;
+                const messageReceiverId = typeof message.receiver === 'object' ? message.receiver._id : message.receiver;
+
+                // Check if message belongs to current conversation
+                const isMessageForCurrentChat = currentChat && (
+                    (messageSenderId === user.id && messageReceiverId === currentChat._id) ||
+                    (messageSenderId === currentChat._id && messageReceiverId === user.id)
+                );
+
+                if (isMessageForCurrentChat) {
                     setMessages((prev) => {
-                        // Check for duplicates
-                        const exists = prev.some(m => m._id === message._id);
+                        // Check for duplicates using _id or a combination of fields
+                        const exists = prev.some(m => {
+                            const mSenderId = typeof m.sender === 'object' ? m.sender._id : m.sender;
+                            const mReceiverId = typeof m.receiver === 'object' ? m.receiver._id : m.receiver;
+
+                            return m._id === message._id ||
+                                (mSenderId === messageSenderId &&
+                                    mReceiverId === messageReceiverId &&
+                                    m.content === message.content &&
+                                    Math.abs(new Date(m.timestamp) - new Date(message.timestamp)) < 1000);
+                        });
                         if (exists) return prev;
                         return [...prev, message];
                     });
                 }
-            });
+
+                // Refresh conversations to update sidebar with new message
+                fetchConversations();
+            };
+
+            socket.on('receive_message', handleReceiveMessage);
+
+            return () => {
+                socket.off('receive_message', handleReceiveMessage);
+            };
         }
     }, [socket, currentChat, user]);
 
@@ -72,6 +122,11 @@ function Chat() {
         const fetchMessages = async () => {
             if (currentChat) {
                 try {
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        console.log('⚠️ No token found, cannot fetch messages');
+                        return;
+                    }
                     const res = await axios.get(`http://localhost:5000/api/chat/${currentChat._id}`, {
                         headers: { Authorization: `Bearer ${token}` }
                     });
@@ -82,8 +137,8 @@ function Chat() {
                 }
             }
         };
-        if (currentChat && token) fetchMessages();
-    }, [currentChat, token]);
+        if (currentChat) fetchMessages();
+    }, [currentChat]); // Fetch when chat changes
 
     // Scroll to bottom
     useEffect(() => {
@@ -116,9 +171,26 @@ function Chat() {
             timestamp: new Date(),
         };
 
-        console.log('Sending message:', messageData);
-        socket.emit('send_message', messageData);
+        console.log('📤 Sending message:', messageData);
+
+        // Optimistic UI update - add message immediately
+        const optimisticMessage = {
+            ...messageData,
+            _id: `temp-${Date.now()}`, // Temporary ID
+        };
+        setMessages((prev) => [...prev, optimisticMessage]);
+        console.log('✨ Added optimistic message to UI');
         setNewMessage('');
+
+        // Send via socket
+        if (socket) {
+            console.log('📡 Emitting send_message via socket...');
+            socket.emit('send_message', messageData);
+        } else {
+            console.error('❌ Socket not connected');
+            // Remove optimistic message if socket fails
+            setMessages((prev) => prev.filter(m => m._id !== optimisticMessage._id));
+        }
     };
 
     return (
@@ -145,13 +217,13 @@ function Chat() {
                                     key={conv._id}
                                     onClick={() => setCurrentChat(conv)}
                                     className={`p-3 rounded-xl cursor-pointer flex items-center gap-3 transition-all duration-200 group ${currentChat?._id === conv._id
-                                            ? 'bg-primary-50 shadow-sm border border-primary-100'
-                                            : 'hover:bg-white hover:shadow-sm border border-transparent'
+                                        ? 'bg-primary-50 shadow-sm border border-primary-100'
+                                        : 'hover:bg-white hover:shadow-sm border border-transparent'
                                         }`}
                                 >
                                     <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold shadow-sm transition-colors ${currentChat?._id === conv._id
-                                            ? 'bg-primary-600 text-white'
-                                            : 'bg-white text-primary-600 border border-primary-100 group-hover:border-primary-200'
+                                        ? 'bg-primary-600 text-white'
+                                        : 'bg-white text-primary-600 border border-primary-100 group-hover:border-primary-200'
                                         }`}>
                                         {conv.name ? conv.name[0].toUpperCase() : '?'}
                                     </div>
@@ -191,7 +263,7 @@ function Chat() {
                                 {/* Chat Header */}
                                 <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white shadow-sm z-10 flex-none">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white flex items-center justify-center font-bold shadow-md">
+                                        <div className="w-10 h-10 rounded-full bg-linear-to-br from-primary-500 to-primary-600 text-white flex items-center justify-center font-bold shadow-md">
                                             {currentChat.name ? currentChat.name[0].toUpperCase() : '?'}
                                         </div>
                                         <div>
@@ -215,13 +287,15 @@ function Chat() {
                                 {/* Messages Area */}
                                 <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50 scroll-smooth">
                                     {messages.map((msg, idx) => {
-                                        const isMe = msg.sender === user.id;
+                                        // Handle both populated and direct ID formats
+                                        const msgSenderId = typeof msg.sender === 'object' ? msg.sender._id : msg.sender;
+                                        const isMe = msgSenderId === user.id;
                                         return (
                                             <div key={msg._id || idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'} group`}>
                                                 <div className={`max-w-[75%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                                                     <div className={`px-5 py-3 rounded-2xl shadow-sm text-sm leading-relaxed relative ${isMe
-                                                            ? 'bg-primary-600 text-white rounded-br-none'
-                                                            : 'bg-white text-gray-700 border border-gray-100 rounded-bl-none'
+                                                        ? 'bg-primary-600 text-white rounded-br-none'
+                                                        : 'bg-white text-gray-700 border border-gray-100 rounded-bl-none'
                                                         }`}>
                                                         {msg.content}
                                                     </div>

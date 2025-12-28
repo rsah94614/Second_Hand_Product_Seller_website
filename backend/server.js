@@ -42,23 +42,34 @@ io.on('connection', (socket) => {
 
     socket.on('send_message', async (data) => {
         const { sender, receiver, content } = data;
+        console.log('📨 Received send_message event:', { sender, receiver, content });
 
         // Validate required fields
         if (!sender || !receiver || !content) {
-            console.error('Missing required fields:', { sender, receiver, content });
+            console.error('❌ Missing required fields:', { sender, receiver, content });
             socket.emit('error', { message: 'Missing required fields' });
             return;
         }
 
         // Save message to database
         try {
+            console.log('💾 Attempting to save message to database...');
             const newMessage = new Message({ sender, receiver, content });
             await newMessage.save();
+            console.log('✅ Message saved successfully:', newMessage._id);
+
+
+            // Populate sender and receiver details for frontend
+            await newMessage.populate('sender', 'name email');
+            await newMessage.populate('receiver', 'name email');
+            console.log('✅ Message populated with user details');
 
             // Emit to receiver's room
             io.to(receiver).emit('receive_message', newMessage);
+            console.log(`📤 Emitted message to receiver room: ${receiver}`);
             // Also emit back to sender for confirmation
             io.to(sender).emit('receive_message', newMessage);
+            console.log(`📤 Emitted message to sender room: ${sender}`);
         } catch (error) {
             console.error("Error saving message:", error);
             socket.emit('error', { message: 'Failed to save message' });
