@@ -30,13 +30,9 @@ const Header = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="shrink-0 flex items-center gap-2 group">
-            <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold text-xl group-hover:bg-primary-700 transition-colors">
-              B
-            </div>
-            <span className="text-2xl font-display font-bold text-gray-900 tracking-tight">
-              Bech<span className="text-primary-600">दे</span>.com
-            </span>
+          <Link to="/" className="shrink-0 flex items-center group">
+            <div className="w-20 h-8 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold text-xl group-hover:bg-primary-700 transition-colors"> Campus </div>
+            <div className="text-2xl font-display font-bold text-gray-900 tracking-tight">Mitra</div>
           </Link>
 
           {/* Desktop Search Bar */}

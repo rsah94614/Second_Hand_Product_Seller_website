@@ -43,7 +43,7 @@ const Home = () => {
     <div className="min-h-screen">
       <Header />
       {/* Hero Section */}
-      <section className="flex justify-center items-center bg-gradient-to-r from-primary-600 to-primary-800 text-white py-20">
+      <section className="flex justify-center items-center bg-linear-to-r from-primary-600 to-primary-800 text-white py-20">
         <div className="container px-4">
           <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-5xl font-bold mb-6 animate-fade-in font-display">

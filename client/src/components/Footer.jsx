@@ -10,7 +10,7 @@ const Footer = () => {
           {/* Brand */}
           <div>
             <div className="flex items-center space-x-2 mb-4">
-              <span className="text-2xl font-bold text-gray-800">Bechदे.com</span>
+              <span className="text-2xl font-bold text-gray-800">CampusMitra</span>
             </div>
             <p className="text-gray-600 mb-4">
               Buy and sell anything with ease. Discover great deals nearby and turn your items into cash.
@@ -85,7 +85,7 @@ const Footer = () => {
 
         {/* Bottom bar */}
         <div className="px-10 mt-10 border-t border-gray-200 flex flex-col md:flex-row items-center justify-between text-sm text-gray-500">
-          <p>© {new Date().getFullYear()} Beachदे.com. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} CampusMitra. All rights reserved.</p>
           <div className="flex items-center gap-4 mt-3 md:mt-0">
             <Link to="#" className="hover:text-blue-600">Privacy Policy</Link>
             <span className="text-gray-300">|</span>
