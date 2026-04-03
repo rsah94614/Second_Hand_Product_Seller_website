@@ -1,12 +1,1 @@
-const { v2: cloudinary } = require('cloudinary');
-
-const connectCloudinary = async () => {
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-  });
-  console.log("✅ Cloudinary connected successfully");
-};
-
-module.exports = connectCloudinary;
+module.exports = require('../src/config/cloudinary');

@@ -65,6 +65,7 @@ const Header = () => {
     { to: '/admin/users', label: 'Users', icon: Users },
     { to: '/admin/products', label: 'Products', icon: Package },
     { to: '/admin/categories', label: 'Categories', icon: FolderTree },
+    { to: '/admin/orders', label: 'Orders', icon: History },
   ];
 
   const utilityLinks = isAdmin
