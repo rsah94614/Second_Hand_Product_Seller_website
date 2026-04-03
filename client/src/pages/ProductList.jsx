@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
@@ -7,6 +7,8 @@ import { Search, Filter, MapPin } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { Input } from '../components/ui/Input';
+import { API_BASE_URL } from '../config/api';
+import { DEFAULT_PRODUCT_CATEGORIES } from '../config/productOptions';
 
 const ProductList = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -22,10 +24,15 @@ const ProductList = () => {
   });
   const [showFilters, setShowFilters] = useState(false);
 
-  const categories = [
-    'Electronics', 'Fashion', 'Home & Garden', 'Sports', 'Books',
-    'Vehicles', 'Real Estate', 'Services', 'Other'
-  ];
+  const { data: categoryResponse } = useQuery({
+    queryKey: ['product-categories'],
+    queryFn: () => axios.get(`${API_BASE_URL}/api/categories`).then((res) => res.data),
+  });
+
+  const categories = useMemo(
+    () => categoryResponse?.categories?.map((category) => category.name) || DEFAULT_PRODUCT_CATEGORIES,
+    [categoryResponse]
+  );
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['products', filters],
@@ -34,7 +41,7 @@ const ProductList = () => {
       Object.entries(filters).forEach(([key, value]) => {
         if (value) params.append(key, value);
       });
-      const res = await axios.get(import.meta.env.VITE_BACKEND_URL + `/api/products?${params.toString()}`);
+      const res = await axios.get(`${API_BASE_URL}/api/products?${params.toString()}`);
       return res.data;
     },
     keepPreviousData: true,

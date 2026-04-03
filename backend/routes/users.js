@@ -36,9 +36,17 @@ router.put('/:id', auth, async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to update this profile' });
     }
 
+    const allowedUpdates = {
+      name: req.body.name,
+      email: req.body.email,
+      phone: req.body.phone,
+      location: req.body.location,
+      avatar: req.body.avatar,
+    };
+
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      allowedUpdates,
       { new: true }
     ).select('-password');
 

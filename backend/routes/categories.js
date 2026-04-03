@@ -1,15 +1,40 @@
 const express = require('express');
-const { body, validationResult } = require('express-validator');
 const Category = require('../models/Category');
-const { auth, adminAuth } = require('../middleware/auth');
+const Product = require('../models/Product');
+const { adminAuth } = require('../middleware/auth');
+const { ensureDefaultCategories, slugify } = require('../utils/categoryDefaults');
 
 const router = express.Router();
 
-// @route   GET /api/categories
-// @desc    Get all categories
-// @access  Public
+const sanitizeCategoryPayload = (payload = {}) => {
+  const name = payload.name?.trim();
+  const description = payload.description?.trim() || '';
+  const sortOrder = Number.isFinite(Number(payload.sortOrder)) ? Number(payload.sortOrder) : 0;
+
+  if (!name || name.length < 2 || name.length > 50) {
+    return { error: 'Category name must be between 2 and 50 characters' };
+  }
+
+  if (description.length > 200) {
+    return { error: 'Description cannot exceed 200 characters' };
+  }
+
+  return {
+    data: {
+      name,
+      slug: slugify(name),
+      description,
+      isActive: payload.isActive !== undefined ? Boolean(payload.isActive) : true,
+      sortOrder,
+      icon: typeof payload.icon === 'string' ? payload.icon : '',
+      image: typeof payload.image === 'string' ? payload.image : '',
+    },
+  };
+};
+
 router.get('/', async (req, res) => {
   try {
+    await ensureDefaultCategories();
     const categories = await Category.find({ isActive: true })
       .sort({ sortOrder: 1, name: 1 })
       .select('-__v');
@@ -21,107 +46,100 @@ router.get('/', async (req, res) => {
   }
 });
 
-// @route   GET /api/categories/:id
-// @desc    Get single category by ID
-// @access  Public
-router.get('/:id', async (req, res) => {
+router.get('/admin/all', adminAuth, async (req, res) => {
   try {
-    const category = await Category.findById(req.params.id);
+    await ensureDefaultCategories();
+    const categories = await Category.find()
+      .sort({ sortOrder: 1, name: 1 })
+      .select('-__v');
 
-    if (!category) {
-      return res.status(404).json({ message: 'Category not found' });
-    }
+    const categoriesWithCounts = await Promise.all(
+      categories.map(async (category) => ({
+        ...category.toObject(),
+        productCount: await Product.countDocuments({ category: category.name }),
+      }))
+    );
 
-    res.json({ category });
+    res.json({ categories: categoriesWithCounts });
   } catch (error) {
-    console.error('Get category error:', error);
-    if (error.name === 'CastError') {
-      return res.status(400).json({ message: 'Invalid category ID' });
-    }
-    res.status(500).json({ message: 'Server error while fetching category' });
+    console.error('Admin get categories error:', error);
+    res.status(500).json({ message: 'Server error while fetching categories' });
   }
 });
 
-// @route   POST /api/categories
-// @desc    Create new category
-// @access  Private (Admin only)
-router.post('/', adminAuth, [
-  body('name').trim().isLength({ min: 2, max: 50 }).withMessage('Name must be between 2 and 50 characters'),
-  body('description').optional().trim().isLength({ max: 200 }).withMessage('Description cannot exceed 200 characters'),
-  body('icon').optional().isString().withMessage('Icon must be a string'),
-  body('image').optional().isString().withMessage('Image must be a string'),
-  body('parent').optional().isMongoId().withMessage('Invalid parent category ID'),
-  body('sortOrder').optional().isInt({ min: 0 }).withMessage('Sort order must be a non-negative integer')
-], async (req, res) => {
+router.post('/', adminAuth, async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ 
-        message: 'Validation failed', 
-        errors: errors.array() 
-      });
+    const { data, error } = sanitizeCategoryPayload(req.body);
+
+    if (error) {
+      return res.status(400).json({ message: error });
     }
 
-    const category = new Category(req.body);
-    await category.save();
+    const existing = await Category.findOne({
+      name: { $regex: `^${data.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' },
+    });
+
+    if (existing) {
+      return res.status(400).json({ message: 'Category with this name already exists' });
+    }
+
+    const category = await Category.create(data);
 
     res.status(201).json({
       message: 'Category created successfully',
-      category
+      category,
     });
   } catch (error) {
     console.error('Create category error:', error);
-    if (error.code === 11000) {
-      return res.status(400).json({ message: 'Category with this name already exists' });
-    }
     res.status(500).json({ message: 'Server error while creating category' });
   }
 });
 
-// @route   PUT /api/categories/:id
-// @desc    Update category
-// @access  Private (Admin only)
-router.put('/:id', adminAuth, [
-  body('name').optional().trim().isLength({ min: 2, max: 50 }).withMessage('Name must be between 2 and 50 characters'),
-  body('description').optional().trim().isLength({ max: 200 }).withMessage('Description cannot exceed 200 characters'),
-  body('isActive').optional().isBoolean().withMessage('isActive must be a boolean'),
-  body('sortOrder').optional().isInt({ min: 0 }).withMessage('Sort order must be a non-negative integer')
-], async (req, res) => {
+router.put('/:id', adminAuth, async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ 
-        message: 'Validation failed', 
-        errors: errors.array() 
-      });
-    }
+    const existingCategory = await Category.findById(req.params.id);
 
-    const category = await Category.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
-
-    if (!category) {
+    if (!existingCategory) {
       return res.status(404).json({ message: 'Category not found' });
     }
 
+    const mergedPayload = {
+      ...existingCategory.toObject(),
+      ...req.body,
+      isActive: req.body.isActive !== undefined ? req.body.isActive : existingCategory.isActive,
+    };
+    const { data, error } = sanitizeCategoryPayload(mergedPayload);
+
+    if (error) {
+      return res.status(400).json({ message: error });
+    }
+
+    const duplicate = await Category.findOne({
+      _id: { $ne: existingCategory._id },
+      name: { $regex: `^${data.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' },
+    });
+
+    if (duplicate) {
+      return res.status(400).json({ message: 'Category with this name already exists' });
+    }
+
+    if (existingCategory.name !== data.name) {
+      await Product.updateMany({ category: existingCategory.name }, { $set: { category: data.name } });
+    }
+
+    Object.assign(existingCategory, data);
+    await existingCategory.save();
+
     res.json({
       message: 'Category updated successfully',
-      category
+      category: existingCategory,
     });
   } catch (error) {
     console.error('Update category error:', error);
-    if (error.code === 11000) {
-      return res.status(400).json({ message: 'Category with this name already exists' });
-    }
     res.status(500).json({ message: 'Server error while updating category' });
   }
 });
 
-// @route   DELETE /api/categories/:id
-// @desc    Delete category
-// @access  Private (Admin only)
 router.delete('/:id', adminAuth, async (req, res) => {
   try {
     const category = await Category.findById(req.params.id);
@@ -130,13 +148,11 @@ router.delete('/:id', adminAuth, async (req, res) => {
       return res.status(404).json({ message: 'Category not found' });
     }
 
-    // Check if category has products
-    const Product = require('../models/Product');
-    const productCount = await Product.countDocuments({ category: req.params.id });
-    
+    const productCount = await Product.countDocuments({ category: category.name });
+
     if (productCount > 0) {
-      return res.status(400).json({ 
-        message: `Cannot delete category. It has ${productCount} products associated with it.` 
+      return res.status(400).json({
+        message: `Cannot delete category. It has ${productCount} products associated with it.`,
       });
     }
 
@@ -146,48 +162,6 @@ router.delete('/:id', adminAuth, async (req, res) => {
   } catch (error) {
     console.error('Delete category error:', error);
     res.status(500).json({ message: 'Server error while deleting category' });
-  }
-});
-
-// @route   POST /api/categories/:id/subcategories
-// @desc    Add subcategory to category
-// @access  Private (Admin only)
-router.post('/:id/subcategories', adminAuth, [
-  body('name').trim().isLength({ min: 2, max: 50 }).withMessage('Name must be between 2 and 50 characters')
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ 
-        message: 'Validation failed', 
-        errors: errors.array() 
-      });
-    }
-
-    const { name } = req.body;
-    const slug = name.toLowerCase().replace(/[^a-z0-9 -]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim('-');
-
-    const category = await Category.findById(req.params.id);
-    if (!category) {
-      return res.status(404).json({ message: 'Category not found' });
-    }
-
-    // Check if subcategory already exists
-    const existingSubcategory = category.subcategories.find(sub => sub.slug === slug);
-    if (existingSubcategory) {
-      return res.status(400).json({ message: 'Subcategory with this name already exists' });
-    }
-
-    category.subcategories.push({ name, slug });
-    await category.save();
-
-    res.json({
-      message: 'Subcategory added successfully',
-      category
-    });
-  } catch (error) {
-    console.error('Add subcategory error:', error);
-    res.status(500).json({ message: 'Server error while adding subcategory' });
   }
 });
 

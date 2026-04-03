@@ -1,12 +1,32 @@
 const express = require('express');
 const Product = require('../models/Product');
 const auth = require('../middleware/auth');
+const { userAuth } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const { v2: cloudinary } = require('cloudinary');
 const fs = require('fs');
+const Category = require('../models/Category');
+const { ensureDefaultCategories } = require('../utils/categoryDefaults');
 
 const router = express.Router();
 const allowedSortFields = new Set(['createdAt', 'price', 'title', 'views']);
+
+const parseContactInfo = (value) => {
+  if (!value) {
+    return {};
+  }
+
+  if (typeof value === 'string') {
+    return JSON.parse(value);
+  }
+
+  return value;
+};
+
+const ensureValidCategory = async (category) => {
+  await ensureDefaultCategories();
+  return Category.findOne({ name: category, isActive: true });
+};
 
 // Get all products with pagination and filters
 router.get('/', async (req, res) => {
@@ -104,7 +124,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create new product
-router.post('/', auth, upload.array('images', 5), async (req, res) => {
+router.post('/', userAuth, upload.array('images', 5), async (req, res) => {
   const tempFilePaths = (req.files || []).map((file) => file.path).filter(Boolean);
 
   try {
@@ -112,6 +132,11 @@ router.post('/', auth, upload.array('images', 5), async (req, res) => {
 
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ message: 'Please upload at least one image' });
+    }
+
+    const validCategory = await ensureValidCategory(category);
+    if (!validCategory) {
+      return res.status(400).json({ message: 'Please choose a valid active category' });
     }
 
     // Upload each image to Cloudinary
@@ -130,7 +155,7 @@ router.post('/', auth, upload.array('images', 5), async (req, res) => {
       condition,
       price,
       location,
-      contactInfo: JSON.parse(contactInfo),
+      contactInfo: parseContactInfo(contactInfo),
       images: uploadedImages,
       seller: req.user._id
     };
@@ -155,7 +180,7 @@ router.post('/', auth, upload.array('images', 5), async (req, res) => {
 });
 
 // Update product
-router.put('/:id', auth, upload.array('images', 5), async (req, res) => {
+router.put('/:id', userAuth, upload.array('images', 5), async (req, res) => {
   const tempFilePaths = (req.files || []).map((file) => file.path).filter(Boolean);
 
   try {
@@ -185,10 +210,12 @@ router.put('/:id', auth, upload.array('images', 5), async (req, res) => {
       existingImages = existingImages ? [existingImages] : [];
     }
 
-    const contactInfo =
-      typeof req.body.contactInfo === 'string'
-        ? JSON.parse(req.body.contactInfo)
-        : req.body.contactInfo;
+    const validCategory = await ensureValidCategory(req.body.category);
+    if (!validCategory) {
+      return res.status(400).json({ message: 'Please choose a valid active category' });
+    }
+
+    const contactInfo = parseContactInfo(req.body.contactInfo);
 
     const nextImages = [...existingImages, ...uploadedImages];
 
@@ -203,7 +230,7 @@ router.put('/:id', auth, upload.array('images', 5), async (req, res) => {
         contactInfo,
         images: nextImages,
       },
-      { new: true }
+      { new: true, runValidators: true }
     ).populate('seller', 'name phone location');
 
     res.json(updatedProduct);
@@ -219,7 +246,7 @@ router.put('/:id', auth, upload.array('images', 5), async (req, res) => {
 });
 
 // Delete product
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', userAuth, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
 

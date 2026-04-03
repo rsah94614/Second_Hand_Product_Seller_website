@@ -11,6 +11,9 @@ Backend API for the OLX Clone application built with Node.js, Express.js, and Mo
 - **Pagination**: Efficient data pagination for large datasets
 - **Data Validation**: Input validation and sanitization
 - **CORS Support**: Cross-origin resource sharing enabled
+- **Role-Based Access**: User and admin roles
+- **Admin Management**: User management, product moderation, and category management
+- **Real-Time Chat**: Socket.IO chat with authenticated socket connections
 
 ## API Endpoints
 
@@ -40,6 +43,28 @@ Backend API for the OLX Clone application built with Node.js, Express.js, and Mo
 | GET | `/:id` | Get user profile | No |
 | PUT | `/:id` | Update user profile | Yes (Owner) |
 
+### Admin Routes (`/api/admin`)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/overview` | Get admin dashboard metrics | Yes (Admin) |
+| GET | `/users` | Get all users with filters | Yes (Admin) |
+| PATCH | `/users/:id` | Update role, verification, or active status | Yes (Admin) |
+| GET | `/products` | Get all products with moderation filters | Yes (Admin) |
+| PATCH | `/products/:id` | Update product active/sold status | Yes (Admin) |
+| DELETE | `/products/:id` | Delete product | Yes (Admin) |
+| GET | `/categories` | Get all categories for admin analytics | Yes (Admin) |
+
+### Category Routes (`/api/categories`)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/` | Get active categories for product forms and filters | No |
+| GET | `/admin/all` | Get all categories with product counts | Yes (Admin) |
+| POST | `/` | Create category | Yes (Admin) |
+| PUT | `/:id` | Update category | Yes (Admin) |
+| DELETE | `/:id` | Delete category | Yes (Admin) |
+
 ## Query Parameters
 
 ### Product List (`GET /api/products`)
@@ -65,6 +90,8 @@ Backend API for the OLX Clone application built with Node.js, Express.js, and Mo
   phone: String (optional),
   location: String (optional),
   avatar: String (optional),
+  role: String ('user' | 'admin'),
+  isActive: Boolean (default: true),
   isVerified: Boolean (default: false),
   createdAt: Date,
   updatedAt: Date
@@ -81,7 +108,7 @@ Backend API for the OLX Clone application built with Node.js, Express.js, and Mo
   condition: String (required, enum),
   location: String (required),
   images: [String] (required),
-  seller: ObjectId (ref: User),
+  seller: ObjectId (ref: User, listing owner),
   isSold: Boolean (default: false),
   isActive: Boolean (default: true),
   views: Number (default: 0),
@@ -100,12 +127,16 @@ Create a `.env` file in the backend directory:
 
 ```env
 PORT=5000
-MONGODB_URI=mongodb://localhost:27017/olx-clone
-JWT_SECRET=your_jwt_secret_key_here
+MONGODB_URI=mongodb://127.0.0.1:27017/campus-mitra
+JWT_SECRET=replace-with-a-strong-secret
 CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
 CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+CLIENT_URL=http://localhost:5173
+ADMIN_EMAIL=admin@example.com
 ```
+
+You can also copy from [`.env.example`](/d:/sem%20project%20GU/backend/.env.example).
 
 ## Installation
 
@@ -125,6 +156,52 @@ npm run dev
 ```bash
 npm start
 ```
+
+## Admin Setup
+
+There are two supported ways to create or promote an admin account.
+
+### Option 1: Promote by email from `.env`
+
+1. Register a normal user account in the app.
+2. Set `ADMIN_EMAIL` in `backend/.env` to that same email.
+3. Restart the backend.
+4. Log in again with that user.
+
+When the backend authenticates that user, the role is upgraded to `admin`.
+
+### Option 2: Use the admin seed command
+
+This is the cleaner bootstrap flow for demos and project submission.
+
+1. Register a normal user account first.
+2. Run the command from the `backend` folder:
+
+```bash
+npm run seed:admin -- user@example.com
+```
+
+This script:
+- finds the user by email
+- sets `role = admin`
+- sets `isActive = true`
+- sets `isVerified = true`
+
+After running it, log in again with that account and open:
+
+- `/admin-dashboard`
+- `/admin/users`
+- `/admin/products`
+- `/admin/categories`
+
+## Recommended Demo Accounts
+
+For college submission, keep two accounts ready:
+
+- `user` account for browsing, listing products, cart, chat, and order flow
+- `admin` account for moderation and admin tools
+
+This makes your demo much smoother during viva or evaluation.
 
 ## Dependencies
 
@@ -157,6 +234,9 @@ The API includes comprehensive error handling:
 - JWT token authentication
 - Input validation and sanitization
 - CORS protection
+- Role-based route protection
+- Authenticated socket connections for chat
+- Upload validation for image type and size
 - Rate limiting (can be added)
 - Helmet.js for security headers (can be added)
 
@@ -168,7 +248,7 @@ The application includes the following database indexes for optimal performance:
 - Product title and description (text search)
 - Product category
 - Product location
-- Product seller
+- Product listing owner
 - Product creation date
 
 ## Future Enhancements
@@ -176,8 +256,8 @@ The application includes the following database indexes for optimal performance:
 - Email verification
 - Password reset functionality
 - Product favorites/wishlist
-- Messaging system between users
 - Advanced search with geolocation
 - Product recommendations
-- Admin dashboard
+- Order monitoring tools for admin
+- Reports and moderation workflow
 - Analytics and reporting

@@ -404,7 +404,7 @@ const PlaceOrder = () => {
                   </div>
                 </div>
                 <div className="space-y-3 text-sm text-gray-600 bg-blue-50 p-4 rounded-xl border border-blue-100">
-                  <p className="font-semibold text-blue-900 mb-2">Seller Contact</p>
+                  <p className="font-semibold text-blue-900 mb-2">Listing Owner Contact</p>
                   <div className="flex items-center">
                     <Phone className="w-4 h-4 mr-2 text-blue-500" />
                     {product.contactInfo?.phone || 'Phone not provided'}

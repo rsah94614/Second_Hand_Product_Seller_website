@@ -262,9 +262,9 @@ const ProductDetail = () => {
                 </div>
               </div>
 
-              {/* Seller Info */}
+              {/* Listing Owner Info */}
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Seller Information</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Listing Owner</h3>
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-14 h-14 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center font-bold text-xl">
                     {product.seller.name?.[0] || <User className="w-6 h-6" />}
@@ -346,7 +346,7 @@ const ProductDetail = () => {
                           className="flex-1 h-11"
                         >
                           <MessageSquare className="w-4 h-4 mr-2" />
-                          Chat with Seller
+                          Chat with Owner
                         </Button>
                         <Button
                           onClick={handleShare}

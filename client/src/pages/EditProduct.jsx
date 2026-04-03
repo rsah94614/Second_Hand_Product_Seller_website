@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
@@ -6,6 +6,7 @@ import { Upload, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Header from '../components/Header';
 import { API_BASE_URL } from '../config/api';
+import { DEFAULT_PRODUCT_CATEGORIES, PRODUCT_CONDITIONS } from '../config/productOptions';
 
 const EditProduct = () => {
   const { id } = useParams();
@@ -30,37 +31,44 @@ const EditProduct = () => {
     queryKey: ['product', id],
     queryFn: () => axios.get(`${API_BASE_URL}/api/products/${id}`).then(res => res.data),
     enabled: !!id,
-    onSuccess: (data) => {
-      setFormData({
-        title: data.title || '',
-        description: data.description || '',
-        price: data.price || '',
-        category: data.category || '',
-        condition: data.condition || '',
-        location: data.location || '',
-        contactInfo: {
-          phone: data.contactInfo?.phone || '',
-          email: data.contactInfo?.email || '',
-        },
-      });
-
-      setImages(
-        data.images?.map((img, index) => ({
-          id: `existing-${index}`,
-          url: img,
-          isExisting: true,
-        })) || []
-      );
-    },
   });
 
+  useEffect(() => {
+    if (!product) {
+      return;
+    }
 
-  const categories = [
-    'Electronics', 'Fashion', 'Home & Garden', 'Sports',
-    'Books', 'Vehicles', 'Real Estate', 'Services', 'Other'
-  ];
+    setFormData({
+      title: product.title || '',
+      description: product.description || '',
+      price: product.price || '',
+      category: product.category || '',
+      condition: product.condition || '',
+      location: product.location || '',
+      contactInfo: {
+        phone: product.contactInfo?.phone || '',
+        email: product.contactInfo?.email || '',
+      },
+    });
 
-  const conditions = ['New', 'Like New', 'Good', 'Fair', 'Poor'];
+    setImages(
+      product.images?.map((img, index) => ({
+        id: `existing-${index}`,
+        url: img,
+        isExisting: true,
+      })) || []
+    );
+    setNewImages([]);
+  }, [product]);
+
+  const { data: categoryResponse } = useQuery({
+    queryKey: ['product-categories'],
+    queryFn: () => axios.get(`${API_BASE_URL}/api/categories`).then((res) => res.data),
+  });
+
+  const categories = categoryResponse?.categories?.map((category) => category.name) || DEFAULT_PRODUCT_CATEGORIES;
+
+  const conditions = PRODUCT_CONDITIONS;
 
   const handleChange = (e) => {
     const { name, value } = e.target;

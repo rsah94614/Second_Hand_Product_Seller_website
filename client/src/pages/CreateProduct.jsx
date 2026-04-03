@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { Upload, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import axios from 'axios';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { API_BASE_URL } from '../config/api';
+import { DEFAULT_PRODUCT_CATEGORIES, PRODUCT_CONDITIONS } from '../config/productOptions';
 
 const CreateProduct = () => {
   const [formData, setFormData] = useState({
@@ -26,12 +29,17 @@ const CreateProduct = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const categories = [
-    'Electronics', 'Fashion', 'Home & Garden', 'Sports',
-    'Books', 'Vehicles', 'Real Estate', 'Services', 'Other'
-  ];
+  const { data: categoryResponse } = useQuery({
+    queryKey: ['product-categories'],
+    queryFn: () => axios.get(`${API_BASE_URL}/api/categories`).then((res) => res.data),
+  });
 
-  const conditions = ['New', 'Like New', 'Good', 'Fair', 'Poor'];
+  const categories = useMemo(
+    () => categoryResponse?.categories?.map((category) => category.name) || DEFAULT_PRODUCT_CATEGORIES,
+    [categoryResponse]
+  );
+
+  const conditions = PRODUCT_CONDITIONS;
 
   const handleChange = (e) => {
     const { name, value } = e.target;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { User, Mail, Phone, MapPin, Edit, Save, X } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Edit, Save, X, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Header from '../components/Header';
 import axios from 'axios';
@@ -115,6 +115,16 @@ const Profile = () => {
                       user.name
                     )}
                   </h2>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${
+                      user.role === 'admin'
+                        ? 'bg-red-100 text-red-700'
+                        : 'bg-emerald-100 text-emerald-700'
+                    }`}>
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      {user.role}
+                    </span>
+                  </div>
                   <p className="text-gray-600">Member since {new Date().getFullYear()}</p>
                 </div>
               </div>

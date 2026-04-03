@@ -8,6 +8,7 @@ const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const Message = require('./models/Message');
 const User = require('./models/User');
+const { ensureDefaultCategories } = require('./utils/categoryDefaults');
 
 dotenv.config();
 
@@ -68,6 +69,8 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/cart', require('./routes/cart'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/chat', require('./routes/chat'));
+app.use('/api/admin', require('./routes/admin'));
+app.use('/api/categories', require('./routes/categories'));
 
 io.on('connection', (socket) => {
   const userId = socket.user._id.toString();
@@ -123,6 +126,7 @@ const connectCloudinary = require('./config/cloudinary');
 const startServer = async () => {
   try {
     await connectDB();
+    await ensureDefaultCategories();
     connectCloudinary();
 
     const PORT = process.env.PORT || 5000;

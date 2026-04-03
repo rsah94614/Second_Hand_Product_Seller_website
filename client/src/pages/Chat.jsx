@@ -249,7 +249,7 @@ function Chat() {
                                         <MessageSquare className="w-8 h-8" />
                                     </div>
                                     <p className="text-gray-500 font-medium">No conversations yet</p>
-                                    <p className="text-xs text-gray-400 mt-1">Start chatting with sellers!</p>
+                                    <p className="text-xs text-gray-400 mt-1">Start chatting with other users!</p>
                                 </div>
                             )}
                         </div>
@@ -337,7 +337,7 @@ function Chat() {
                                     <MessageSquare className="w-10 h-10 text-gray-400" />
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-600 mb-2">Your Messages</h3>
-                                <p className="text-gray-400 max-w-xs text-center">Select a conversation from the sidebar to start chatting with buyers or sellers.</p>
+                                <p className="text-gray-400 max-w-xs text-center">Select a conversation from the sidebar to start chatting with other users.</p>
                             </div>
                         )}
                     </div>

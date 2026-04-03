@@ -8,6 +8,7 @@ import { Plus, Edit, Trash2, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { API_BASE_URL } from '../config/api';
 
 const MyProducts = () => {
   const { user } = useAuth();
@@ -16,7 +17,7 @@ const { data: products, isLoading, refetch } = useQuery({
   queryKey: ['user-products', user?.id],
   queryFn: () =>
     axios
-      .get(`${import.meta.env.VITE_BACKEND_URL}/api/products/user/${user?.id}`)
+      .get(`${API_BASE_URL}/api/products/user/${user?.id}`)
       .then(res => res.data),
   enabled: !!user?.id,
 });
@@ -25,7 +26,7 @@ const { data: products, isLoading, refetch } = useQuery({
     if (!window.confirm('Are you sure you want to delete this product?')) return;
 
     try {
-      await axios.delete(import.meta.env.VITE_BACKEND_URL + `/api/products/${productId}`);
+      await axios.delete(`${API_BASE_URL}/api/products/${productId}`);
       toast.success('Product deleted successfully');
       refetch();
     } catch {
@@ -35,7 +36,7 @@ const { data: products, isLoading, refetch } = useQuery({
 
   const toggleProductStatus = async (productId, currentStatus) => {
     try {
-      await axios.put(import.meta.env.VITE_BACKEND_URL + `/api/products/${productId}`, {
+      await axios.put(`${API_BASE_URL}/api/products/${productId}`, {
         isActive: !currentStatus
       });
       toast.success(`Product ${!currentStatus ? 'activated' : 'deactivated'} successfully`);

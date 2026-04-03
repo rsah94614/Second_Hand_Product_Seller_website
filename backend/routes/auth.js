@@ -22,7 +22,8 @@ router.post('/register', async (req, res) => {
       email,
       password,
       phone,
-      location
+      location,
+      role: 'user'
     });
 
     await user.save();
@@ -42,7 +43,8 @@ router.post('/register', async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
-        location: user.location
+        location: user.location,
+        role: user.role
       }
     });
   } catch (error) {
@@ -59,6 +61,14 @@ router.post('/login', async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    if (!user.role) {
+      user.role = 'user';
+      await user.save();
+    } else if (user.role !== 'admin' && user.role !== 'user') {
+      user.role = 'user';
+      await user.save();
     }
 
     // Check password
@@ -82,7 +92,8 @@ router.post('/login', async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
-        location: user.location
+        location: user.location,
+        role: user.role
       }
     });
   } catch (error) {
@@ -100,7 +111,8 @@ router.get('/me', auth, async (req, res) => {
         email: req.user.email,
         phone: req.user.phone,
         location: req.user.location,
-        avatar: req.user.avatar
+        avatar: req.user.avatar,
+        role: req.user.role
       }
     });
   } catch (error) {
