@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query'
 import axios from 'axios';
@@ -9,11 +9,10 @@ import Footer from '../components/Footer.jsx';
 
 const Home = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
 
   const categories = [
     'Electronics', 'Fashion', 'Home & Garden', 'Sports', 'Books',
-    'Vehicles', 'Tools', 'FreeZone', 'Furniture', 'Other'
+    'Vehicles', 'Real Estate', 'Services', 'Other'
   ];
 
   const { data: featuredProducts, isLoading } = useQuery({

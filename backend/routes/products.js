@@ -6,6 +6,7 @@ const { v2: cloudinary } = require('cloudinary');
 const fs = require('fs');
 
 const router = express.Router();
+const allowedSortFields = new Set(['createdAt', 'price', 'title', 'views']);
 
 // Get all products with pagination and filters
 router.get('/', async (req, res) => {
@@ -39,8 +40,9 @@ router.get('/', async (req, res) => {
       ];
     }
 
+    const safeSortBy = allowedSortFields.has(sortBy) ? sortBy : 'createdAt';
     const sortOptions = {};
-    sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
+    sortOptions[safeSortBy] = sortOrder === 'desc' ? -1 : 1;
 
     const products = await Product.find(query)
       .populate('seller', 'name phone location')
@@ -82,7 +84,9 @@ router.get('/:id', async (req, res) => {
         const userId = decoded.userId;
 
         // If user hasn't viewed the product yet
-        if (!product.viewedBy.includes(userId)) {
+        const hasViewed = product.viewedBy.some((viewerId) => viewerId.toString() === userId);
+
+        if (!hasViewed) {
           product.views += 1;
           product.viewedBy.push(userId);
           await product.save();
@@ -101,6 +105,8 @@ router.get('/:id', async (req, res) => {
 
 // Create new product
 router.post('/', auth, upload.array('images', 5), async (req, res) => {
+  const tempFilePaths = (req.files || []).map((file) => file.path).filter(Boolean);
+
   try {
     const { title, description, category, condition, price, location, contactInfo } = req.body;
 
@@ -115,9 +121,6 @@ router.post('/', auth, upload.array('images', 5), async (req, res) => {
         folder: 'olx-products'
       });
       uploadedImages.push(result.secure_url);
-
-      // Remove temp file after upload
-      fs.unlinkSync(file.path);
     }
 
     const productData = {
@@ -142,11 +145,19 @@ router.post('/', auth, upload.array('images', 5), async (req, res) => {
   } catch (error) {
     console.error('Error creating product:', error);
     res.status(500).json({ message: error.message });
+  } finally {
+    tempFilePaths.forEach((filePath) => {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    });
   }
 });
 
 // Update product
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth, upload.array('images', 5), async (req, res) => {
+  const tempFilePaths = (req.files || []).map((file) => file.path).filter(Boolean);
+
   try {
     const product = await Product.findById(req.params.id);
 
@@ -159,15 +170,51 @@ router.put('/:id', auth, async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to update this product' });
     }
 
+    let uploadedImages = [];
+    if (req.files?.length) {
+      for (const file of req.files) {
+        const result = await cloudinary.uploader.upload(file.path, {
+          folder: 'olx-products'
+        });
+        uploadedImages.push(result.secure_url);
+      }
+    }
+
+    let existingImages = req.body.existingImages || [];
+    if (!Array.isArray(existingImages)) {
+      existingImages = existingImages ? [existingImages] : [];
+    }
+
+    const contactInfo =
+      typeof req.body.contactInfo === 'string'
+        ? JSON.parse(req.body.contactInfo)
+        : req.body.contactInfo;
+
+    const nextImages = [...existingImages, ...uploadedImages];
+
+    if (nextImages.length === 0) {
+      return res.status(400).json({ message: 'Please keep at least one image' });
+    }
+
     const updatedProduct = await Product.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      {
+        ...req.body,
+        contactInfo,
+        images: nextImages,
+      },
       { new: true }
     ).populate('seller', 'name phone location');
 
     res.json(updatedProduct);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  } finally {
+    tempFilePaths.forEach((filePath) => {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    });
   }
 });
 

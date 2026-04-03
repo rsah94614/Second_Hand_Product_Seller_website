@@ -28,7 +28,7 @@ const { data: products, isLoading, refetch } = useQuery({
       await axios.delete(import.meta.env.VITE_BACKEND_URL + `/api/products/${productId}`);
       toast.success('Product deleted successfully');
       refetch();
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete product');
     }
   };
@@ -40,7 +40,7 @@ const { data: products, isLoading, refetch } = useQuery({
       });
       toast.success(`Product ${!currentStatus ? 'activated' : 'deactivated'} successfully`);
       refetch();
-    } catch (error) {
+    } catch {
       toast.error('Failed to update product status');
     }
   };

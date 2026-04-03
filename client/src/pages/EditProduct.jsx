@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
-import { Upload, X, Plus } from 'lucide-react';
+import { Upload, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Header from '../components/Header';
+import { API_BASE_URL } from '../config/api';
 
 const EditProduct = () => {
   const { id } = useParams();
@@ -27,7 +28,7 @@ const EditProduct = () => {
 
   const { data: product, isLoading: productLoading } = useQuery({
     queryKey: ['product', id],
-    queryFn: () => axios.get(import.meta.env.VITE_BACKEND_URL + `/api/products/${id}`).then(res => res.data),
+    queryFn: () => axios.get(`${API_BASE_URL}/api/products/${id}`).then(res => res.data),
     enabled: !!id,
     onSuccess: (data) => {
       setFormData({
@@ -140,7 +141,7 @@ const EditProduct = () => {
         formDataToSend.append('images', image.file);
       });
 
-      const response = await fetch(`/api/products/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/products/${id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -155,7 +156,7 @@ const EditProduct = () => {
         const error = await response.json();
         toast.error(error.message || 'Failed to update product');
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to update product');
     } finally {
       setIsLoading(false);

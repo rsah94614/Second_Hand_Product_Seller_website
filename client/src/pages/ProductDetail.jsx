@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { MapPin, Eye, Calendar, Phone, Mail, User, Edit, Trash2, Share2, ShoppingCart, Minus, Plus, Package, MessageSquare } from 'lucide-react';
+import { MapPin, Eye, Calendar, Phone, Mail, User, Edit, Trash2, Share2, ShoppingCart, Package, MessageSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { assets } from '../assets/assets'
 import Header from '../components/Header';
@@ -53,7 +53,7 @@ const ProductDetail = () => {
       await axios.delete(import.meta.env.VITE_BACKEND_URL + `/api/products/${id}`);
       toast.success('Product deleted successfully');
       navigate('/my-products');
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete product');
     }
   };

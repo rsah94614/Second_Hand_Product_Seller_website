@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import ProductCard from '../components/ProductCard';
-import { Search, Filter, SortAsc, SortDesc, MapPin } from 'lucide-react';
+import { Search, Filter, MapPin } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { Input } from '../components/ui/Input';
@@ -24,7 +24,7 @@ const ProductList = () => {
 
   const categories = [
     'Electronics', 'Fashion', 'Home & Garden', 'Sports', 'Books',
-    'Vehicles', 'Tools', 'FreeZone', 'Furniture', 'Other'
+    'Vehicles', 'Real Estate', 'Services', 'Other'
   ];
 
   const { data, isLoading, error } = useQuery({

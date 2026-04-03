@@ -174,12 +174,23 @@ router.delete('/:productId', auth, async (req, res) => {
 // Checkout current cart
 router.post('/checkout', auth, async (req, res) => {
   try {
+    const { shippingDetails = {} } = req.body;
     const cart = await Cart.findOne({ user: req.user._id }).populate(
       'items.product'
     );
 
     if (!cart || cart.items.length === 0) {
       return res.status(400).json({ message: 'Cart is empty' });
+    }
+
+    const unavailableProduct = cart.items.find(
+      (item) => !item.product || item.product.isSold || item.product.isActive === false
+    );
+
+    if (unavailableProduct) {
+      return res.status(400).json({
+        message: 'One or more products in your cart are no longer available.',
+      });
     }
 
     const orderItems = cart.items.map((item) => ({
@@ -199,6 +210,18 @@ router.post('/checkout', auth, async (req, res) => {
       user: req.user._id,
       items: orderItems,
       total,
+      shippingDetails: {
+        fullName: shippingDetails.fullName || req.user.name || '',
+        phone: shippingDetails.phone || req.user.phone || '',
+        email: shippingDetails.email || req.user.email || '',
+        addressLine1: shippingDetails.addressLine1 || '',
+        addressLine2: shippingDetails.addressLine2 || '',
+        landmark: shippingDetails.landmark || '',
+        city: shippingDetails.city || '',
+        state: shippingDetails.state || '',
+        postalCode: shippingDetails.postalCode || '',
+        country: shippingDetails.country || 'India',
+      },
     });
 
     cart.items = [];

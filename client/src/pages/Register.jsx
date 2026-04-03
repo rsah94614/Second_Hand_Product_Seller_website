@@ -44,7 +44,8 @@ const Register = () => {
 
     setIsLoading(true);
 
-    const { confirmPassword, ...userData } = formData;
+    const userData = { ...formData };
+    delete userData.confirmPassword;
     const result = await register(userData);
 
     if (result.success) {

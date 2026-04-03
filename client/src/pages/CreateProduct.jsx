@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Upload, X, Plus } from 'lucide-react';
+import { Upload, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { API_BASE_URL } from '../config/api';
 
 const CreateProduct = () => {
   const [formData, setFormData] = useState({
@@ -27,7 +28,7 @@ const CreateProduct = () => {
 
   const categories = [
     'Electronics', 'Fashion', 'Home & Garden', 'Sports',
-    'Books', 'Vehicles', 'Tools', 'Services', 'Other'
+    'Books', 'Vehicles', 'Real Estate', 'Services', 'Other'
   ];
 
   const conditions = ['New', 'Like New', 'Good', 'Fair', 'Poor'];
@@ -97,11 +98,11 @@ const CreateProduct = () => {
       });
 
       // Add images
-      images.forEach((image, index) => {
+      images.forEach((image) => {
         formDataToSend.append('images', image.file);        
       });
 
-      const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/api/products', {
+      const response = await fetch(`${API_BASE_URL}/api/products`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -118,7 +119,7 @@ const CreateProduct = () => {
         const error = await response.json();
         toast.error(error.message || 'Failed to create product');
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to create product');
     } finally {
       setIsLoading(false);

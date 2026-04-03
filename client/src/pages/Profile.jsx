@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import Header from '../components/Header';
 import axios from 'axios';
 import Footer from '../components/Footer';
+import { API_BASE_URL } from '../config/api';
 
 const Profile = () => {
   const { user, logout } = useAuth();
@@ -25,25 +26,17 @@ const Profile = () => {
 
   const handleSave = async () => {
     try {
-      const response = await axios(import.meta.env.VITE_BACKEND_URL + `/api/users/${user.id}`, {
-        method: 'PUT',
+      await axios.put(`${API_BASE_URL}/api/users/${user.id}`, formData, {
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify(formData)
       });
 
-      if (response.ok) {
-        toast.success('Profile updated successfully!');
-        setIsEditing(false);
-        // Refresh user data
-        window.location.reload();
-      } else {
-        toast.error('Failed to update profile');
-      }
-    } catch (error) {
-      toast.error('Failed to update profile');
+      toast.success('Profile updated successfully!');
+      setIsEditing(false);
+      window.location.reload();
+    } catch {
+      toast.error('Failed to update profile.');
     }
   };
 
@@ -140,7 +133,7 @@ const Profile = () => {
                         className="form-input border rounded pl-3 pr-3 py-1"
                       />
                     ) : (
-                      <p className="text-gray-900">{user.email}</p> // {} required
+                      <p className="text-gray-900">{user.email}</p>
                     )}
                   </div>
                 </div>
@@ -158,7 +151,7 @@ const Profile = () => {
                         className="form-input border rounded pl-3 pr-3 py-1"
                       />
                     ) : (
-                      <p className="text-gray-900">{user.phone || 'Not provided'}</p> //{} required
+                      <p className="text-gray-900">{user.phone || 'Not provided'}</p>
                     )}
                   </div>
                 </div>
@@ -176,7 +169,7 @@ const Profile = () => {
                         className="form-input border rounded pl-3 pr-3 py-1"
                       />
                     ) : (
-                      <p className="text-gray-900">{user.location || 'Not provided'}</p> // {} required
+                      <p className="text-gray-900">{user.location || 'Not provided'}</p>
                     )}
                   </div>
                 </div>

@@ -6,8 +6,6 @@ import toast from 'react-hot-toast';
 import {
     ShoppingCart,
     Trash2,
-    Plus,
-    Minus,
     PackageCheck,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -24,22 +22,6 @@ const Cart = () => {
         queryFn: () =>
             axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/cart`).then((res) => res.data),
         enabled: !!user,
-    });
-
-    const updateQuantity = useMutation({
-        mutationFn: ({ productId, quantity }) =>
-            axios.put(
-                `${import.meta.env.VITE_BACKEND_URL}/api/cart/${productId}`,
-                { quantity }
-            ),
-
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['cart'] });
-        },
-
-        onError: () => {
-            toast.error('Unable to update quantity. Please try again.');
-        },
     });
 
     const removeItem = useMutation({
