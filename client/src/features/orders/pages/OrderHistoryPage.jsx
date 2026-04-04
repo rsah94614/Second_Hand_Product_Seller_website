@@ -126,7 +126,7 @@ const OrderHistoryPage = () => {
           </div>
 
           {orders.length === 0 ? (
-            <Card className="rounded-3xl border-gray-100 shadow-sm text-center animate-fade-in">
+            <Card className="rounded-2xl border-gray-100 shadow-sm text-center animate-fade-in">
               <CardContent className="p-10">
               <ShoppingBag className="w-16 h-16 text-primary-600 mx-auto mb-4" />
               <h2 className="text-2xl font-bold text-gray-800 mb-2">
@@ -148,7 +148,7 @@ const OrderHistoryPage = () => {
               {orders.map((order) => (
                 <Card
                   key={order._id}
-                  className="space-y-4 rounded-3xl border-gray-100 shadow-sm animate-fade-in"
+                  className="space-y-4 rounded-2xl border-gray-100 shadow-sm animate-fade-in"
                 >
                   <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between">

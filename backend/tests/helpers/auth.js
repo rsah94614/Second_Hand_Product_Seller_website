@@ -1,4 +1,5 @@
 const request = require('supertest');
+const User = require('../../models/User');
 
 const registerAndLogin = async (app, overrides = {}) => {
   const payload = {
@@ -22,6 +23,15 @@ const registerAndLogin = async (app, overrides = {}) => {
   };
 };
 
+const promoteUserToAdmin = async (userId) => {
+  return User.findByIdAndUpdate(
+    userId,
+    { role: 'admin', isActive: true, isVerified: true },
+    { new: true }
+  );
+};
+
 module.exports = {
   registerAndLogin,
+  promoteUserToAdmin,
 };

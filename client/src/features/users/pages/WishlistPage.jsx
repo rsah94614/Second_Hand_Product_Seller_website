@@ -21,7 +21,7 @@ const WishlistPage = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <Card className="mb-8 rounded-3xl border-gray-100 shadow-sm animate-fade-in">
+        <Card className="mb-8 rounded-2xl border-gray-100 shadow-sm animate-fade-in">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-3 text-3xl text-gray-900">
               <Heart className="h-8 w-8 text-rose-500" />
@@ -38,7 +38,7 @@ const WishlistPage = () => {
         {isLoading ? (
           <div className="grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4">
             {[...Array(8)].map((_, index) => (
-              <div key={index} className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm animate-pulse">
+              <div key={index} className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm animate-pulse">
                 <div className="aspect-square bg-gray-200" />
                 <div className="space-y-3 p-5">
                   <div className="h-5 rounded bg-gray-200" />
@@ -49,7 +49,7 @@ const WishlistPage = () => {
             ))}
           </div>
         ) : products.length === 0 ? (
-          <Card className="rounded-3xl border-gray-100 shadow-sm text-center animate-fade-in">
+          <Card className="rounded-2xl border-gray-100 shadow-sm text-center animate-fade-in">
             <CardContent className="p-12">
               <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-rose-50 text-rose-400">
                 <Heart className="h-12 w-12" />

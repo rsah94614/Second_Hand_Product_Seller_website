@@ -105,7 +105,7 @@ const AdminProductsPage = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 mb-8 animate-fade-in">
+        <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 mb-8 animate-fade-in">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.2em] text-red-600">
@@ -123,7 +123,7 @@ const AdminProductsPage = () => {
           </div>
         </section>
 
-        <Card className="rounded-3xl border-gray-100 shadow-sm mb-8 animate-fade-up-delayed">
+        <Card className="rounded-2xl border-gray-100 shadow-sm mb-8 animate-fade-up-delayed">
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="relative">
@@ -164,7 +164,7 @@ const AdminProductsPage = () => {
         <section className="space-y-4">
           {isLoading ? (
             [...Array(5)].map((_, index) => (
-              <div key={index} className="h-32 rounded-3xl bg-white border border-gray-100 animate-pulse" />
+              <div key={index} className="h-32 rounded-2xl bg-white border border-gray-100 animate-pulse" />
             ))
           ) : products.length ? (
             products.map((product) => {
@@ -173,7 +173,7 @@ const AdminProductsPage = () => {
               return (
                 <article
                   key={product._id}
-                  className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 animate-fade-in"
+                  className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 animate-fade-in"
                 >
                   <div className="flex flex-col lg:flex-row gap-6">
                     <img
@@ -250,7 +250,7 @@ const AdminProductsPage = () => {
               );
             })
           ) : (
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-10 text-center text-gray-500">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center text-gray-500">
               No products matched these filters.
             </div>
           )}

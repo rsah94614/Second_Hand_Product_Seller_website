@@ -63,7 +63,7 @@ const ProfilePage = () => {
       <Header />
       <div className="px-4 py-10 flex items-center justify-center">
         <div className="container max-w-2xl">
-          <Card className="rounded-3xl border-gray-100 shadow-sm animate-fade-in">
+          <Card className="rounded-2xl border-gray-100 shadow-sm animate-fade-in">
             <CardContent className="p-8">
             <div className="flex items-center justify-between mb-8">
               <h1 className="text-3xl font-bold text-gray-800">My Profile</h1>

@@ -75,7 +75,7 @@ const AdminReportsPage = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 mb-8 animate-fade-in">
+        <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 mb-8 animate-fade-in">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.2em] text-red-600">Admin Tools</p>
@@ -91,7 +91,7 @@ const AdminReportsPage = () => {
           </div>
         </section>
 
-        <Card className="rounded-3xl border-gray-100 shadow-sm mb-8 animate-fade-up-delayed">
+        <Card className="rounded-2xl border-gray-100 shadow-sm mb-8 animate-fade-up-delayed">
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Select value={filters.status || 'all'} onValueChange={(value) => setFilters((prev) => ({ ...prev, status: value === 'all' ? '' : value }))}>
@@ -123,11 +123,11 @@ const AdminReportsPage = () => {
         <section className="space-y-5">
           {isLoading ? (
             [...Array(4)].map((_, index) => (
-              <div key={index} className="h-56 rounded-3xl border border-gray-100 bg-white animate-pulse" />
+              <div key={index} className="h-56 rounded-2xl border border-gray-100 bg-white animate-pulse" />
             ))
           ) : reports.length ? (
             reports.map((report) => (
-              <Card key={report._id} className="rounded-3xl border-gray-100 shadow-sm animate-fade-in">
+              <Card key={report._id} className="rounded-2xl border-gray-100 shadow-sm animate-fade-in">
                 <CardHeader className="border-b border-gray-100 pb-4">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div>
@@ -211,7 +211,7 @@ const AdminReportsPage = () => {
               </Card>
             ))
           ) : (
-            <Card className="rounded-3xl border-gray-100 shadow-sm">
+            <Card className="rounded-2xl border-gray-100 shadow-sm">
               <CardContent className="p-10 text-center text-gray-500">
                 No reports matched these filters.
               </CardContent>

@@ -1,9 +1,21 @@
 const { setupTestApp, teardownTestApp } = require('./helpers/testApp');
+const { runAdminTests } = require('./admin.test');
 const { runAuthTests } = require('./auth.test');
+const { runCartTests } = require('./cart.test');
+const { runCategoryTests } = require('./categories.test');
 const { runNotificationTests } = require('./notifications.test');
+const { runOrderTests } = require('./orders.test');
+const { runProductFeatureTests } = require('./products.test');
+const { runUserFeatureTests } = require('./users.test');
 
 const tests = [
   ['Auth API', runAuthTests],
+  ['User Features API', runUserFeatureTests],
+  ['Product Features API', runProductFeatureTests],
+  ['Orders API', runOrderTests],
+  ['Cart API', runCartTests],
+  ['Admin API', runAdminTests],
+  ['Categories API', runCategoryTests],
   ['Notifications API', runNotificationTests],
 ];
 

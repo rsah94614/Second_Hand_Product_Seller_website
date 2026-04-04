@@ -158,7 +158,7 @@ const NotificationsPage = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-        <Card className="rounded-3xl border-gray-100 shadow-sm">
+        <Card className="rounded-2xl border-gray-100 shadow-sm">
           <CardHeader className="flex flex-col gap-5 border-b border-gray-100 pb-6 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <CardTitle className="flex items-center gap-3 text-3xl">
@@ -190,7 +190,7 @@ const NotificationsPage = () => {
                 <TabsTrigger value="all">All</TabsTrigger>
                 <TabsTrigger value="unread">Unread</TabsTrigger>
               </TabsList>
-              <div className="mb-6 rounded-3xl border border-gray-100 bg-gray-50/80 p-4">
+              <div className="mb-6 rounded-2xl border border-gray-100 bg-gray-50/80 p-4">
                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-700">
                   <SlidersHorizontal className="h-4 w-4 text-primary-600" />
                   Category Filters
@@ -242,7 +242,7 @@ const NotificationsPage = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="rounded-3xl border border-dashed border-gray-200 bg-white px-6 py-16 text-center">
+                  <div className="rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-16 text-center">
                     <Bell className="mx-auto h-10 w-10 text-gray-300" />
                     <h2 className="mt-4 text-xl font-semibold text-gray-900">
                       {activeCategory === 'all' ? 'No notifications yet' : `No ${activeCategory} notifications`}
@@ -273,7 +273,7 @@ const NotificationsPage = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="rounded-3xl border border-dashed border-gray-200 bg-white px-6 py-16 text-center">
+                  <div className="rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-16 text-center">
                     <CheckCheck className="mx-auto h-10 w-10 text-emerald-400" />
                     <h2 className="mt-4 text-xl font-semibold text-gray-900">All caught up</h2>
                     <p className="mt-2 text-gray-500">You have no unread notifications right now.</p>

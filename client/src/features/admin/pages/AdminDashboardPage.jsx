@@ -104,7 +104,7 @@ const AdminDashboardPage = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 mb-8">
+        <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 mb-8">
           <div className="flex items-start justify-between gap-6">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.2em] text-red-600">
@@ -152,7 +152,7 @@ const AdminDashboardPage = () => {
               <Link
                 key={tool.label}
                 to={tool.to}
-                className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 hover:border-red-200 hover:shadow-md transition-all"
+                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:border-red-200 hover:shadow-md transition-all"
               >
                 <div className="flex items-center justify-between">
                   <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-700 flex items-center justify-center">
@@ -168,7 +168,7 @@ const AdminDashboardPage = () => {
         </section>
 
         <section className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          <div className="xl:col-span-2 bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+          <div className="xl:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Top Products</h2>
@@ -215,7 +215,7 @@ const AdminDashboardPage = () => {
           </div>
 
           <div className="space-y-6">
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Users</h2>
               <div className="space-y-3">
                 {(data?.recentUsers || []).map((user) => (
@@ -233,7 +233,7 @@ const AdminDashboardPage = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Orders</h2>
               <div className="space-y-3">
                 {(data?.recentOrders || []).map((order) => (
@@ -253,7 +253,7 @@ const AdminDashboardPage = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Category Mix</h2>
               <div className="space-y-3">
                 {(data?.categoryBreakdown || []).map((entry) => (

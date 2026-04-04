@@ -326,7 +326,7 @@ const Header = () => {
           )}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-96 rounded-3xl p-2">
+      <DropdownMenuContent align="end" className="w-96 rounded-2xl p-2">
         <DropdownMenuLabel className="flex items-center justify-between gap-3 px-3 py-2">
           <div>
             <p className="text-sm font-semibold text-gray-900">Notifications</p>

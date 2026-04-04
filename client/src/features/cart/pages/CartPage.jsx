@@ -142,7 +142,7 @@ const CartPage = () => {
           </div>
 
           {items.length === 0 ? (
-            <Card className="mx-auto max-w-2xl rounded-3xl border-gray-100 shadow-sm text-center animate-fade-in">
+            <Card className="mx-auto max-w-2xl rounded-2xl border-gray-100 shadow-sm text-center animate-fade-in">
               <CardContent className="p-12">
                 <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
                   <ShoppingCart className="w-12 h-12 text-gray-400" />
@@ -210,7 +210,7 @@ const CartPage = () => {
                 ))}
               </div>
 
-              <Card className="sticky top-24 h-fit rounded-3xl border-gray-100 shadow-sm animate-fade-up-delayed">
+              <Card className="sticky top-24 h-fit rounded-2xl border-gray-100 shadow-sm animate-fade-up-delayed">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xl text-gray-900">Order Summary</CardTitle>
                 </CardHeader>

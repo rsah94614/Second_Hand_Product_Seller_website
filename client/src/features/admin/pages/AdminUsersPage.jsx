@@ -92,7 +92,7 @@ const AdminUsersPage = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 mb-8 animate-fade-in">
+        <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 mb-8 animate-fade-in">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.2em] text-red-600">
@@ -110,7 +110,7 @@ const AdminUsersPage = () => {
           </div>
         </section>
 
-        <Card className="rounded-3xl border-gray-100 shadow-sm mb-8 animate-fade-up-delayed">
+        <Card className="rounded-2xl border-gray-100 shadow-sm mb-8 animate-fade-up-delayed">
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="relative">
@@ -146,7 +146,7 @@ const AdminUsersPage = () => {
           </CardContent>
         </Card>
 
-        <Card className="rounded-3xl border-gray-100 shadow-sm overflow-hidden animate-fade-up-delayed">
+        <Card className="rounded-2xl border-gray-100 shadow-sm overflow-hidden animate-fade-up-delayed">
           <CardHeader className="px-6 py-5 border-b border-gray-100">
             <div className="flex items-center gap-3">
               <UserCog className="w-5 h-5 text-red-600" />

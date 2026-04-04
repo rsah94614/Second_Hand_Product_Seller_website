@@ -84,7 +84,7 @@ const AdminOrdersPage = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 mb-8 animate-fade-in">
+        <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 mb-8 animate-fade-in">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.2em] text-red-600">
@@ -102,7 +102,7 @@ const AdminOrdersPage = () => {
           </div>
         </section>
 
-        <Card className="rounded-3xl border-gray-100 shadow-sm mb-8 animate-fade-up-delayed">
+        <Card className="rounded-2xl border-gray-100 shadow-sm mb-8 animate-fade-up-delayed">
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="relative">
@@ -132,18 +132,18 @@ const AdminOrdersPage = () => {
 
         <section className="space-y-4">
           {error ? (
-            <div className="bg-white rounded-3xl border border-red-100 shadow-sm p-8 text-red-700">
+            <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-8 text-red-700">
               {error.response?.data?.message || error.message || 'Failed to load admin orders'}
             </div>
           ) : isLoading ? (
             [...Array(5)].map((_, index) => (
-              <div key={index} className="h-44 rounded-3xl bg-white border border-gray-100 animate-pulse" />
+              <div key={index} className="h-44 rounded-2xl bg-white border border-gray-100 animate-pulse" />
             ))
           ) : orders.length ? (
             orders.map((order) => (
               <article
                 key={order._id}
-                className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 animate-fade-in"
+                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 animate-fade-in"
               >
                 <div className="flex flex-col xl:flex-row xl:items-start gap-6">
                   <div className="flex-1">
@@ -268,7 +268,7 @@ const AdminOrdersPage = () => {
               </article>
             ))
           ) : (
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-10 text-center text-gray-500">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center text-gray-500">
               No orders matched these filters.
             </div>
           )}

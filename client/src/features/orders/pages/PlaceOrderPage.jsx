@@ -182,7 +182,7 @@ const PlaceOrderPage = () => {
           </Button>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-            <Card className="rounded-3xl border-gray-100 shadow-sm animate-fade-in">
+            <Card className="rounded-2xl border-gray-100 shadow-sm animate-fade-in">
               <CardHeader className="pb-2">
                 <CardTitle className="text-2xl text-gray-900">Shipping Details</CardTitle>
               </CardHeader>
@@ -273,7 +273,7 @@ const PlaceOrderPage = () => {
               </CardContent>
             </Card>
 
-            <Card className="sticky top-24 h-fit rounded-3xl border-gray-100 shadow-sm animate-fade-up-delayed">
+            <Card className="sticky top-24 h-fit rounded-2xl border-gray-100 shadow-sm animate-fade-up-delayed">
               <CardHeader className="pb-2">
                 <CardTitle className="text-2xl text-gray-900">Order Summary</CardTitle>
               </CardHeader>
