@@ -90,6 +90,7 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     loading,
+    refreshUser: fetchUser,
     isUser: user?.role === 'user',
     isAdmin: user?.role === 'admin',
   };

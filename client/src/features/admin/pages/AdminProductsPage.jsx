@@ -4,10 +4,19 @@ import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 import { Search, ShieldCheck, Trash2 } from 'lucide-react';
 import axios from 'axios';
-import Header from '../../../components/shared/Header';
-import Footer from '../../../components/shared/Footer';
+import Header from '../../../components/Header';
+import Footer from '../../../components/Footer';
+import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
+import { Card, CardContent } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../../components/ui/Select';
 import { DEFAULT_PRODUCT_CATEGORIES } from '../../../config/productOptions';
 import { API_BASE_URL } from '../../../config/api';
 import {
@@ -96,7 +105,7 @@ const AdminProductsPage = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 mb-8">
+        <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 mb-8 animate-fade-in">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.2em] text-red-600">
@@ -114,8 +123,9 @@ const AdminProductsPage = () => {
           </div>
         </section>
 
-        <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="rounded-3xl border-gray-100 shadow-sm mb-8 animate-fade-up-delayed">
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="relative">
               <Input
                 value={filters.search}
@@ -125,28 +135,31 @@ const AdminProductsPage = () => {
               />
               <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
             </div>
-            <select
-              value={filters.category}
-              onChange={(e) => setFilters((prev) => ({ ...prev, category: e.target.value }))}
-              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
-            >
-              <option value="">All Categories</option>
-              {categories.map((category) => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-            </select>
-            <select
-              value={filters.status}
-              onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
-              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
-            >
-              <option value="">All Statuses</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="sold">Sold</option>
-            </select>
-          </div>
-        </section>
+            <Select value={filters.category} onValueChange={(value) => setFilters((prev) => ({ ...prev, category: value === 'all' ? '' : value }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filters.status} onValueChange={(value) => setFilters((prev) => ({ ...prev, status: value === 'all' ? '' : value }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="sold">Sold</SelectItem>
+              </SelectContent>
+            </Select>
+            </div>
+          </CardContent>
+        </Card>
 
         <section className="space-y-4">
           {isLoading ? (
@@ -160,7 +173,7 @@ const AdminProductsPage = () => {
               return (
                 <article
                   key={product._id}
-                  className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6"
+                  className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 animate-fade-in"
                 >
                   <div className="flex flex-col lg:flex-row gap-6">
                     <img
@@ -173,9 +186,9 @@ const AdminProductsPage = () => {
                         <div>
                           <div className="flex items-center gap-3 flex-wrap">
                             <h2 className="text-2xl font-bold text-gray-900">{product.title}</h2>
-                            <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${status.tone}`}>
+                            <Badge className={status.tone}>
                               {status.label}
-                            </span>
+                            </Badge>
                           </div>
                           <p className="text-gray-600 mt-2">
                             {product.category} | {product.location}

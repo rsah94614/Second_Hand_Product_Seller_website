@@ -60,3 +60,13 @@ export const updateAdminOrder = async (orderId, status) => {
   const response = await axios.patch(`${API_BASE_URL}/api/admin/orders/${orderId}`, { status });
   return response.data;
 };
+
+export const getAdminReports = async (queryString = '') => {
+  const response = await axios.get(`${API_BASE_URL}/api/admin/reports${queryString ? `?${queryString}` : ''}`);
+  return response.data;
+};
+
+export const updateAdminReport = async (reportId, payload) => {
+  const response = await axios.patch(`${API_BASE_URL}/api/admin/reports/${reportId}`, payload);
+  return response.data;
+};

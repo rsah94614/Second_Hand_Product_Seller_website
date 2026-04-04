@@ -12,6 +12,8 @@ const buildAuthUser = (user) => ({
   phone: user.phone,
   location: user.location,
   role: user.role,
+  wishlist: (user.wishlist || []).map((item) => item.toString()),
+  wishlistCount: user.wishlist?.length || 0,
 });
 
 router.post('/register', async (req, res) => {
@@ -99,6 +101,8 @@ router.get('/me', auth, async (req, res) => {
         location: req.user.location,
         avatar: req.user.avatar,
         role: req.user.role,
+        wishlist: (req.user.wishlist || []).map((item) => item.toString()),
+        wishlistCount: req.user.wishlist?.length || 0,
       },
     });
   } catch (error) {

@@ -12,9 +12,12 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
+import { Badge } from '../../../components/ui/Badge';
+import { Button } from '../../../components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
-import Footer from '../../../components/shared/Footer';
-import Header from '../../../components/shared/Header';
+import Footer from '../../../components/Footer';
+import Header from '../../../components/Header';
 import { getProduct } from '../../products/api/productApi';
 import { placeOrder } from '../api/orderApi';
 
@@ -115,9 +118,9 @@ const PlaceOrderPage = () => {
           </p>
           <Link
             to="/login"
-            className="inline-flex items-center justify-center bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors"
+            className="inline-flex items-center justify-center"
           >
-            Go to Login
+            <Button>Go to Login</Button>
           </Link>
         </div>
       </div>
@@ -155,9 +158,9 @@ const PlaceOrderPage = () => {
           </p>
           <Link
             to="/products"
-            className="inline-flex items-center justify-center bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors"
+            className="inline-flex items-center justify-center"
           >
-            Browse Products
+            <Button>Browse Products</Button>
           </Link>
         </div>
       </div>
@@ -169,19 +172,21 @@ const PlaceOrderPage = () => {
       <Header />
       <div className="min-h-screen bg-gray-50 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <button
+          <Button
             onClick={() => navigate(-1)}
-            className="inline-flex items-center text-sm font-medium text-gray-600 hover:text-primary-600 mb-8 transition-colors"
+            variant="ghost"
+            className="mb-8 px-0 text-sm font-medium text-gray-600 hover:text-primary-600 hover:bg-transparent"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Product
-          </button>
+          </Button>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 font-display">
-                Shipping Details
-              </h2>
+            <Card className="rounded-3xl border-gray-100 shadow-sm animate-fade-in">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-2xl text-gray-900">Shipping Details</CardTitle>
+              </CardHeader>
+              <CardContent className="p-8 pt-2">
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -250,10 +255,10 @@ const PlaceOrderPage = () => {
                   <Input type="number" min="1" {...register('quantity', { valueAsNumber: true, min: 1 })} />
                 </div>
 
-                <button
+                <Button
                   type="submit"
                   disabled={placeOrderMutation.isPending}
-                  className="w-full flex items-center justify-center bg-primary-600 text-white py-4 px-6 rounded-xl font-bold hover:bg-primary-700 transition-all shadow-lg shadow-primary-600/20 disabled:opacity-60 disabled:shadow-none"
+                  className="w-full py-4 text-base shadow-lg shadow-primary-600/20"
                 >
                   {placeOrderMutation.isPending ? (
                     <>
@@ -263,21 +268,23 @@ const PlaceOrderPage = () => {
                   ) : (
                     'Place Order'
                   )}
-                </button>
+                </Button>
               </form>
-            </div>
+              </CardContent>
+            </Card>
 
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 h-fit sticky top-24">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 font-display">
-                Order Summary
-              </h2>
+            <Card className="sticky top-24 h-fit rounded-3xl border-gray-100 shadow-sm animate-fade-up-delayed">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-2xl text-gray-900">Order Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="p-8 pt-2">
               <div className="space-y-6">
                 <div className="relative group">
                   <img src={product.images?.[0] || '/placeholder-image.jpg'} alt={product.title} className="w-full h-64 object-cover rounded-xl shadow-sm" />
                   {product.isSold && (
-                    <span className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-sm">
+                    <Badge variant="destructive" className="absolute top-4 right-4 px-3 py-1 text-sm shadow-sm">
                       Sold
-                    </span>
+                    </Badge>
                   )}
                 </div>
                 <div>
@@ -314,7 +321,8 @@ const PlaceOrderPage = () => {
                   </div>
                 </div>
               </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

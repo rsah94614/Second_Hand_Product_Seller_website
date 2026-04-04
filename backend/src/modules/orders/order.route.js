@@ -2,6 +2,10 @@ const express = require('express');
 const Order = require('../../../models/Order');
 const Product = require('../../../models/Product');
 const auth = require('../../shared/middleware/auth.middleware');
+const {
+  createNotification,
+  createNotifications,
+} = require('../../shared/utils/notification.utils');
 
 const router = express.Router();
 
@@ -60,6 +64,36 @@ router.post('/', auth, async (req, res) => {
       },
     });
 
+    await Promise.all([
+      createNotification({
+        userId: req.user._id,
+        actorId: req.user._id,
+        productId: product._id,
+        orderId: order._id,
+        type: 'order_placed',
+        title: 'Order placed successfully',
+        message: `Your order for "${product.title}" has been placed.`,
+        link: '/orders',
+        metadata: {
+          status: order.status,
+          productTitle: product.title,
+        },
+      }),
+      createNotifications([product.seller], {
+        actorId: req.user._id,
+        productId: product._id,
+        orderId: order._id,
+        type: 'new_order',
+        title: 'New order received',
+        message: `${req.user.name} placed an order for "${product.title}".`,
+        link: '/notifications',
+        metadata: {
+          buyerId: req.user._id.toString(),
+          productTitle: product.title,
+        },
+      }),
+    ]);
+
     return res.status(201).json(order);
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -113,6 +147,34 @@ router.patch('/:id/cancel', auth, async (req, res) => {
 
     order.status = 'cancelled';
     await order.save();
+
+    const sellerIds = [...new Set(
+      (order.items || [])
+        .map((item) => item.product)
+        .filter(Boolean)
+        .map((productId) => productId.toString())
+    )];
+
+    if (sellerIds.length) {
+      const sellerProducts = await Product.find({
+        _id: { $in: sellerIds },
+      }).select('seller');
+
+      await createNotifications(
+        sellerProducts.map((product) => product.seller),
+        {
+          actorId: req.user._id,
+          orderId: order._id,
+          type: 'order_cancelled',
+          title: 'Order cancelled',
+          message: `${req.user.name} cancelled order #${order._id.toString().slice(-6).toUpperCase()}.`,
+          link: '/notifications',
+          metadata: {
+            status: order.status,
+          },
+        }
+      );
+    }
 
     return res.json({ message: 'Order cancelled successfully', order });
   } catch (error) {

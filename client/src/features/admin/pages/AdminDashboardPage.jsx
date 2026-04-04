@@ -9,9 +9,10 @@ import {
   IndianRupee,
   ArrowUpRight,
   FolderTree,
+  Flag,
 } from 'lucide-react';
-import Header from '../../../components/shared/Header';
-import Footer from '../../../components/shared/Footer';
+import Header from '../../../components/Header';
+import Footer from '../../../components/Footer';
 import { getAdminOverview } from '../api/adminApi';
 
 const AdminDashboardPage = () => {
@@ -51,6 +52,12 @@ const AdminDashboardPage = () => {
       icon: IndianRupee,
       tone: 'bg-violet-50 text-violet-700 border-violet-100',
     },
+    {
+      label: 'Open Reports',
+      value: metrics.openReports || 0,
+      icon: Flag,
+      tone: 'bg-rose-50 text-rose-700 border-rose-100',
+    },
   ];
 
   const adminTools = [
@@ -77,6 +84,12 @@ const AdminDashboardPage = () => {
       description: 'Track all orders, inspect shipping details, and update delivery status.',
       to: '/admin/orders',
       icon: ShoppingBag,
+    },
+    {
+      label: 'Review Reports',
+      description: 'Handle product and user reports submitted by marketplace members.',
+      to: '/admin/reports',
+      icon: Flag,
     },
   ];
 

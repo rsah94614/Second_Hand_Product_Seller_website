@@ -6,6 +6,10 @@ const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const Message = require('../models/Message');
 const User = require('../models/User');
+const {
+  setNotificationIO,
+  createNotification,
+} = require('./shared/utils/notification.utils');
 
 const createApp = () => {
   const app = express();
@@ -32,6 +36,7 @@ const createApp = () => {
       methods: ['GET', 'POST'],
     },
   });
+  setNotificationIO(io);
 
   io.use(async (socket, next) => {
     try {
@@ -67,6 +72,7 @@ const createApp = () => {
   app.use('/api/chat', require('./modules/chat/chat.route'));
   app.use('/api/admin', require('./modules/admin/admin.route'));
   app.use('/api/categories', require('./modules/categories/category.route'));
+  app.use('/api/notifications', require('./modules/notifications/notification.route'));
 
   io.on('connection', (socket) => {
     const userId = socket.user._id.toString();
@@ -97,6 +103,22 @@ const createApp = () => {
         await newMessage.save();
         await newMessage.populate('sender', 'name email');
         await newMessage.populate('receiver', 'name email');
+
+        await createNotification({
+          userId: receiver,
+          actorId: sender,
+          type: 'new_message',
+          title: `New message from ${socket.user.name}`,
+          message: content.trim().length > 80
+            ? `${content.trim().slice(0, 77)}...`
+            : content.trim(),
+          link: '/chat',
+          metadata: {
+            senderId: sender,
+            receiverId: receiver,
+            messageId: newMessage._id.toString(),
+          },
+        });
 
         io.to(receiver).emit('receive_message', newMessage);
         io.to(sender).emit('receive_message', newMessage);

@@ -8,9 +8,18 @@ import {
   Truck,
   User,
 } from 'lucide-react';
-import Header from '../../../components/shared/Header';
-import Footer from '../../../components/shared/Footer';
+import Header from '../../../components/Header';
+import Footer from '../../../components/Footer';
+import { Badge } from '../../../components/ui/Badge';
+import { Card, CardContent } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../../components/ui/Select';
 import { getAdminOrders, updateAdminOrder } from '../api/adminApi';
 
 const statusStyles = {
@@ -75,7 +84,7 @@ const AdminOrdersPage = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 mb-8">
+        <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 mb-8 animate-fade-in">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.2em] text-red-600">
@@ -93,8 +102,9 @@ const AdminOrdersPage = () => {
           </div>
         </section>
 
-        <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="rounded-3xl border-gray-100 shadow-sm mb-8 animate-fade-up-delayed">
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="relative">
               <Input
                 value={filters.search}
@@ -104,19 +114,21 @@ const AdminOrdersPage = () => {
               />
               <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
             </div>
-            <select
-              value={filters.status}
-              onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
-              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
-            >
-              <option value="">All Statuses</option>
-              <option value="processing">Processing</option>
-              <option value="shipped">Shipped</option>
-              <option value="delivered">Delivered</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </div>
-        </section>
+            <Select value={filters.status} onValueChange={(value) => setFilters((prev) => ({ ...prev, status: value === 'all' ? '' : value }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="processing">Processing</SelectItem>
+                <SelectItem value="shipped">Shipped</SelectItem>
+                <SelectItem value="delivered">Delivered</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+            </div>
+          </CardContent>
+        </Card>
 
         <section className="space-y-4">
           {error ? (
@@ -131,7 +143,7 @@ const AdminOrdersPage = () => {
             orders.map((order) => (
               <article
                 key={order._id}
-                className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6"
+                className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 animate-fade-in"
               >
                 <div className="flex flex-col xl:flex-row xl:items-start gap-6">
                   <div className="flex-1">
@@ -141,9 +153,9 @@ const AdminOrdersPage = () => {
                           <h2 className="text-2xl font-bold text-gray-900">
                             #{order._id.slice(-6).toUpperCase()}
                           </h2>
-                          <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[order.status] || statusStyles.processing}`}>
+                          <Badge className={statusStyles[order.status] || statusStyles.processing}>
                             {order.status}
-                          </span>
+                          </Badge>
                         </div>
                         <p className="text-sm text-gray-500 mt-2">
                           Placed on {formatDate(order.createdAt || order.placedAt)}
@@ -230,19 +242,23 @@ const AdminOrdersPage = () => {
                       Update Status
                     </div>
                     <div className="space-y-3">
-                      <select
+                      <Select
                         value={order.status}
-                        onChange={(e) =>
-                          updateOrderMutation.mutate({ orderId: order._id, status: e.target.value })
+                        onValueChange={(value) =>
+                          updateOrderMutation.mutate({ orderId: order._id, status: value })
                         }
-                        className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                         disabled={updateOrderMutation.isPending}
                       >
-                        <option value="processing">Processing</option>
-                        <option value="shipped">Shipped</option>
-                        <option value="delivered">Delivered</option>
-                        <option value="cancelled">Cancelled</option>
-                      </select>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="processing">Processing</SelectItem>
+                          <SelectItem value="shipped">Shipped</SelectItem>
+                          <SelectItem value="delivered">Delivered</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <div className="rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-600">
                         Admin can manage fulfillment state across the platform from here.
                       </div>

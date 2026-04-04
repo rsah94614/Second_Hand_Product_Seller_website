@@ -11,9 +11,11 @@ import {
   ShoppingBag,
   X,
 } from 'lucide-react';
+import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
-import Footer from '../../../components/shared/Footer';
-import Header from '../../../components/shared/Header';
+import { Card, CardContent } from '../../../components/ui/Card';
+import Footer from '../../../components/Footer';
+import Header from '../../../components/Header';
 import { cancelOrder, getOrders } from '../api/orderApi';
 
 const statusStyles = {
@@ -77,9 +79,9 @@ const OrderHistoryPage = () => {
           </p>
           <Link
             to="/login"
-            className="inline-flex items-center justify-center bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors"
+            className="inline-flex items-center justify-center"
           >
-            Go to Login
+            <Button>Go to Login</Button>
           </Link>
         </div>
       </div>
@@ -124,7 +126,8 @@ const OrderHistoryPage = () => {
           </div>
 
           {orders.length === 0 ? (
-            <div className="bg-white p-10 rounded-2xl shadow text-center">
+            <Card className="rounded-3xl border-gray-100 shadow-sm text-center animate-fade-in">
+              <CardContent className="p-10">
               <ShoppingBag className="w-16 h-16 text-primary-600 mx-auto mb-4" />
               <h2 className="text-2xl font-bold text-gray-800 mb-2">
                 No orders yet
@@ -134,18 +137,20 @@ const OrderHistoryPage = () => {
               </p>
               <Link
                 to="/products"
-                className="inline-flex items-center justify-center bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors"
+                className="inline-flex items-center justify-center"
               >
-                Browse Products
+                <Button>Browse Products</Button>
               </Link>
-            </div>
+              </CardContent>
+            </Card>
           ) : (
             <div className="space-y-6">
               {orders.map((order) => (
-                <div
+                <Card
                   key={order._id}
-                  className="bg-white p-6 rounded-2xl shadow space-y-4"
+                  className="space-y-4 rounded-3xl border-gray-100 shadow-sm animate-fade-in"
                 >
+                  <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                     <div>
                       <p className="text-sm text-gray-500">Order ID</p>
@@ -157,11 +162,9 @@ const OrderHistoryPage = () => {
                       </p>
                     </div>
                     <div className="mt-3 md:mt-0 flex items-center gap-3">
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm font-semibold ${statusStyles[order.status] || statusStyles.processing}`}
-                      >
+                      <Badge className={`px-3 py-1 text-sm ${statusStyles[order.status] || statusStyles.processing}`}>
                         {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
-                      </span>
+                      </Badge>
                       <div className="flex items-center text-gray-700 font-semibold">
                         <IndianRupee className="w-4 h-4" />
                         {formatPrice(order.total)}
@@ -245,7 +248,8 @@ const OrderHistoryPage = () => {
                       </div>
                     )}
                   </div>
-                </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}

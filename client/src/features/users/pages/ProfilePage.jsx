@@ -2,8 +2,12 @@ import React, { useState } from 'react';
 import { User, Mail, Phone, MapPin, Edit, Save, X, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext';
-import Header from '../../../components/shared/Header';
-import Footer from '../../../components/shared/Footer';
+import Header from '../../../components/Header';
+import Footer from '../../../components/Footer';
+import { Badge } from '../../../components/ui/Badge';
+import { Button } from '../../../components/ui/Button';
+import { Card, CardContent } from '../../../components/ui/Card';
+import { Input } from '../../../components/ui/Input';
 import { updateUserProfile } from '../api/userApi';
 
 const ProfilePage = () => {
@@ -55,37 +59,40 @@ const ProfilePage = () => {
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-gray-100">
       <Header />
-      <div className="min-h-screen bg-gray-100 py-8 flex items-center justify-center">
+      <div className="px-4 py-10 flex items-center justify-center">
         <div className="container max-w-2xl">
-          <div className="bg-white rounded-lg shadow-md p-8">
+          <Card className="rounded-3xl border-gray-100 shadow-sm animate-fade-in">
+            <CardContent className="p-8">
             <div className="flex items-center justify-between mb-8">
               <h1 className="text-3xl font-bold text-gray-800">My Profile</h1>
               {!isEditing ? (
-                <button
+                <Button
                   onClick={() => setIsEditing(true)}
-                  className="flex items-center space-x-2 btn btn-outline hover:cursor-pointer"
+                  variant="outline"
+                  className="flex items-center space-x-2"
                 >
                   <Edit className="w-4 h-4" />
                   <span>Edit Profile</span>
-                </button>
+                </Button>
               ) : (
                 <div className="flex space-x-2">
-                  <button
+                  <Button
                     onClick={handleSave}
-                    className="flex items-center space-x-2 btn btn-primary hover:cursor-pointer"
+                    className="flex items-center space-x-2"
                   >
                     <Save className="w-4 h-4" />
                     <span>Save</span>
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={handleCancel}
-                    className="flex items-center space-x-2 btn btn-secondary cursor-pointer"
+                    variant="outline"
+                    className="flex items-center space-x-2"
                   >
                     <X className="w-4 h-4" />
                     <span>Cancel</span>
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -98,26 +105,22 @@ const ProfilePage = () => {
                 <div>
                   <h2 className="text-2xl font-semibold text-gray-800">
                     {isEditing ? (
-                      <input
+                      <Input
                         type="text"
                         name="name"
                         value={formData.name}
                         onChange={handleChange}
-                        className="form-input text-2xl font-semibold"
+                        className="h-11 text-2xl font-semibold"
                       />
                     ) : (
                       user.name
                     )}
                   </h2>
                   <div className="flex items-center gap-2 mt-2">
-                    <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${
-                      user.role === 'admin'
-                        ? 'bg-red-100 text-red-700'
-                        : 'bg-emerald-100 text-emerald-700'
-                    }`}>
+                    <Badge variant={user.role === 'admin' ? 'destructive' : 'success'} className="gap-1 px-3 py-1 uppercase tracking-wide">
                       <ShieldCheck className="w-3.5 h-3.5" />
                       {user.role}
-                    </span>
+                    </Badge>
                   </div>
                   <p className="text-gray-600">Member since {new Date().getFullYear()}</p>
                 </div>
@@ -129,12 +132,11 @@ const ProfilePage = () => {
                   <div className="flex-1">
                     <label className="block text-sm font-medium text-gray-700">Email</label>
                     {isEditing ? (
-                      <input
+                      <Input
                         type="email"
                         name="email"
                         value={formData.email}
                         onChange={handleChange}
-                        className="form-input border rounded pl-3 pr-3 py-1"
                       />
                     ) : (
                       <p className="text-gray-900">{user.email}</p>
@@ -147,12 +149,11 @@ const ProfilePage = () => {
                   <div className="flex-1">
                     <label className="block text-sm font-medium text-gray-700">Phone</label>
                     {isEditing ? (
-                      <input
+                      <Input
                         type="tel"
                         name="phone"
                         value={formData.phone}
                         onChange={handleChange}
-                        className="form-input border rounded pl-3 pr-3 py-1"
                       />
                     ) : (
                       <p className="text-gray-900">{user.phone || 'Not provided'}</p>
@@ -165,12 +166,11 @@ const ProfilePage = () => {
                   <div className="flex-1">
                     <label className="block text-sm font-medium text-gray-700">Location</label>
                     {isEditing ? (
-                      <input
+                      <Input
                         type="text"
                         name="location"
                         value={formData.location}
                         onChange={handleChange}
-                        className="form-input border rounded pl-3 pr-3 py-1"
                       />
                     ) : (
                       <p className="text-gray-900">{user.location || 'Not provided'}</p>
@@ -180,15 +180,16 @@ const ProfilePage = () => {
               </div>
 
               <div className="pt-6 border-t border-gray-200">
-                <button
+                <Button
                   onClick={logout}
-                  className="btn btn-danger bg-blue-500 py-2 px-4 rounded text-white"
+                  variant="destructive"
                 >
                   Logout
-                </button>
+                </Button>
               </div>
             </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
       <Footer />

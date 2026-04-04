@@ -1,8 +1,19 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { MapPin, Eye, Calendar } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { MapPin, Eye, Calendar, Heart } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { toggleWishlist } from '../features/users/api/userApi';
+import { Button } from './ui/Button';
+import { Badge } from './ui/Badge';
 
-const ProductCard = ({ product }) => {
+const ProductCard = ({ product, highlightLabel = '', highlightTone = 'bg-primary-600 text-white' }) => {
+  const { user, refreshUser } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const isWishlisted = Boolean(user?.wishlist?.includes(product._id));
+
   const formatPrice = (price) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -19,6 +30,31 @@ const ProductCard = ({ product }) => {
     });
   };
 
+  const wishlistMutation = useMutation({
+    mutationFn: () => toggleWishlist(product._id),
+    onSuccess: async (response) => {
+      await refreshUser();
+      queryClient.invalidateQueries({ queryKey: ['wishlist'] });
+      toast.success(response.message);
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to update wishlist');
+    },
+  });
+
+  const handleWishlistClick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!user) {
+      toast.error('Please login to save products');
+      navigate('/login');
+      return;
+    }
+
+    wishlistMutation.mutate();
+  };
+
   return (
     <Link to={`/products/${product._id}`} className="block group">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
@@ -32,10 +68,28 @@ const ProductCard = ({ product }) => {
             }}
           />
           {product.isSold && (
-            <div className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
+            <Badge variant="destructive" className="absolute top-3 right-3 px-3 py-1.5 text-xs font-bold shadow-lg">
               SOLD
-            </div>
+            </Badge>
           )}
+          {!product.isSold && highlightLabel && (
+            <Badge className={`absolute bottom-3 left-3 border-transparent px-3 py-1.5 text-xs font-bold shadow-lg ${highlightTone}`}>
+              {highlightLabel}
+            </Badge>
+          )}
+          <Button
+            type="button"
+            size="icon"
+            variant="outline"
+            onClick={handleWishlistClick}
+            disabled={wishlistMutation.isPending}
+            className={`absolute top-3 left-3 h-10 w-10 rounded-full border-white/80 bg-white/95 shadow-md hover:bg-white ${
+              isWishlisted ? 'text-rose-500' : 'text-gray-500'
+            }`}
+            title={isWishlisted ? 'Remove from wishlist' : 'Save product'}
+          >
+            <Heart className={`h-4 w-4 ${isWishlisted ? 'fill-current' : ''}`} />
+          </Button>
           <div className="absolute inset-0 bg-linear-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         </div>
 

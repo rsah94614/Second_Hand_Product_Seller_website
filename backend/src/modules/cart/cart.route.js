@@ -3,6 +3,10 @@ const Cart = require('../../../models/Cart');
 const Product = require('../../../models/Product');
 const Order = require('../../../models/Order');
 const auth = require('../../shared/middleware/auth.middleware');
+const {
+  createNotification,
+  createNotifications,
+} = require('../../shared/utils/notification.utils');
 
 const router = express.Router();
 
@@ -218,6 +222,41 @@ router.post('/checkout', auth, async (req, res) => {
         country: shippingDetails.country || 'India',
       },
     });
+
+    const uniqueSellerIds = [...new Set(
+      cart.items
+        .map((item) => item.product?.seller)
+        .filter(Boolean)
+        .map((sellerId) => sellerId.toString())
+    )];
+
+    await Promise.all([
+      createNotification({
+        userId: req.user._id,
+        actorId: req.user._id,
+        orderId: order._id,
+        type: 'order_placed',
+        title: 'Order placed successfully',
+        message: `Your cart checkout order with ${orderItems.length} item${orderItems.length > 1 ? 's' : ''} is now processing.`,
+        link: '/orders',
+        metadata: {
+          status: order.status,
+          itemCount: orderItems.length,
+        },
+      }),
+      createNotifications(uniqueSellerIds, {
+        actorId: req.user._id,
+        orderId: order._id,
+        type: 'new_order',
+        title: 'New order received',
+        message: `${req.user.name} placed a checkout order containing your listing${uniqueSellerIds.length > 1 ? 's' : ''}.`,
+        link: '/notifications',
+        metadata: {
+          buyerId: req.user._id.toString(),
+          itemCount: orderItems.length,
+        },
+      }),
+    ]);
 
     cart.items = [];
     await cart.save();

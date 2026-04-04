@@ -2,10 +2,13 @@ import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { FolderTree, Plus, ShieldCheck, Trash2 } from 'lucide-react';
-import Header from '../../../components/shared/Header';
-import Footer from '../../../components/shared/Footer';
+import Header from '../../../components/Header';
+import Footer from '../../../components/Footer';
+import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
+import { Textarea } from '../../../components/ui/Textarea';
 import {
   createAdminCategory,
   deleteAdminCategory,
@@ -133,7 +136,7 @@ const AdminCategoriesContent = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 mb-8">
+        <section className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 mb-8 animate-fade-in">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.2em] text-red-600">
@@ -152,7 +155,8 @@ const AdminCategoriesContent = () => {
         </section>
 
         <section className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          <div className="xl:col-span-1 bg-white rounded-3xl border border-gray-100 shadow-sm p-6 h-fit">
+          <Card className="xl:col-span-1 rounded-3xl border-gray-100 shadow-sm h-fit animate-fade-up-delayed">
+            <CardContent className="p-6">
             <div className="flex items-center gap-3 mb-6">
               <Plus className="w-5 h-5 text-red-600" />
               <h2 className="text-xl font-bold text-gray-900">
@@ -171,11 +175,10 @@ const AdminCategoriesContent = () => {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
-                <textarea
+                <Textarea
                   value={formData.description}
                   onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
                   rows={4}
-                  className="flex min-h-[100px] w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                   placeholder="Short category description"
                 />
               </div>
@@ -204,13 +207,16 @@ const AdminCategoriesContent = () => {
                 </Button>
               </div>
             </form>
-          </div>
+            </CardContent>
+          </Card>
 
-          <div className="xl:col-span-2 bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-3">
-              <FolderTree className="w-5 h-5 text-red-600" />
-              <h2 className="text-xl font-bold text-gray-900">Catalog Categories</h2>
-            </div>
+          <Card className="xl:col-span-2 rounded-3xl border-gray-100 shadow-sm overflow-hidden animate-fade-up-delayed">
+            <CardHeader className="px-6 py-5 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <FolderTree className="w-5 h-5 text-red-600" />
+                <CardTitle className="text-xl">Catalog Categories</CardTitle>
+              </div>
+            </CardHeader>
 
             {error ? (
               <div className="p-6">
@@ -239,14 +245,12 @@ const AdminCategoriesContent = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 flex-wrap">
                         <h3 className="text-lg font-semibold text-gray-900">{category.name}</h3>
-                        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                          category.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-700'
-                        }`}>
+                        <Badge variant={category.isActive ? 'success' : 'secondary'}>
                           {category.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                        <span className="inline-flex rounded-full px-3 py-1 text-xs font-semibold bg-blue-100 text-blue-700">
+                        </Badge>
+                        <Badge className="bg-blue-100 text-blue-700 border-transparent">
                           {category.productCount || 0} products
-                        </span>
+                        </Badge>
                       </div>
                       <p className="text-gray-600 mt-2">{category.description || 'No description added yet.'}</p>
                     </div>
@@ -271,7 +275,7 @@ const AdminCategoriesContent = () => {
             ) : (
               <div className="p-10 text-center text-gray-500">No categories found.</div>
             )}
-          </div>
+          </Card>
         </section>
       </main>
       <Footer />
