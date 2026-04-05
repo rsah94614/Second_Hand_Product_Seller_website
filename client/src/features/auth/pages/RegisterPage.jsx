@@ -32,13 +32,25 @@ const RegisterPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!formData.name.trim()) {
+      toast.error('Full name is required');
       return;
     }
 
-    if (formData.password.length < 6) {
-      toast.error('Password must be at least 6 characters long');
+    if (!emailRegex.test(formData.email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      toast.error('Password must be at least 8 characters long');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Passwords do not match');
       return;
     }
 
@@ -59,24 +71,31 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 shadow-xl rounded-2xl p-8 bg-white border border-gray-100">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-bold text-gray-900 font-display">
-            Create your account
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Or{' '}
-            <Link
-              to="/login"
-              className="font-medium text-primary-600 hover:text-primary-500 transition-colors"
-            >
-              sign in to your existing account
-            </Link>
-          </p>
-        </div>
+    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ec_0%,#f8fafc_24%,#f8fafc_100%)] flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-[1100px] min-h-[700px] overflow-hidden rounded-[2.5rem] bg-white shadow-[0_20px_80px_-20px_rgba(15,23,42,0.15)] flex flex-col lg:flex-row-reverse animate-fade-in border border-stone-100/50">
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        {/* Right Form Section */}
+        <div className="w-full lg:w-1/2 p-10 sm:p-14 lg:px-16 lg:py-12 flex flex-col justify-center bg-white relative z-10">
+          <div>
+            <Link to="/" className="inline-flex mb-8 items-center gap-1.5 group">
+               <div className="w-auto px-2.5 h-6 bg-linear-to-br from-primary-600 to-indigo-600 rounded flex items-center justify-center text-white font-black text-xs shadow-md shadow-primary-600/20 group-hover:scale-105 transition-transform duration-300">Campus</div>
+               <div className="text-base font-display font-black bg-clip-text text-transparent bg-linear-to-r from-gray-900 to-gray-600 tracking-tight ml-0.5">Mitra</div>
+            </Link>
+            <h2 className="text-3xl font-black text-gray-900 tracking-tight">
+              Create your account
+            </h2>
+            <p className="mt-3 text-sm text-gray-600">
+              Or{' '}
+              <Link
+                to="/login"
+                className="font-semibold text-primary-600 hover:text-primary-500 transition-colors"
+              >
+                sign in to your existing account
+              </Link>
+            </p>
+          </div>
+
+          <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
@@ -210,12 +229,36 @@ const RegisterPage = () => {
             </div>
           </div>
 
-          <div>
-            <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading ? 'Creating account...' : 'Create account'}
-            </Button>
+            <div className="pt-2">
+              <Button type="submit" disabled={isLoading} className="w-full h-12 text-base font-semibold shadow-md hover:shadow-lg transition-all rounded-xl">
+                {isLoading ? 'Creating account...' : 'Create account'}
+              </Button>
+            </div>
+          </form>
+        </div>
+
+        {/* Left Graphic Section (reversed) */}
+        <div className="hidden lg:flex w-1/2 p-16 flex-col justify-between relative overflow-hidden group">
+          <div className="absolute inset-0 bg-slate-900 z-0" />
+          <div className="absolute inset-0 bg-linear-to-br from-indigo-900 via-primary-900 to-cyan-950 z-0 opacity-90" />
+          
+          <div className="absolute top-10 right-[-10%] w-[120%] h-[120%] rounded-full bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] from-indigo-500/30 via-transparent to-transparent blur-3xl group-hover:scale-105 transition-transform duration-[3s] ease-out z-0" />
+          <div className="absolute bottom-[-10%] left-[-10%] w-[80%] h-[80%] rounded-full bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] from-cyan-400/20 via-transparent to-transparent blur-3xl group-hover:-translate-y-4 transition-transform duration-[3s] ease-out z-0" />
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIuNSIgZmlsbD0iI2ZmZmZmZiIgZmlsbC1vcGFjaXR5PSIwLjA1Ii8+PC9zdmc+')] opacity-60 mix-blend-overlay z-0" />
+
+          <div className="relative z-10">
           </div>
-        </form>
+
+          <div className="relative z-10 text-white space-y-6 max-w-md">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sm font-medium mb-2 transform group-hover:-translate-x-1 transition-transform duration-500">
+              <span className="flex h-2 w-2 rounded-full bg-indigo-400 animate-pulse shadow-[0_0_8px_rgba(129,140,248,0.8)]"></span>
+              Join the Community
+            </div>
+            <h3 className="text-[2.75rem] font-black leading-[1.1] tracking-tight">Make your<br />first trade today.</h3>
+            <p className="text-lg text-primary-100/80 leading-relaxed font-medium">Join thousands of students securely trading course materials, electronics, and dorm essentials.</p>
+          </div>
+        </div>
+
       </div>
     </div>
   );

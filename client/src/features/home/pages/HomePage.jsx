@@ -3,12 +3,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import ProductCard from '../../../components/ProductCard.jsx';
-import { Search, TrendingUp, Star, Users, Package, Sparkles, ArrowRight, Compass, ShieldCheck } from 'lucide-react';
+import {
+  TrendingUp, Star, Users, Package, Sparkles, ArrowRight,
+  ShieldCheck, Zap, BookOpen, Cpu, Coffee, Shirt, Music, Camera, Bike, Home,
+} from 'lucide-react';
 import Header from '../../../components/Header.jsx';
 import Footer from '../../../components/Footer.jsx';
 import { Button } from '../../../components/ui/Button.jsx';
-import { Card, CardContent } from '../../../components/ui/Card.jsx';
-import { Input } from '../../../components/ui/Input.jsx';
 import { API_BASE_URL } from '../../../config/api.js';
 import { DEFAULT_PRODUCT_CATEGORIES } from '../../../config/productOptions.js';
 import { getProductCategories } from '../../products/api/productApi.js';
@@ -18,35 +19,66 @@ import { getRecentlyViewed } from '../../users/api/userApi.js';
 const fetchProducts = (params) =>
   axios.get(`${API_BASE_URL}/api/products`, { params }).then((res) => res.data);
 
-const SectionShell = ({ title, description, icon, viewAllTo = '/products', children }) => (
-  <section className="px-4 py-16 lg:px-12">
+// Category icon & color mapping
+const CATEGORY_META = {
+  'Electronics': { icon: Cpu, color: 'from-blue-500 to-indigo-600', bg: 'bg-blue-50', text: 'text-blue-600' },
+  'Books': { icon: BookOpen, color: 'from-amber-500 to-orange-500', bg: 'bg-amber-50', text: 'text-amber-600' },
+  'Clothing': { icon: Shirt, color: 'from-pink-500 to-rose-500', bg: 'bg-pink-50', text: 'text-pink-600' },
+  'Music': { icon: Music, color: 'from-violet-500 to-purple-600', bg: 'bg-violet-50', text: 'text-violet-600' },
+  'Photography': { icon: Camera, color: 'from-cyan-500 to-sky-600', bg: 'bg-cyan-50', text: 'text-cyan-600' },
+  'Sports': { icon: Bike, color: 'from-emerald-500 to-teal-600', bg: 'bg-emerald-50', text: 'text-emerald-600' },
+  'Food': { icon: Coffee, color: 'from-yellow-500 to-amber-500', bg: 'bg-yellow-50', text: 'text-yellow-600' },
+  'Home': { icon: Home, color: 'from-stone-500 to-gray-600', bg: 'bg-stone-50', text: 'text-stone-600' },
+  'Other': { icon: Package, color: 'from-primary-500 to-indigo-500', bg: 'bg-primary-50', text: 'text-primary-600' },
+};
+const getCategoryMeta = (name) =>
+  CATEGORY_META[name] || { icon: Package, color: 'from-primary-500 to-indigo-600', bg: 'bg-primary-50', text: 'text-primary-600' };
+
+const SectionShell = ({ title, description, icon, accent = 'text-primary-600', viewAllTo = '/products', children }) => (
+  <section className="px-4 py-14 lg:px-12">
     <div className="mx-auto max-w-7xl">
-      <div className="mb-10 flex items-center justify-between gap-4">
+      <div className="mb-10 flex items-end justify-between gap-4">
         <div>
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-semibold text-primary-700">
-            {React.createElement(icon, { className: 'h-4 w-4' })}
-            <span>{title}</span>
+          <div className={`mb-2 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-widest ${accent} bg-current/5`}
+            style={{ backgroundColor: 'transparent' }}
+          >
+            {React.createElement(icon, { className: `h-4 w-4 ${accent}` })}
+            <span className={accent}>{title}</span>
           </div>
-          <h2 className="text-3xl font-black tracking-[-0.03em] text-stone-950">{title}</h2>
-          <p className="mt-2 max-w-2xl text-stone-600">{description}</p>
+          <h2 className="text-3xl font-black tracking-tight text-gray-900">{title}</h2>
+          <p className="mt-2 max-w-xl text-gray-500 text-sm leading-relaxed">{description}</p>
         </div>
-        <Link to={viewAllTo} className="hidden md:inline-flex">
-          <Button variant="outline" className="gap-2 rounded-full border-stone-200 px-5">
+        <Link to={viewAllTo} className="hidden md:inline-flex shrink-0">
+          <Button variant="outline" className="gap-2 rounded-full border-gray-200 px-5 hover:border-primary-300">
             View All
             <ArrowRight className="h-4 w-4" />
           </Button>
         </Link>
       </div>
       {children}
-      <div className="mt-14 h-px w-full bg-linear-to-r from-transparent via-stone-300 to-transparent" />
+      <div className="mt-14 h-px w-full bg-linear-to-r from-transparent via-gray-200 to-transparent" />
     </div>
   </section>
+);
+
+const SkeletonGrid = () => (
+  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+    {[...Array(8)].map((_, i) => (
+      <div key={i} className="overflow-hidden rounded-[1.75rem] bg-white shadow-sm animate-pulse">
+        <div className="aspect-4/3 bg-gray-100" />
+        <div className="space-y-3 p-5">
+          <div className="h-4 rounded-full bg-gray-100 w-1/3" />
+          <div className="h-5 rounded-full bg-gray-100" />
+          <div className="h-7 rounded-full bg-gray-100 w-2/3" />
+        </div>
+      </div>
+    ))}
+  </div>
 );
 
 const HomePage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: categoryResponse } = useQuery({
     queryKey: ['home-product-categories'],
@@ -55,7 +87,7 @@ const HomePage = () => {
   });
 
   const categories = useMemo(
-    () => categoryResponse?.categories?.map((category) => category.name).slice(0, 10) || DEFAULT_PRODUCT_CATEGORIES.slice(0, 10),
+    () => categoryResponse?.categories?.map((c) => c.name).slice(0, 10) || DEFAULT_PRODUCT_CATEGORIES.slice(0, 10),
     [categoryResponse]
   );
 
@@ -84,42 +116,14 @@ const HomePage = () => {
     staleTime: 2 * 60 * 1000,
   });
 
-  const handleSearch = (event) => {
-    event.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
-
   const handleCategoryClick = (category) => {
     navigate(`/products?category=${encodeURIComponent(category)}`);
   };
 
-  const renderProductGrid = (products, isLoading) => (
+  const renderTaggedProductGrid = (products, isLoading, highlightLabel, highlightTone) =>
     isLoading ? (
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {[...Array(8)].map((_, index) => (
-          <div key={index} className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm animate-pulse">
-            <div className="aspect-4/3 bg-gray-200" />
-            <div className="space-y-3 p-5">
-              <div className="h-5 rounded bg-gray-200" />
-              <div className="h-6 w-2/3 rounded bg-gray-200" />
-              <div className="h-4 w-1/2 rounded bg-gray-200" />
-            </div>
-          </div>
-        ))}
-      </div>
+      <SkeletonGrid />
     ) : (
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 animate-fade-in">
-        {(products?.products || []).map((product) => (
-          <ProductCard key={product._id} product={product} />
-        ))}
-      </div>
-    )
-  );
-
-const renderTaggedProductGrid = (products, isLoading, highlightLabel, highlightTone) => (
-    isLoading ? renderProductGrid(products, isLoading) : (
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 animate-fade-in">
         {(products?.products || []).map((product) => (
           <ProductCard
@@ -130,8 +134,7 @@ const renderTaggedProductGrid = (products, isLoading, highlightLabel, highlightT
           />
         ))}
       </div>
-    )
-  );
+    );
 
   const recentlyViewed = (recentlyViewedResponse?.products || []).slice(0, 4);
 
@@ -139,128 +142,125 @@ const renderTaggedProductGrid = (products, isLoading, highlightLabel, highlightT
     <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ec_0%,#f8fafc_28%,#f8fafc_100%)]">
       <Header />
 
+      {/* ── HERO ── */}
       <section className="relative overflow-hidden px-4 pb-10 pt-8 lg:px-12">
-        <div className="mx-auto max-w-7xl overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#111827_0%,#172554_38%,#0f766e_100%)] text-white shadow-[0_30px_90px_rgba(15,23,42,0.22)]">
-          <div className="absolute inset-0 opacity-25">
-            <div className="absolute left-10 top-10 h-40 w-40 rounded-full bg-white/20 blur-3xl" />
-            <div className="absolute bottom-0 right-0 h-56 w-56 rounded-full bg-amber-300/30 blur-3xl" />
-          </div>
-          <div className="absolute inset-y-0 right-0 hidden w-1/2 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.16),transparent_62%)] lg:block" />
-          <div className="relative grid gap-10 px-6 py-14 md:px-10 lg:grid-cols-[1.2fr_0.8fr] lg:px-14 lg:py-16">
-            <div className="max-w-3xl">
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold backdrop-blur">
-                <Sparkles className="h-4 w-4" />
-                Marketplace editorial edition
+        <div className="mx-auto max-w-7xl overflow-hidden rounded-4xl bg-slate-900 shadow-[0_30px_90px_-15px_rgba(15,23,42,0.28)] relative">
+          {/* Gradient base */}
+          <div className="absolute inset-0 bg-linear-to-br from-primary-950 via-indigo-900 to-blue-950 opacity-95" />
+          {/* Ambient glow orbs */}
+          <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[180%] rounded-full bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] from-primary-500/25 via-transparent to-transparent blur-3xl" />
+          <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[160%] rounded-full bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] from-cyan-400/20 via-transparent to-transparent blur-3xl" />
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIuNSIgZmlsbD0iI2ZmZmZmZiIgZmlsbC1vcGFjaXR5PSIwLjA0Ii8+PC9zdmc+')] opacity-60" />
+
+          <div className="relative z-10 grid gap-10 px-8 py-16 md:px-14 lg:grid-cols-[1.3fr_0.7fr] lg:py-20">
+            <div>
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white/80 backdrop-blur-sm">
+                <span className="flex h-2 w-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_6px_rgba(34,211,238,0.8)]" />
+                CampusMitra — Marketplace 2025
               </div>
-              <h1 className="max-w-3xl text-4xl font-black leading-[0.95] tracking-[-0.05em] text-white md:text-6xl animate-fade-in">
+              <h1 className="max-w-2xl text-4xl font-black leading-none tracking-[-0.04em] text-white sm:text-5xl md:text-[3.5rem] animate-fade-in">
                 Discover the most wanted finds around campus.
               </h1>
-              <p className="mt-6 max-w-2xl text-base leading-7 text-white/75 md:text-lg animate-fade-up-delayed">
-                Search smarter, browse curated categories, and jump into premium, trending, and top-rated listings without digging through clutter.
+              <p className="mt-6 max-w-xl text-base leading-7 text-white/65 md:text-lg">
+                Search smarter, browse curated categories, and jump into premium, trending, and top-rated listings — without digging through clutter.
               </p>
 
-              <form onSubmit={handleSearch} className="mt-8 max-w-3xl">
-                <div className="relative rounded-2xl border border-white/15 bg-white/95 p-2 shadow-2xl">
-                  <Input
-                    type="text"
-                    placeholder="Search products, categories, or locations"
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    className="h-14 rounded-xl border-0 bg-transparent pl-12 pr-36 text-base text-gray-900 shadow-none focus-visible:ring-0"
-                  />
-                  <Search className="absolute left-6 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                  <Button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl bg-stone-950 px-5 text-white hover:bg-stone-800">
-                    Search
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link to="/products">
+                  <Button variant="outline" className="h-12 px-7 rounded-full border-white/25 hover:text-primary-700 text-white bg-white/10">
+                    Browse All Products <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
-                </div>
-              </form>
+                </Link>
+                <Link to="/products?sortBy=views&sortOrder=desc">
+                  <Button variant="outline" className="h-12 px-7 rounded-full border-white/25 hover:text-primary-700 text-white bg-white/10">
+                    <TrendingUp className="mr-2 h-4 w-4" /> Trending
+                  </Button>
+                </Link>
+              </div>
 
-              <div className="mt-8 flex flex-wrap gap-3 text-sm text-white/75">
-                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">Trending right now</span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">Top rated picks</span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2">Recently viewed</span>
+              <div className="mt-10 flex flex-wrap gap-3 text-sm text-white/50">
+                {['Trending right now', 'Top rated picks', 'Recently viewed'].map((tag) => (
+                  <span key={tag} className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5">{tag}</span>
+                ))}
               </div>
             </div>
 
-            <div className="grid gap-4 self-end md:grid-cols-2 lg:grid-cols-1">
-              <div className="rounded-2xl border border-white/10 bg-white/10 p-6 backdrop-blur-md">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 text-amber-300">
-                  <Compass className="h-6 w-6" />
+            <div className="hidden lg:flex flex-col justify-center gap-8">
+              {[
+                { icon: Zap, color: 'text-amber-300', label: 'Curated for intent', sub: 'Fresh, trending & top-rated sections surface exact what buyers want.' },
+                { icon: ShieldCheck, color: 'text-emerald-300', label: 'Ratings & trust signals', sub: 'Buyer ratings and history guide smarter purchasing decisions.' },
+              ].map(({ icon: Icon, color, label, sub }) => (
+                <div key={label} className="flex gap-4">
+                  <div className={`mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 ${color}`}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-white text-lg tracking-tight">{label}</h3>
+                    <p className="mt-1 text-sm text-white/55 leading-relaxed">{sub}</p>
+                  </div>
                 </div>
-                <p className="text-sm font-bold uppercase tracking-[0.22em] text-white/55">Discovery</p>
-                <h2 className="mt-2 text-2xl font-black tracking-[-0.03em]">Curated for intent</h2>
-                <p className="mt-3 text-sm leading-6 text-white/70">
-                  Fresh, trending, and top-rated sections make the homepage feel like a real marketplace front page.
-                </p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/10 p-6 backdrop-blur-md">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 text-emerald-300">
-                  <ShieldCheck className="h-6 w-6" />
-                </div>
-                <p className="text-sm font-bold uppercase tracking-[0.22em] text-white/55">Trust</p>
-                <h2 className="mt-2 text-2xl font-black tracking-[-0.03em]">Ratings and signals</h2>
-                <p className="mt-3 text-sm leading-6 text-white/70">
-                  Ratings, popularity, and product history guide better decisions without overwhelming the buyer.
-                </p>
-              </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      <section className="px-4 py-6 lg:px-12">
-        <div className="mx-auto max-w-7xl px-2 py-4 md:px-0">
-          <div className="mb-10 flex items-end justify-between gap-4">
+      {/* ── CATEGORIES ── */}
+      <section className="px-4 py-10 lg:px-12">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-8 flex items-end justify-between gap-4">
             <div>
-              <p className="text-sm font-bold uppercase tracking-[0.2em] text-stone-400">Curated Browse</p>
-              <h2 className="mt-2 text-3xl font-black tracking-[-0.03em] text-stone-950 font-display">
-                Browse by Category
-              </h2>
+              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Curated Browse</p>
+              <h2 className="text-3xl font-black tracking-tight text-gray-900">Browse by Category</h2>
             </div>
-            <p className="hidden max-w-xl text-sm leading-6 text-stone-500 md:block">
-              Jump straight into the categories your users care about most without sending them through generic navigation.
-            </p>
+            <Link to="/products" className="hidden md:block">
+              <Button variant="outline" className="gap-2 rounded-full text-sm">
+                All Products <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
           </div>
-          <h2 className="sr-only">
-            Browse by Category
-          </h2>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => handleCategoryClick(category)}
-                className="group rounded-2xl border border-stone-200 bg-[linear-gradient(180deg,#ffffff_0%,#faf7ef_100%)] p-6 text-left transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:bg-white hover:shadow-xl"
-              >
-                <div>
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-stone-100 text-primary-600 shadow-sm transition-transform group-hover:scale-110 group-hover:bg-primary-50">
-                    <Package className="h-6 w-6 text-primary-600" />
+
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {categories.map((category) => {
+              const { icon: CatIcon, color, bg, text } = getCategoryMeta(category);
+              return (
+                <button
+                  key={category}
+                  onClick={() => handleCategoryClick(category)}
+                  className="group rounded-2xl border border-gray-100 bg-white p-5 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-gray-200"
+                >
+                  <div className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br ${color} shadow-md transition-transform group-hover:scale-110`}>
+                    <CatIcon className="h-6 w-6 text-white" />
                   </div>
-                  <span className="block font-black tracking-[-0.02em] text-stone-900 transition-colors group-hover:text-primary-700">
+                  <span className="block font-black text-gray-900 tracking-tight text-sm group-hover:text-primary-700 transition-colors">
                     {category}
                   </span>
-                  <span className="mt-2 block text-sm text-stone-500">
-                    Explore curated listings
+                  <span className={`mt-1 block text-xs font-medium ${text} opacity-70`}>
+                    Browse listings →
                   </span>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
-          <div className="mt-14 h-px w-full bg-linear-to-r from-transparent via-stone-300 to-transparent" />
+          <div className="mt-12 h-px w-full bg-linear-to-r from-transparent via-gray-200 to-transparent" />
         </div>
       </section>
 
+      {/* ── PRODUCT SECTIONS ── */}
       <SectionShell
         title="Latest Products"
-        description="Fresh listings from across the marketplace so users can spot newly available deals right away."
+        description="Fresh listings from across the marketplace — spot newly available deals right away."
         icon={Sparkles}
+        accent="text-primary-600"
       >
         {renderTaggedProductGrid(latestProducts, latestLoading, 'Fresh', 'bg-primary-600 text-white')}
       </SectionShell>
 
       <SectionShell
         title="Trending Right Now"
-        description="Popular listings ranked by marketplace attention, helping users jump into what others are viewing most."
+        description="Popular listings ranked by marketplace attention — jump into what others are viewing most."
         icon={TrendingUp}
+        accent="text-amber-600"
         viewAllTo="/products?sortBy=views&sortOrder=desc"
       >
         {renderTaggedProductGrid(trendingProducts, trendingLoading, 'Trending', 'bg-amber-500 text-white')}
@@ -268,8 +268,9 @@ const renderTaggedProductGrid = (products, isLoading, highlightLabel, highlightT
 
       <SectionShell
         title="Top Rated Picks"
-        description="Products with stronger buyer feedback and ratings, surfaced to build trust and speed up decision-making."
+        description="Products with stronger buyer feedback — surfaced to build trust and speed up decisions."
         icon={Star}
+        accent="text-rose-500"
         viewAllTo="/products?sortBy=averageRating&sortOrder=desc"
       >
         {renderTaggedProductGrid(topRatedProducts, ratedLoading, 'Top Rated', 'bg-rose-500 text-white')}
@@ -278,8 +279,9 @@ const renderTaggedProductGrid = (products, isLoading, highlightLabel, highlightT
       {user && recentlyViewed.length > 0 && (
         <SectionShell
           title="Pick Up Where You Left Off"
-          description="Quick access to products you explored recently, so returning users can continue comparing and buying."
+          description="Quick access to products you explored recently — continue comparing and buying."
           icon={Package}
+          accent="text-violet-600"
           viewAllTo="/products"
         >
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 animate-fade-in">
@@ -295,45 +297,27 @@ const renderTaggedProductGrid = (products, isLoading, highlightLabel, highlightT
         </SectionShell>
       )}
 
-      <section className="px-4 pb-16 pt-6 text-black lg:px-12">
-        <div className="mx-auto w-full max-w-7xl px-2 py-4 sm:px-0">
-          <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="text-sm font-bold uppercase tracking-[0.2em] text-stone-400">Marketplace Snapshot</p>
-              <h2 className="mt-2 text-3xl font-black tracking-[-0.03em] text-stone-950">A more confident storefront</h2>
+      {/* ── STATS BAND ── */}
+      <section className="px-4 pb-20 pt-4 lg:px-12">
+        <div className="mx-auto max-w-7xl">
+          <div className="relative overflow-hidden rounded-4xl bg-slate-900 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.2)]">
+            <div className="absolute inset-0 bg-linear-to-br from-indigo-900 via-primary-900 to-blue-950 opacity-95" />
+            <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] from-cyan-400/15 via-transparent to-transparent blur-3xl" />
+            <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-white/10">
+              {[
+                { icon: Users, value: '100+', label: 'Active Students', color: 'text-cyan-300' },
+                { icon: Package, value: '50+', label: 'Products Listed', color: 'text-amber-300' },
+                { icon: Star, value: '4.8/5', label: 'Average Rating', color: 'text-rose-300' },
+              ].map(({ icon: Icon, value, label, color }) => (
+                <div key={label} className="flex flex-col items-center justify-center gap-3 py-12 px-8 text-center">
+                  <div className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 ${color}`}>
+                    <Icon className="h-7 w-7" />
+                  </div>
+                  <p className={`text-5xl font-black tracking-tight ${color}`}>{value}</p>
+                  <p className="text-sm font-semibold text-white/60 uppercase tracking-widest">{label}</p>
+                </div>
+              ))}
             </div>
-            <p className="max-w-2xl text-sm leading-6 text-stone-500">
-              These summary blocks reinforce activity, trust, and quality so the landing page feels active even before a user scrolls deeper.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 text-center md:grid-cols-3 md:gap-6 lg:gap-8">
-            <Card className="border-stone-200/70 bg-white/70 shadow-none backdrop-blur-sm animate-fade-in">
-              <CardContent className="p-8">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl border border-primary-100 bg-primary-50/70">
-                  <Users className="h-8 w-8 text-primary-600" />
-                </div>
-                <h3 className="mb-2 text-3xl font-black tracking-[-0.03em]">100+</h3>
-                <p className="text-stone-600">Active Users</p>
-              </CardContent>
-            </Card>
-            <Card className="border-stone-200/70 bg-white/70 shadow-none backdrop-blur-sm animate-fade-in">
-              <CardContent className="p-8">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl border border-amber-100 bg-amber-50/70">
-                  <Package className="h-8 w-8 text-amber-600" />
-                </div>
-                <h3 className="mb-2 text-3xl font-black tracking-[-0.03em]">50+</h3>
-                <p className="text-stone-600">Products Listed</p>
-              </CardContent>
-            </Card>
-            <Card className="border-stone-200/70 bg-white/70 shadow-none backdrop-blur-sm animate-fade-in">
-              <CardContent className="p-8">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl border border-rose-100 bg-rose-50/70">
-                  <Star className="h-8 w-8 text-rose-500" />
-                </div>
-                <h3 className="mb-2 text-3xl font-black tracking-[-0.03em]">4.8/5</h3>
-                <p className="text-stone-600">User Rating</p>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </section>

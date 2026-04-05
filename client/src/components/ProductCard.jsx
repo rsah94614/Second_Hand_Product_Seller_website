@@ -58,14 +58,14 @@ const ProductCard = ({ product, highlightLabel = '', highlightTone = 'bg-primary
 
   return (
     <Link to={`/products/${product._id}`} className="block h-full group">
-      <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-stone-200/80 bg-[linear-gradient(180deg,#fffdf8_0%,#ffffff_100%)] shadow-[0_16px_40px_rgba(15,23,42,0.08)] transition-all duration-500 hover:-translate-y-2 hover:border-stone-300 hover:shadow-[0_26px_70px_rgba(15,23,42,0.16)]">
-        <div className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.18),transparent_36%),linear-gradient(135deg,#f8fafc_0%,#f6f2e9_48%,#ffffff_100%)] aspect-[4/3] p-4 sm:p-5">
-          <div className="absolute inset-x-0 top-0 h-24 bg-linear-to-b from-white/80 to-transparent" />
-          <div className="absolute inset-x-6 bottom-5 h-10 rounded-full bg-black/10 blur-2xl" />
+      <article className="flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-gray-100 bg-white shadow-[0_10px_40px_-10px_rgba(0,0,0,0.06)] transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_60px_-10px_rgba(0,0,0,0.12)]">
+        <div className="relative overflow-hidden bg-gray-50 aspect-4/3">
+          <div className="absolute inset-x-0 top-0 h-32 bg-linear-to-b from-black/40 to-transparent z-10" />
+          <div className="absolute inset-x-0 bottom-0 h-32 bg-linear-to-t from-black/50 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <img
             src={product.images[0] || '/placeholder-image.jpg'}
             alt={product.title}
-            className="relative z-10 h-full w-full object-contain transition-transform duration-500 group-hover:scale-[1.06]"
+            className="relative z-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
             onError={(e) => {
               e.target.src = 'https://via.placeholder.com/400x400?text=No+Image';
             }}
@@ -86,32 +86,30 @@ const ProductCard = ({ product, highlightLabel = '', highlightTone = 'bg-primary
             variant="outline"
             onClick={handleWishlistClick}
             disabled={wishlistMutation.isPending}
-            className={`absolute left-3 top-3 z-20 h-10 w-10 rounded-full border-white/80 bg-white/95 shadow-md backdrop-blur hover:bg-white ${
-              isWishlisted ? 'text-rose-500' : 'text-gray-500'
+            className={`absolute right-3 top-3 z-20 h-10 w-10 rounded-full border border-white/20 shadow-lg backdrop-blur-md transition-colors ${
+              isWishlisted ? 'bg-rose-500 hover:bg-rose-600 text-white border-transparent' : 'bg-white/30 text-white hover:bg-white hover:text-rose-500'
             }`}
             title={isWishlisted ? 'Remove from wishlist' : 'Save product'}
           >
             <Heart className={`h-4 w-4 ${isWishlisted ? 'fill-current' : ''}`} />
           </Button>
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-stone-900/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
         </div>
 
-        <div className="flex flex-1 flex-col px-5 pb-5 pt-4">
-          <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="flex flex-1 flex-col px-6 pb-6 pt-5 bg-white relative z-20">
+          <div className="mb-4 flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="mb-3 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center rounded-full border border-stone-200 bg-stone-100/70 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-600">
+                <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-gray-600">
                   {product.category}
                 </span>
-                <span className="inline-flex items-center rounded-full border border-primary-200 bg-primary-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-primary-700">
+                <span className="inline-flex items-center rounded-full bg-primary-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-primary-700">
                   {product.condition}
                 </span>
               </div>
-              <h3 className="line-clamp-2 text-[1.08rem] font-black leading-[1.15] tracking-[-0.02em] text-stone-950 transition-colors group-hover:text-primary-700">
+              <h3 className="line-clamp-2 text-xl font-bold leading-tight tracking-tight text-gray-900 transition-colors group-hover:text-primary-600">
                 {product.title}
               </h3>
             </div>
-            <ArrowUpRight className="mt-1 h-4 w-4 shrink-0 text-stone-300 transition-all duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary-600" />
           </div>
 
           <div className="mb-4 flex items-end justify-between gap-3">

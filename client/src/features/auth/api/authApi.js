@@ -9,3 +9,9 @@ export const loginUser = (email, password) =>
 
 export const registerUser = (userData) =>
   axios.post(`${API_BASE_URL}/api/auth/register`, userData).then((res) => res.data);
+
+export const forgotPasswordApi = (email) =>
+  axios.post(`${API_BASE_URL}/api/auth/forgot-password`, { email }).then((res) => res.data);
+
+export const resetPasswordApi = (token, newPassword) =>
+  axios.post(`${API_BASE_URL}/api/auth/reset-password`, { token, newPassword }).then((res) => res.data);

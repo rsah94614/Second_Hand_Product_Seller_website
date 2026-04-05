@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Mail, Phone, MapPin, Edit, Save, X, ShieldCheck } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Edit, Save, X, ShieldCheck, LogOut } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext';
 import Header from '../../../components/Header';
@@ -50,7 +50,7 @@ const ProfilePage = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ec_0%,#f8fafc_24%,#f8fafc_100%)] flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-800 mb-4">Please log in to view your profile</h1>
         </div>
@@ -58,139 +58,144 @@ const ProfilePage = () => {
     );
   }
 
+  const initials = user.name
+    ? user.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
+    : '?';
+
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ec_0%,#f8fafc_24%,#f8fafc_100%)]">
       <Header />
-      <div className="px-4 py-10 flex items-center justify-center">
-        <div className="container max-w-2xl">
-          <Card className="rounded-2xl border-gray-100 shadow-sm animate-fade-in">
-            <CardContent className="p-8">
+      <div className="max-w-3xl mx-auto px-4 py-12">
+
+        {/* Profile Hero */}
+        <div className="relative overflow-hidden rounded-4xl mb-6 bg-slate-900 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.2)]">
+          <div className="absolute inset-0 bg-linear-to-br from-primary-900 via-indigo-900 to-blue-950 opacity-90" />
+          <div className="absolute top-0 right-0 w-60 h-60 rounded-full bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] from-cyan-400/20 via-transparent to-transparent blur-3xl" />
+          <div className="relative z-10 p-8 flex items-center gap-6">
+            <div className="w-20 h-20 rounded-2xl bg-linear-to-br from-primary-400/30 to-indigo-400/20 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white text-3xl font-black shrink-0 shadow-xl">
+              {initials}
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge
+                  className={`text-xs font-bold px-3 py-1 border-0 ${
+                    user.role === 'admin'
+                      ? 'bg-rose-500/20 text-rose-200 backdrop-blur-sm'
+                      : 'bg-white/10 text-white/80 backdrop-blur-sm'
+                  }`}
+                >
+                  <ShieldCheck className="w-3 h-3 mr-1" />
+                  {user.role}
+                </Badge>
+              </div>
+              <h1 className="text-3xl font-black text-white tracking-tight">{user.name}</h1>
+              <p className="text-primary-200/70 text-sm mt-0.5">{user.email}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Edit Card */}
+        <Card className="rounded-4xl border border-gray-100 shadow-sm animate-fade-in">
+          <CardContent className="p-8">
             <div className="flex items-center justify-between mb-8">
-              <h1 className="text-3xl font-bold text-gray-800">My Profile</h1>
+              <div>
+                <h2 className="text-2xl font-black text-gray-900 tracking-tight">Account Details</h2>
+                <p className="text-gray-500 text-sm mt-1">Manage your personal information</p>
+              </div>
               {!isEditing ? (
                 <Button
                   onClick={() => setIsEditing(true)}
                   variant="outline"
-                  className="flex items-center space-x-2"
+                  className="gap-2 rounded-full"
                 >
                   <Edit className="w-4 h-4" />
-                  <span>Edit Profile</span>
+                  Edit Profile
                 </Button>
               ) : (
-                <div className="flex space-x-2">
-                  <Button
-                    onClick={handleSave}
-                    className="flex items-center space-x-2"
-                  >
+                <div className="flex gap-2">
+                  <Button onClick={handleSave} className="gap-2 rounded-full">
                     <Save className="w-4 h-4" />
-                    <span>Save</span>
+                    Save
                   </Button>
-                  <Button
-                    onClick={handleCancel}
-                    variant="outline"
-                    className="flex items-center space-x-2"
-                  >
+                  <Button onClick={handleCancel} variant="outline" className="gap-2 rounded-full">
                     <X className="w-4 h-4" />
-                    <span>Cancel</span>
+                    Cancel
                   </Button>
                 </div>
               )}
             </div>
 
-            <div className="space-y-6">
-              <div className="flex items-center space-x-4">
-                <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center">
-                  <User className="w-10 h-10 text-gray-600" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-semibold text-gray-800">
-                    {isEditing ? (
-                      <Input
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        className="h-11 text-2xl font-semibold"
-                      />
-                    ) : (
-                      user.name
-                    )}
-                  </h2>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Badge variant={user.role === 'admin' ? 'destructive' : 'success'} className="gap-1 px-3 py-1 uppercase tracking-wide">
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      {user.role}
-                    </Badge>
+            <div className="space-y-5">
+              {[
+                {
+                  icon: User,
+                  label: 'Full Name',
+                  name: 'name',
+                  value: formData.name,
+                  display: user.name,
+                  type: 'text',
+                },
+                {
+                  icon: Mail,
+                  label: 'Email Address',
+                  name: 'email',
+                  value: formData.email,
+                  display: user.email,
+                  type: 'email',
+                },
+                {
+                  icon: Phone,
+                  label: 'Phone Number',
+                  name: 'phone',
+                  value: formData.phone,
+                  display: user.phone || 'Not provided',
+                  type: 'tel',
+                },
+                {
+                  icon: MapPin,
+                  label: 'Location',
+                  name: 'location',
+                  value: formData.location,
+                  display: user.location || 'Not provided',
+                  type: 'text',
+                },
+              ].map(({ icon: Icon, label, name, value, display, type }) => (
+                <div key={name} className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50/60 border border-gray-100">
+                  <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center shrink-0 mt-0.5">
+                    <Icon className="w-4.5 h-4.5 text-primary-600" />
                   </div>
-                  <p className="text-gray-600">Member since {new Date().getFullYear()}</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <Mail className="w-5 h-5 text-gray-400" />
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700">Email</label>
+                  <div className="flex-1 min-w-0">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
+                      {label}
+                    </label>
                     {isEditing ? (
                       <Input
-                        type="email"
-                        name="email"
-                        value={formData.email}
+                        type={type}
+                        name={name}
+                        value={value}
                         onChange={handleChange}
+                        className="h-10"
                       />
                     ) : (
-                      <p className="text-gray-900">{user.email}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-3">
-                  <Phone className="w-5 h-5 text-gray-400" />
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700">Phone</label>
-                    {isEditing ? (
-                      <Input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleChange}
-                      />
-                    ) : (
-                      <p className="text-gray-900">{user.phone || 'Not provided'}</p>
+                      <p className="text-gray-900 font-semibold">{display}</p>
                     )}
                   </div>
                 </div>
-
-                <div className="flex items-center space-x-3">
-                  <MapPin className="w-5 h-5 text-gray-400" />
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700">Location</label>
-                    {isEditing ? (
-                      <Input
-                        type="text"
-                        name="location"
-                        value={formData.location}
-                        onChange={handleChange}
-                      />
-                    ) : (
-                      <p className="text-gray-900">{user.location || 'Not provided'}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-6 border-t border-gray-200">
-                <Button
-                  onClick={logout}
-                  variant="destructive"
-                >
-                  Logout
-                </Button>
-              </div>
+              ))}
             </div>
-            </CardContent>
-          </Card>
-        </div>
+
+            <div className="pt-6 mt-6 border-t border-gray-100">
+              <Button
+                onClick={logout}
+                variant="outline"
+                className="gap-2 text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 rounded-full"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
       <Footer />
     </div>

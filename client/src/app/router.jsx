@@ -3,6 +3,8 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import HomePage from '../features/home/pages/HomePage';
 import LoginPage from '../features/auth/pages/LoginPage';
 import RegisterPage from '../features/auth/pages/RegisterPage';
+import ForgotPasswordPage from '../features/auth/pages/ForgotPasswordPage';
+import ResetPasswordPage from '../features/auth/pages/ResetPasswordPage';
 import ProductListPage from '../features/products/pages/ProductListPage';
 import ProductDetailPage from '../features/products/pages/ProductDetailPage';
 import ProfilePage from '../features/users/pages/ProfilePage';
@@ -31,6 +33,8 @@ const AppRouter = () => (
     <Route path="/products/:id" element={<ProductDetailPage />} />
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<RegisterPage />} />
+    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+    <Route path="/reset-password" element={<ResetPasswordPage />} />
     <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
     <Route path="/wishlist" element={<ProtectedRoute><WishlistPage /></ProtectedRoute>} />
     <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />

@@ -159,9 +159,8 @@ const Header = () => {
                 toast.dismiss(toastInstance.id);
                 openNotification(notification);
               }}
-              className={`w-full max-w-sm rounded-2xl border bg-white p-4 text-left shadow-xl transition-all ${
-                toastInstance.visible ? 'animate-soft-pop' : 'opacity-0'
-              }`}
+              className={`w-full max-w-sm rounded-2xl border bg-white p-4 text-left shadow-xl transition-all ${toastInstance.visible ? 'animate-soft-pop' : 'opacity-0'
+                }`}
             >
               <div className="flex items-start gap-3">
                 <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-600">
@@ -234,16 +233,16 @@ const Header = () => {
 
   const primaryLinks = isAdmin
     ? [
-        { to: '/admin-dashboard', label: 'Overview', icon: ShieldCheck },
-      ]
+      { to: '/admin-dashboard', label: 'Overview', icon: ShieldCheck },
+    ]
     : isUser
       ? [
-          { to: '/products', label: 'Products', icon: Store },
-          { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        ]
+        { to: '/products', label: 'Products', icon: Store },
+      ]
       : [];
 
   const userMenuLinks = [
+    { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/my-products', label: 'My Products', icon: Briefcase },
     { to: '/wishlist', label: 'Saved Items', icon: Heart },
     { to: '/orders', label: 'Orders', icon: History },
@@ -259,57 +258,73 @@ const Header = () => {
 
   const utilityLinks = isAdmin
     ? [
-        { to: '/notifications', label: 'Notifications', icon: Bell },
-        { to: '/profile', label: 'Profile', icon: User },
-      ]
+      { to: '/notifications', label: 'Notifications', icon: Bell },
+      { to: '/profile', label: 'Profile', icon: User },
+    ]
     : [
-        { to: '/chat', label: 'Chat', icon: MessageCircle },
-        { to: '/cart', label: 'Cart', icon: ShoppingCart },
-        { to: '/notifications', label: 'Notifications', icon: Bell },
-        { to: '/profile', label: 'Profile', icon: User },
-      ];
+      { to: '/chat', label: 'Chat', icon: MessageCircle },
+      { to: '/notifications', label: 'Notifications', icon: Bell },
+      { to: '/profile', label: 'Profile', icon: User },
+    ];
 
-  const renderDesktopDropdown = (label, items) => (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button type="button" variant="ghost" size="sm" className="gap-2 text-gray-600">
-          <span>{label}</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 rounded-2xl p-2 animate-soft-pop">
-        {items.map((item, index) => {
-          const Icon = item.icon;
-          const isLogout = item.action === 'logout';
-          const content = (
-            <>
-              <Icon className="w-4 h-4" />
-              <span className="font-medium">{item.label}</span>
-            </>
-          );
+  const renderUnifiedProfileDropdown = () => {
+    const topLinks = isAdmin ? adminManageLinks : userMenuLinks;
+    const bottomLinks = [
+      ...utilityLinks,
+      { isSeparator: true },
+      { label: 'Logout', icon: LogOut, action: 'logout', danger: true },
+    ];
 
-          if (isLogout) {
-            return (
-              <React.Fragment key={item.label}>
-                {index > 0 && <DropdownMenuSeparator />}
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-primary-100 text-primary-700 font-semibold border border-transparent shadow-sm hover:ring-2 hover:ring-primary-500/30 hover:bg-primary-200 transition-all focus:outline-none"
+          >
+            {user?.name?.[0]?.toUpperCase() || <User className="w-5 h-5" />}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-64 rounded-2xl p-2 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border border-gray-100 animate-soft-pop mt-2">
+          <div className="px-3 py-3 mb-1 bg-gray-50/80 rounded-xl">
+            <p className="font-semibold text-gray-900 truncate">{user?.name || 'Account'}</p>
+            <p className="text-xs text-gray-500 font-medium truncate capitalize mt-0.5">{user?.email || (user?.role && `${user.role} Account`)}</p>
+          </div>
+
+          {[...topLinks, { isSeparator: true }, ...bottomLinks].map((item, index) => {
+            if (item.isSeparator) {
+              return <DropdownMenuSeparator key={`sep-${index}`} className="my-1.5 opacity-50" />;
+            }
+            const Icon = item.icon;
+            const content = (
+              <>
+                <Icon className="w-[18px] h-[18px]" />
+                <span className="font-medium text-[14px]">{item.label}</span>
+              </>
+            );
+
+            if (item.action === 'logout') {
+              return (
                 <DropdownMenuItem
+                  key={item.label}
                   onClick={handleLogout}
-                  className="gap-3 rounded-xl text-red-600 focus:bg-red-50 focus:text-red-600"
+                  className="gap-3 rounded-xl text-red-600 focus:bg-red-50 focus:text-red-700 mt-1 cursor-pointer py-2.5"
                 >
                   {content}
                 </DropdownMenuItem>
-              </React.Fragment>
-            );
-          }
+              );
+            }
 
-          return (
-            <DropdownMenuItem key={item.to} asChild className="gap-3 rounded-xl">
-              <Link to={item.to}>{content}</Link>
-            </DropdownMenuItem>
-          );
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
+            return (
+              <DropdownMenuItem key={item.to || item.label} asChild className="gap-3 rounded-xl mb-0.5 cursor-pointer py-2.5">
+                <Link to={item.to}>{content}</Link>
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
 
   const renderNotificationsDropdown = () => (
     <DropdownMenu>
@@ -320,7 +335,7 @@ const Header = () => {
         >
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
-            <span className="absolute -right-1 -top-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-primary-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+            <span className="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-primary-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
@@ -348,7 +363,7 @@ const Header = () => {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {notificationItems.length ? (
-          <div className="max-h-[24rem] overflow-y-auto py-1">
+          <div className="max-h-96 overflow-y-auto py-1">
             {notificationItems.map((notification) => (
               <DropdownMenuItem
                 key={notification._id}
@@ -387,24 +402,24 @@ const Header = () => {
   );
 
   return (
-    <header className="bg-white/85 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <header className="bg-primary-950/90 backdrop-blur-xl border-b border-white/10 sticky top-0 z-50">
+      <div className="mx-auto px-4 sm:px-6 lg:px-24">
         <div className="flex items-center justify-between h-16">
-          <Link to="/" className="shrink-0 flex items-center group">
-            <div className="w-20 h-8 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold text-xl group-hover:bg-primary-700 transition-colors"> Campus </div>
-            <div className="text-2xl font-display font-bold text-gray-900 tracking-tight">Mitra</div>
+          <Link to="/" className="shrink-0 flex items-center gap-1.5 group">
+            <div className="px-2.5 h-8 bg-linear-to-br from-primary-400 to-cyan-400 rounded-xl flex items-center justify-center text-white font-black text-lg tracking-tight group-hover:rotate-2 transition-transform duration-300 shadow-md shadow-primary-600/30">Campus</div>
+            <div className="text-2xl font-display font-black text-white tracking-tight ml-0.5">Mitra</div>
           </Link>
 
-          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8">
+          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-4 lg:mx-8">
             <div className="relative w-full group">
               <Input
                 type="text"
                 placeholder="Search for anything..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-gray-50 border-gray-200 focus:bg-white transition-all"
+                className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/15 focus:border-white/30 transition-all"
               />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 group-hover:text-primary-500 transition-colors w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40 group-hover:text-white/70 transition-colors w-4 h-4" />
               {debouncedSearch.length >= 2 && suggestions.length > 0 && (
                 <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl animate-soft-pop">
                   {suggestions.map((product) => (
@@ -437,17 +452,13 @@ const Header = () => {
           <div className="hidden md:flex items-center gap-3">
             {user ? (
               <>
-                <Badge variant={roleTone} className="hidden xl:inline-flex uppercase tracking-[0.18em] animate-fade-in">
-                  {roleLabel}
-                </Badge>
-
-                <nav className="flex items-center gap-1 rounded-full border border-gray-200 bg-white/90 px-2 py-1 shadow-sm animate-soft-pop">
+                <nav className="flex items-center gap-1 xl:gap-2 mr-3 border-r border-white/15 pr-5">
                   {primaryLinks.map((link) => {
                     const Icon = link.icon;
 
                     return (
                       <Link key={link.to} to={link.to}>
-                        <Button variant="ghost" size="sm" className="gap-2 text-gray-600 hover:text-primary-700">
+                        <Button variant="ghost" size="sm" className="gap-2 text-white/70 hover:text-white hover:bg-white/10 transition-colors font-medium rounded-xl">
                           <Icon className="w-4 h-4" />
                           <span>{link.label}</span>
                         </Button>
@@ -457,36 +468,37 @@ const Header = () => {
                 </nav>
 
                 {isUser && (
-                  <Link to="/create-product">
+                  <Link to="/create-product" className="mr-1">
                     <Button
-                      className="gap-2 rounded-full bg-linear-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 text-white shadow-md hover:shadow-lg transition-all border-none"
+                      className="gap-2 rounded-full bg-linear-to-r from-primary-600 to-indigo-500 hover:from-primary-700 hover:to-indigo-600 text-white shadow-lg shadow-primary-600/20 hover:shadow-primary-600/30 hover:-translate-y-0.5 transition-all duration-300 border-none"
                       size="sm"
                     >
                       <Plus className="w-4 h-4" />
-                      <span className="font-semibold">List Product</span>
+                      <span className="font-semibold text-[14px]">List Product</span>
                     </Button>
                   </Link>
                 )}
 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-3 xl:gap-4 pl-1">
+                  {!isAdmin && (
+                    <Link to="/cart">
+                      <button
+                        type="button"
+                        className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white/70 transition-colors hover:bg-white/20 hover:text-white"
+                        title="Your Cart"
+                      >
+                        <ShoppingCart className="h-4 w-4" />
+                      </button>
+                    </Link>
+                  )}
                   {renderNotificationsDropdown()}
-                  {isUser && (
-                    renderDesktopDropdown('Workspace', userMenuLinks)
-                  )}
-                  {isAdmin && renderDesktopDropdown('Manage', adminManageLinks)}
-                  {renderDesktopDropdown(
-                    'Account',
-                    [
-                      ...utilityLinks,
-                      { label: 'Logout', icon: LogOut, action: 'logout' },
-                    ]
-                  )}
+                  {renderUnifiedProfileDropdown()}
                 </div>
               </>
             ) : (
               <div className="flex items-center gap-3">
                 <Link to="/login">
-                  <Button variant="ghost" className="font-medium">Login</Button>
+                  <Button variant="ghost" className="font-medium text-white/70 hover:text-white hover:bg-white/10">Login</Button>
                 </Link>
                 <Link to="/register">
                   <Button variant="primary" className="font-medium">Register</Button>
@@ -517,7 +529,7 @@ const Header = () => {
                     <Bell className="w-5 h-5" />
                   </Button>
                   {unreadCount > 0 && (
-                    <span className="absolute -right-0.5 -top-0.5 inline-flex min-w-[1rem] items-center justify-center rounded-full bg-primary-600 px-1 py-0.5 text-[10px] font-bold text-white">
+                    <span className="absolute -right-0.5 -top-0.5 inline-flex min-w-4 items-center justify-center rounded-full bg-primary-600 px-1 py-0.5 text-[10px] font-bold text-white">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
@@ -526,7 +538,7 @@ const Header = () => {
             )}
             <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
               <SheetTrigger asChild>
-                <button className="p-2 text-gray-600 hover:text-primary-600 transition-colors rounded-lg hover:bg-gray-50">
+                <button className="p-2 text-white/70 hover:text-white transition-colors rounded-lg hover:bg-white/10">
                   <Menu className="w-6 h-6" />
                 </button>
               </SheetTrigger>

@@ -4,6 +4,8 @@ import {
   getCurrentUser,
   loginUser,
   registerUser,
+  forgotPasswordApi,
+  resetPasswordApi,
 } from '../features/auth/api/authApi';
 
 const AuthContext = createContext();
@@ -84,11 +86,31 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const forgotPassword = async (email) => {
+    try {
+      const response = await forgotPasswordApi(email);
+      return { success: true, message: response.message };
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || 'Failed to send reset link.' };
+    }
+  };
+
+  const resetPassword = async (token, newPassword) => {
+    try {
+      const response = await resetPasswordApi(token, newPassword);
+      return { success: true, message: response.message };
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || 'Failed to reset password.' };
+    }
+  };
+
   const value = {
     user,
     login,
     register,
     logout,
+    forgotPassword,
+    resetPassword,
     loading,
     refreshUser: fetchUser,
     isUser: user?.role === 'user',
