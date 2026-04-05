@@ -14,8 +14,8 @@ const Footer = () => {
 
           {/* Brand */}
           <div className="lg:col-span-1">
-            <Link to="/" className="inline-flex items-center gap-1.5 mb-5 group">
-              <div className="px-2.5 h-8 bg-linear-to-br from-primary-400 to-cyan-400 rounded-xl flex items-center justify-center text-white font-black text-lg tracking-tight shadow-md group-hover:rotate-2 transition-transform duration-300">
+            <Link to="/" className="inline-flex items-center mb-5 group">
+              <div className="px-2.5 h-8 bg-linear-to-br from-primary-600 to-indigo-400 rounded-xl flex items-center justify-center text-white font-black text-lg tracking-tight shadow-md group-hover:rotate-2 transition-transform duration-300">
                 Campus
               </div>
               <span className="text-2xl font-black text-white tracking-tight ml-0.5">Mitra</span>
@@ -29,14 +29,14 @@ const Footer = () => {
                 { icon: Instagram, label: 'Instagram' },
                 { icon: Twitter, label: 'Twitter' },
                 { icon: Youtube, label: 'YouTube' },
-              ].map(({ icon: Icon, label }) => (
+              ].map((item) => (
                 <a
-                  key={label}
+                  key={item.label}
                   href="#"
-                  aria-label={label}
+                  aria-label={item.label}
                   className="w-9 h-9 rounded-xl bg-white/8 border border-white/10 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/15 hover:border-white/20 transition-all duration-200"
                 >
-                  <Icon className="w-4 h-4" />
+                  <item.icon className="w-4 h-4" />
                 </a>
               ))}
             </div>

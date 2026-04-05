@@ -229,8 +229,6 @@ const Header = () => {
 
   const roleTone = user?.role === 'admin' ? 'destructive' : 'success';
 
-  const roleLabel = user?.role ? `${user.role.charAt(0).toUpperCase()}${user.role.slice(1)}` : '';
-
   const primaryLinks = isAdmin
     ? [
       { to: '/admin-dashboard', label: 'Overview', icon: ShieldCheck },
@@ -405,8 +403,8 @@ const Header = () => {
     <header className="bg-primary-950/90 backdrop-blur-xl border-b border-white/10 sticky top-0 z-50">
       <div className="mx-auto px-4 sm:px-6 lg:px-24">
         <div className="flex items-center justify-between h-16">
-          <Link to="/" className="shrink-0 flex items-center gap-1.5 group">
-            <div className="px-2.5 h-8 bg-linear-to-br from-primary-400 to-cyan-400 rounded-xl flex items-center justify-center text-white font-black text-lg tracking-tight group-hover:rotate-2 transition-transform duration-300 shadow-md shadow-primary-600/30">Campus</div>
+          <Link to="/" className="shrink-0 flex items-center group">
+            <div className="px-2.5 h-8 bg-linear-to-br from-primary-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-lg tracking-tight group-hover:rotate-2 transition-transform duration-300 shadow-md shadow-primary-600/30">Campus</div>
             <div className="text-2xl font-display font-black text-white tracking-tight ml-0.5">Mitra</div>
           </Link>
 

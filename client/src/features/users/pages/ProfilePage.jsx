@@ -159,25 +159,25 @@ const ProfilePage = () => {
                   display: user.location || 'Not provided',
                   type: 'text',
                 },
-              ].map(({ icon: Icon, label, name, value, display, type }) => (
-                <div key={name} className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50/60 border border-gray-100">
+              ].map((item) => (
+                <div key={item.name} className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50/60 border border-gray-100">
                   <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center shrink-0 mt-0.5">
-                    <Icon className="w-4.5 h-4.5 text-primary-600" />
+                    <item.icon className="w-4.5 h-4.5 text-primary-600" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
-                      {label}
+                      {item.label}
                     </label>
                     {isEditing ? (
                       <Input
-                        type={type}
-                        name={name}
-                        value={value}
+                        type={item.type}
+                        name={item.name}
+                        value={item.value}
                         onChange={handleChange}
                         className="h-10"
                       />
                     ) : (
-                      <p className="text-gray-900 font-semibold">{display}</p>
+                      <p className="text-gray-900 font-semibold">{item.display}</p>
                     )}
                   </div>
                 </div>

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
@@ -6,6 +6,7 @@ import ProductCard from '../../../components/ProductCard.jsx';
 import {
   TrendingUp, Star, Users, Package, Sparkles, ArrowRight,
   ShieldCheck, Zap, BookOpen, Cpu, Coffee, Shirt, Music, Camera, Bike, Home,
+  Car, Building, Wrench,
 } from 'lucide-react';
 import Header from '../../../components/Header.jsx';
 import Footer from '../../../components/Footer.jsx';
@@ -21,18 +22,18 @@ const fetchProducts = (params) =>
 
 // Category icon & color mapping
 const CATEGORY_META = {
-  'Electronics': { icon: Cpu, color: 'from-blue-500 to-indigo-600', bg: 'bg-blue-50', text: 'text-blue-600' },
-  'Books': { icon: BookOpen, color: 'from-amber-500 to-orange-500', bg: 'bg-amber-50', text: 'text-amber-600' },
-  'Clothing': { icon: Shirt, color: 'from-pink-500 to-rose-500', bg: 'bg-pink-50', text: 'text-pink-600' },
-  'Music': { icon: Music, color: 'from-violet-500 to-purple-600', bg: 'bg-violet-50', text: 'text-violet-600' },
-  'Photography': { icon: Camera, color: 'from-cyan-500 to-sky-600', bg: 'bg-cyan-50', text: 'text-cyan-600' },
-  'Sports': { icon: Bike, color: 'from-emerald-500 to-teal-600', bg: 'bg-emerald-50', text: 'text-emerald-600' },
-  'Food': { icon: Coffee, color: 'from-yellow-500 to-amber-500', bg: 'bg-yellow-50', text: 'text-yellow-600' },
-  'Home': { icon: Home, color: 'from-stone-500 to-gray-600', bg: 'bg-stone-50', text: 'text-stone-600' },
-  'Other': { icon: Package, color: 'from-primary-500 to-indigo-500', bg: 'bg-primary-50', text: 'text-primary-600' },
+  'Electronics': { icon: Cpu, color: 'from-blue-500 to-indigo-600', text: 'text-blue-600' },
+  'Fashion': { icon: Shirt, color: 'from-pink-500 to-rose-500', text: 'text-pink-600' },
+  'Home & Garden': { icon: Home, color: 'from-orange-500 to-amber-600', text: 'text-orange-600' },
+  'Sports': { icon: Bike, color: 'from-emerald-500 to-teal-600', text: 'text-emerald-600' },
+  'Books': { icon: BookOpen, color: 'from-amber-400 to-orange-500', text: 'text-amber-600' },
+  'Vehicles': { icon: Car, color: 'from-red-500 to-rose-600', text: 'text-red-600' },
+  'Real Estate': { icon: Building, color: 'from-violet-500 to-purple-600', text: 'text-violet-600' },
+  'Services': { icon: Wrench, color: 'from-cyan-500 to-sky-600', text: 'text-cyan-600' },
+  'Other': { icon: Package, color: 'from-slate-500 to-gray-600', text: 'text-slate-600' },
 };
 const getCategoryMeta = (name) =>
-  CATEGORY_META[name] || { icon: Package, color: 'from-primary-500 to-indigo-600', bg: 'bg-primary-50', text: 'text-primary-600' };
+  CATEGORY_META[name] || { icon: Package, color: 'from-gray-400 to-gray-500', text: 'text-gray-500' };
 
 const SectionShell = ({ title, description, icon, accent = 'text-primary-600', viewAllTo = '/products', children }) => (
   <section className="px-4 py-14 lg:px-12">
@@ -189,14 +190,14 @@ const HomePage = () => {
               {[
                 { icon: Zap, color: 'text-amber-300', label: 'Curated for intent', sub: 'Fresh, trending & top-rated sections surface exact what buyers want.' },
                 { icon: ShieldCheck, color: 'text-emerald-300', label: 'Ratings & trust signals', sub: 'Buyer ratings and history guide smarter purchasing decisions.' },
-              ].map(({ icon: Icon, color, label, sub }) => (
-                <div key={label} className="flex gap-4">
-                  <div className={`mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 ${color}`}>
-                    <Icon className="h-5 w-5" />
+              ].map((item) => (
+                <div key={item.label} className="flex gap-4">
+                  <div className={`mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 ${item.color}`}>
+                    <item.icon className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="font-black text-white text-lg tracking-tight">{label}</h3>
-                    <p className="mt-1 text-sm text-white/55 leading-relaxed">{sub}</p>
+                    <h3 className="font-black text-white text-lg tracking-tight">{item.label}</h3>
+                    <p className="mt-1 text-sm text-white/55 leading-relaxed">{item.sub}</p>
                   </div>
                 </div>
               ))}
@@ -222,7 +223,7 @@ const HomePage = () => {
 
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {categories.map((category) => {
-              const { icon: CatIcon, color, bg, text } = getCategoryMeta(category);
+              const { icon: CatIcon, color, text } = getCategoryMeta(category);
               return (
                 <button
                   key={category}
@@ -308,13 +309,13 @@ const HomePage = () => {
                 { icon: Users, value: '100+', label: 'Active Students', color: 'text-cyan-300' },
                 { icon: Package, value: '50+', label: 'Products Listed', color: 'text-amber-300' },
                 { icon: Star, value: '4.8/5', label: 'Average Rating', color: 'text-rose-300' },
-              ].map(({ icon: Icon, value, label, color }) => (
-                <div key={label} className="flex flex-col items-center justify-center gap-3 py-12 px-8 text-center">
-                  <div className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 ${color}`}>
-                    <Icon className="h-7 w-7" />
+              ].map((item) => (
+                <div key={item.label} className="flex flex-col items-center justify-center gap-3 py-12 px-8 text-center">
+                  <div className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 ${item.color}`}>
+                    <item.icon className="h-7 w-7" />
                   </div>
-                  <p className={`text-5xl font-black tracking-tight ${color}`}>{value}</p>
-                  <p className="text-sm font-semibold text-white/60 uppercase tracking-widest">{label}</p>
+                  <p className={`text-5xl font-black tracking-tight ${item.color}`}>{item.value}</p>
+                  <p className="text-sm font-semibold text-white/60 uppercase tracking-widest">{item.label}</p>
                 </div>
               ))}
             </div>

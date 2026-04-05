@@ -1,8 +1,8 @@
 import React from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import HomePage from '../features/home/pages/HomePage';
-import LoginPage from '../features/auth/pages/LoginPage';
-import RegisterPage from '../features/auth/pages/RegisterPage';
+import SignInPage from '../features/auth/pages/Sign-In';
+import SignUpPage from '../features/auth/pages/Sign-Up';
 import ForgotPasswordPage from '../features/auth/pages/ForgotPasswordPage';
 import ResetPasswordPage from '../features/auth/pages/ResetPasswordPage';
 import ProductListPage from '../features/products/pages/ProductListPage';
@@ -31,8 +31,8 @@ const AppRouter = () => (
     <Route path="/" element={<HomePage />} />
     <Route path="/products" element={<ProductListPage />} />
     <Route path="/products/:id" element={<ProductDetailPage />} />
-    <Route path="/login" element={<LoginPage />} />
-    <Route path="/register" element={<RegisterPage />} />
+    <Route path="/login" element={<SignInPage />} />
+    <Route path="/register" element={<SignUpPage />} />
     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
     <Route path="/reset-password" element={<ResetPasswordPage />} />
     <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />

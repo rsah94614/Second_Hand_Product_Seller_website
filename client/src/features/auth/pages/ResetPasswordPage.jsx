@@ -81,14 +81,14 @@ const ResetPasswordPage = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-11 pr-11 h-12 bg-gray-50 border-gray-200"
+                  className="pl-11 pr-11 h-12 bg-white border-gray-800 placeholder:text-gray-600"
                   placeholder="Enter new password"
                 />
-                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-600 w-5 h-5" />
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-600 transition-colors focus:outline-none"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
