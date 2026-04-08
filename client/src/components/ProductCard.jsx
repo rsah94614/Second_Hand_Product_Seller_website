@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { MapPin, Eye, Calendar, Heart, Star, ArrowUpRight } from 'lucide-react';
+import { MapPin, Calendar, Heart } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { toggleWishlist } from '../features/users/api/userApi';
 import { Button } from './ui/Button';
@@ -13,7 +13,6 @@ const ProductCard = ({ product, highlightLabel = '', highlightTone = 'bg-primary
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isWishlisted = Boolean(user?.wishlist?.includes(product._id));
-  const hasRating = Number(product.averageRating) > 0;
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('en-IN', {
@@ -96,7 +95,7 @@ const ProductCard = ({ product, highlightLabel = '', highlightTone = 'bg-primary
         </div>
 
         <div className="flex flex-1 flex-col px-6 pb-6 pt-5 bg-white relative z-20">
-          <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="mb-3 flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="mb-3 flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-gray-600">
@@ -106,49 +105,28 @@ const ProductCard = ({ product, highlightLabel = '', highlightTone = 'bg-primary
                   {product.condition}
                 </span>
               </div>
-              <h3 className="line-clamp-2 text-xl font-bold leading-tight tracking-tight text-gray-900 transition-colors group-hover:text-primary-600">
+              <h3 className="line-clamp-2 text-xl font-bold leading-tight tracking-tight text-gray-900 transition-colors">
                 {product.title}
               </h3>
             </div>
           </div>
 
-          <div className="mb-4 flex items-end justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-stone-400">
-                Asking Price
-              </p>
-              <p className="mt-1 text-[1.9rem] font-black leading-none tracking-[-0.04em] text-stone-950">
-                {formatPrice(product.price)}
-              </p>
-            </div>
-            {hasRating && (
-              <div className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 shadow-sm">
-                <Star className="h-3.5 w-3.5 fill-current" />
-                <span>{Number(product.averageRating).toFixed(1)}</span>
-                <span className="text-amber-600/80">({product.reviewCount || 0})</span>
-              </div>
-            )}
-          </div>
+          <p className="mb-4 text-[1.9rem] font-black leading-none tracking-[-0.04em] text-stone-950">
+            {formatPrice(product.price)}
+          </p>
 
           <div className="mb-5 flex items-center text-sm font-medium text-stone-600">
             <MapPin className="mr-1.5 h-4 w-4 shrink-0 text-stone-400" />
             <span className="truncate">{product.location}</span>
           </div>
 
-          <div className="mt-auto grid grid-cols-2 gap-3 border-t border-stone-100 pt-4 text-xs text-stone-500">
+          <div className="mt-auto border-t border-stone-100 pt-4 text-xs text-stone-500">
             <div className="rounded-xl bg-stone-50 px-3 py-2">
               <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-stone-400">
                 <Calendar className="h-3.5 w-3.5 text-stone-400" />
                 <span>Listed</span>
               </div>
               <span>{formatDate(product.createdAt)}</span>
-            </div>
-            <div className="rounded-xl bg-stone-50 px-3 py-2 text-right">
-              <div className="mb-1 flex items-center justify-end gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-stone-400">
-                <Eye className="h-3.5 w-3.5 text-stone-400" />
-                <span>Views</span>
-              </div>
-              <span>{product.views || 0}</span>
             </div>
           </div>
         </div>

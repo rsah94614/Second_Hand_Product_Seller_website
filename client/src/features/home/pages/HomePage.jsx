@@ -4,9 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import ProductCard from '../../../components/ProductCard.jsx';
 import {
-  TrendingUp, Star, Users, Package, Sparkles, ArrowRight,
+  Users, Package, Sparkles, ArrowRight,
   ShieldCheck, Zap, BookOpen, Cpu, Coffee, Shirt, Music, Camera, Bike, Home,
-  Car, Building, Wrench,
+  Wrench,
 } from 'lucide-react';
 import Header from '../../../components/Header.jsx';
 import Footer from '../../../components/Footer.jsx';
@@ -23,13 +23,15 @@ const fetchProducts = (params) =>
 // Category icon & color mapping
 const CATEGORY_META = {
   'Electronics': { icon: Cpu, color: 'from-blue-500 to-indigo-600', text: 'text-blue-600' },
-  'Fashion': { icon: Shirt, color: 'from-pink-500 to-rose-500', text: 'text-pink-600' },
-  'Home & Garden': { icon: Home, color: 'from-orange-500 to-amber-600', text: 'text-orange-600' },
-  'Sports': { icon: Bike, color: 'from-emerald-500 to-teal-600', text: 'text-emerald-600' },
-  'Books': { icon: BookOpen, color: 'from-amber-400 to-orange-500', text: 'text-amber-600' },
-  'Vehicles': { icon: Car, color: 'from-red-500 to-rose-600', text: 'text-red-600' },
-  'Real Estate': { icon: Building, color: 'from-violet-500 to-purple-600', text: 'text-violet-600' },
-  'Services': { icon: Wrench, color: 'from-cyan-500 to-sky-600', text: 'text-cyan-600' },
+  'Books & Study Materials': { icon: BookOpen, color: 'from-amber-400 to-orange-500', text: 'text-amber-600' },
+  'Fashion & Clothing': { icon: Shirt, color: 'from-pink-500 to-rose-500', text: 'text-pink-600' },
+  'Hostel Essentials': { icon: Home, color: 'from-orange-500 to-amber-600', text: 'text-orange-600' },
+  'Furniture & Decor': { icon: Coffee, color: 'from-stone-500 to-amber-700', text: 'text-stone-600' },
+  'Sports & Fitness': { icon: Bike, color: 'from-emerald-500 to-teal-600', text: 'text-emerald-600' },
+  'Bags & Accessories': { icon: Camera, color: 'from-fuchsia-500 to-pink-600', text: 'text-fuchsia-600' },
+  'Cycles': { icon: Bike, color: 'from-red-500 to-rose-600', text: 'text-red-600' },
+  'Academic Tools': { icon: Music, color: 'from-violet-500 to-purple-600', text: 'text-violet-600' },
+  'Student Services': { icon: Wrench, color: 'from-cyan-500 to-sky-600', text: 'text-cyan-600' },
   'Other': { icon: Package, color: 'from-slate-500 to-gray-600', text: 'text-slate-600' },
 };
 const getCategoryMeta = (name) =>
@@ -98,15 +100,9 @@ const HomePage = () => {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: trendingProducts, isLoading: trendingLoading } = useQuery({
-    queryKey: ['home-products-trending'],
-    queryFn: () => fetchProducts({ limit: 8, sortBy: 'views', sortOrder: 'desc' }),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: topRatedProducts, isLoading: ratedLoading } = useQuery({
-    queryKey: ['home-products-top-rated'],
-    queryFn: () => fetchProducts({ limit: 8, sortBy: 'averageRating', sortOrder: 'desc' }),
+  const { data: budgetProducts, isLoading: budgetLoading } = useQuery({
+    queryKey: ['home-products-budget'],
+    queryFn: () => fetchProducts({ limit: 8, sortBy: 'price', sortOrder: 'asc' }),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -160,10 +156,10 @@ const HomePage = () => {
                 CampusMitra — Marketplace 2025
               </div>
               <h1 className="max-w-2xl text-4xl font-black leading-none tracking-[-0.04em] text-white sm:text-5xl md:text-[3.5rem] animate-fade-in">
-                Discover the most wanted finds around campus.
+                Buy useful campus essentials before they are gone.
               </h1>
               <p className="mt-6 max-w-xl text-base leading-7 text-white/65 md:text-lg">
-                Search smarter, browse curated categories, and jump into premium, trending, and top-rated listings — without digging through clutter.
+                Browse category-first, check the newest listings, and grab affordable second-hand items from students around you.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
@@ -172,15 +168,15 @@ const HomePage = () => {
                     Browse All Products <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
-                <Link to="/products?sortBy=views&sortOrder=desc">
+                <Link to={user ? '/create-product' : '/register'}>
                   <Button variant="outline" className="h-12 px-7 rounded-full border-white/25 hover:text-primary-700 text-white bg-white/10">
-                    <TrendingUp className="mr-2 h-4 w-4" /> Trending
+                    {user ? 'List Your Item' : 'Start Selling'}
                   </Button>
                 </Link>
               </div>
 
               <div className="mt-10 flex flex-wrap gap-3 text-sm text-white/50">
-                {['Trending right now', 'Top rated picks', 'Recently viewed'].map((tag) => (
+                {['Fresh listings', 'Budget-friendly picks', 'Student-to-student deals'].map((tag) => (
                   <span key={tag} className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5">{tag}</span>
                 ))}
               </div>
@@ -188,8 +184,8 @@ const HomePage = () => {
 
             <div className="hidden lg:flex flex-col justify-center gap-8">
               {[
-                { icon: Zap, color: 'text-amber-300', label: 'Curated for intent', sub: 'Fresh, trending & top-rated sections surface exact what buyers want.' },
-                { icon: ShieldCheck, color: 'text-emerald-300', label: 'Ratings & trust signals', sub: 'Buyer ratings and history guide smarter purchasing decisions.' },
+                { icon: Zap, color: 'text-amber-300', label: 'Built for quick resale', sub: 'Fresh and affordable listings matter more here than popularity metrics.' },
+                { icon: ShieldCheck, color: 'text-emerald-300', label: 'Simple campus flow', sub: 'Browse by category, open a listing, and contact the seller without extra clutter.' },
               ].map((item) => (
                 <div key={item.label} className="flex gap-4">
                   <div className={`mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 ${item.color}`}>
@@ -211,7 +207,6 @@ const HomePage = () => {
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 flex items-end justify-between gap-4">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Curated Browse</p>
               <h2 className="text-3xl font-black tracking-tight text-gray-900">Browse by Category</h2>
             </div>
             <Link to="/products" className="hidden md:block">
@@ -233,7 +228,7 @@ const HomePage = () => {
                   <div className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br ${color} shadow-md transition-transform group-hover:scale-110`}>
                     <CatIcon className="h-6 w-6 text-white" />
                   </div>
-                  <span className="block font-black text-gray-900 tracking-tight text-sm group-hover:text-primary-700 transition-colors">
+                  <span className="block font-black text-gray-900 tracking-tight text-sm transition-colors">
                     {category}
                   </span>
                   <span className={`mt-1 block text-xs font-medium ${text} opacity-70`}>
@@ -258,23 +253,13 @@ const HomePage = () => {
       </SectionShell>
 
       <SectionShell
-        title="Trending Right Now"
-        description="Popular listings ranked by marketplace attention — jump into what others are viewing most."
-        icon={TrendingUp}
+        title="Budget Picks"
+        description="Affordable listings surfaced first so students can spot practical deals without digging through the full catalog."
+        icon={Zap}
         accent="text-amber-600"
-        viewAllTo="/products?sortBy=views&sortOrder=desc"
+        viewAllTo="/products?sortBy=price&sortOrder=asc"
       >
-        {renderTaggedProductGrid(trendingProducts, trendingLoading, 'Trending', 'bg-amber-500 text-white')}
-      </SectionShell>
-
-      <SectionShell
-        title="Top Rated Picks"
-        description="Products with stronger buyer feedback — surfaced to build trust and speed up decisions."
-        icon={Star}
-        accent="text-rose-500"
-        viewAllTo="/products?sortBy=averageRating&sortOrder=desc"
-      >
-        {renderTaggedProductGrid(topRatedProducts, ratedLoading, 'Top Rated', 'bg-rose-500 text-white')}
+        {renderTaggedProductGrid(budgetProducts, budgetLoading, 'Budget', 'bg-amber-500 text-white')}
       </SectionShell>
 
       {user && recentlyViewed.length > 0 && (
@@ -298,6 +283,46 @@ const HomePage = () => {
         </SectionShell>
       )}
 
+      <section className="px-4 py-8 lg:px-12">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-8 max-w-2xl">
+            <p className="mb-2 text-xs font-bold uppercase tracking-widest text-gray-400">How It Works</p>
+            <h2 className="text-3xl font-black tracking-tight text-gray-900">Why students use CampusMitra</h2>
+            <p className="mt-2 text-sm leading-relaxed text-gray-500">
+              Everything here is designed to help you find useful second-hand items quickly and contact the seller without wasting time.
+            </p>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-3">
+            {[
+              {
+                icon: Sparkles,
+                title: 'See fresh listings first',
+                description: 'Recently posted items appear up front, so you can catch good deals before someone else does.',
+              },
+              {
+                icon: Package,
+                title: 'Browse by category',
+                description: 'Jump straight to books, electronics, hostel items, furniture, and other things you actually need.',
+              },
+              {
+                icon: ShieldCheck,
+                title: 'Connect with the seller quickly',
+                description: 'Open a listing, check the essentials, and reach out directly when the item feels right for you.',
+              },
+            ].map((item) => (
+              <div key={item.title} className="rounded-3xl border border-gray-100 bg-white p-7 shadow-sm">
+                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 text-white">
+                  <item.icon className="h-6 w-6" />
+                </div>
+                <h3 className="text-xl font-black tracking-tight text-gray-900">{item.title}</h3>
+                <p className="mt-3 text-sm leading-7 text-gray-500">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── STATS BAND ── */}
       <section className="px-4 pb-20 pt-4 lg:px-12">
         <div className="mx-auto max-w-7xl">
@@ -308,7 +333,7 @@ const HomePage = () => {
               {[
                 { icon: Users, value: '100+', label: 'Active Students', color: 'text-cyan-300' },
                 { icon: Package, value: '50+', label: 'Products Listed', color: 'text-amber-300' },
-                { icon: Star, value: '4.8/5', label: 'Average Rating', color: 'text-rose-300' },
+                { icon: ShieldCheck, value: `${categories.length}+`, label: 'Browse Categories', color: 'text-emerald-300' },
               ].map((item) => (
                 <div key={item.label} className="flex flex-col items-center justify-center gap-3 py-12 px-8 text-center">
                   <div className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 ${item.color}`}>

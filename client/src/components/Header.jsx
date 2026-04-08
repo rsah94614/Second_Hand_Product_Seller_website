@@ -5,7 +5,7 @@ import axios from 'axios';
 import { io } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
-import { Search, Plus, User, LogOut, Menu, Briefcase, ShoppingCart, History, MessageCircle, LayoutDashboard, ShieldCheck, Users, FolderTree, Package, Store, Heart, Flag, Bell, CheckCheck } from 'lucide-react';
+import { Search, Plus, User, LogOut, Menu, Briefcase, ShoppingCart, History, MessageCircle, LayoutDashboard, ShieldCheck, Users, FolderTree, Package, Heart, Flag, Bell, CheckCheck } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Badge } from './ui/Badge';
@@ -228,6 +228,8 @@ const Header = () => {
   };
 
   const roleTone = user?.role === 'admin' ? 'destructive' : 'success';
+  const desktopHeaderIconClass = 'relative inline-flex h-10 w-10 items-center justify-center rounded-xl text-white/75 transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/20';
+  const mobileHeaderIconClass = 'h-9 w-9 rounded-xl text-white/75 hover:bg-white/10 hover:text-white';
 
   const primaryLinks = isAdmin
     ? [
@@ -235,7 +237,7 @@ const Header = () => {
     ]
     : isUser
       ? [
-        { to: '/products', label: 'Products', icon: Store },
+        { to: '/products', label: 'Products', icon: Package },
       ]
       : [];
 
@@ -278,9 +280,10 @@ const Header = () => {
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="flex items-center justify-center w-10 h-10 rounded-full bg-primary-100 text-primary-700 font-semibold border border-transparent shadow-sm hover:ring-2 hover:ring-primary-500/30 hover:bg-primary-200 transition-all focus:outline-none"
+            className={desktopHeaderIconClass}
+            title="Account"
           >
-            {user?.name?.[0]?.toUpperCase() || <User className="w-5 h-5" />}
+            <User className="h-5 w-5" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64 rounded-2xl p-2 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border border-gray-100 animate-soft-pop mt-2">
@@ -329,7 +332,8 @@ const Header = () => {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition-colors hover:border-primary-200 hover:text-primary-700"
+          className={desktopHeaderIconClass}
+          title="Notifications"
         >
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
@@ -482,7 +486,7 @@ const Header = () => {
                     <Link to="/cart">
                       <button
                         type="button"
-                        className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white/70 transition-colors hover:bg-white/20 hover:text-white"
+                        className={desktopHeaderIconClass}
                         title="Your Cart"
                       >
                         <ShoppingCart className="h-4 w-4" />
@@ -509,21 +513,14 @@ const Header = () => {
             {user && (
               <>
                 {!isAdmin && (
-                  <>
-                    <Link to="/cart">
-                      <Button variant="ghost" size="icon" className="text-gray-600">
-                        <ShoppingCart className="w-5 h-5" />
-                      </Button>
-                    </Link>
-                    <Link to="/chat">
-                      <Button variant="ghost" size="icon" className="text-gray-600">
-                        <MessageCircle className="w-5 h-5" />
-                      </Button>
-                    </Link>
-                  </>
+                  <Link to="/cart">
+                    <Button variant="ghost" size="icon" className={mobileHeaderIconClass}>
+                      <ShoppingCart className="w-5 h-5" />
+                    </Button>
+                  </Link>
                 )}
                 <Link to="/notifications" className="relative">
-                  <Button variant="ghost" size="icon" className="text-gray-600">
+                  <Button variant="ghost" size="icon" className={mobileHeaderIconClass}>
                     <Bell className="w-5 h-5" />
                   </Button>
                   {unreadCount > 0 && (
@@ -536,14 +533,14 @@ const Header = () => {
             )}
             <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
               <SheetTrigger asChild>
-                <button className="p-2 text-white/70 hover:text-white transition-colors rounded-lg hover:bg-white/10">
+                <button className={`${mobileHeaderIconClass} inline-flex items-center justify-center`}>
                   <Menu className="w-6 h-6" />
                 </button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[88vw] max-w-sm p-0">
                 <SheetHeader className="border-b border-gray-100 px-5 py-4">
                   <SheetTitle className="flex items-center gap-2 text-xl">
-                    <Store className="w-5 h-5 text-primary-600" />
+                    <Package className="w-5 h-5 text-primary-600" />
                     Navigation
                   </SheetTitle>
                 </SheetHeader>
@@ -551,8 +548,8 @@ const Header = () => {
                   {user ? (
                     <>
                       <div className="flex items-center gap-3 px-3 py-3 bg-gray-50 rounded-2xl mb-2 animate-fade-in">
-                        <div className="w-10 h-10 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center font-bold text-lg">
-                          {user.name?.[0] || 'U'}
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
+                          <User className="h-5 w-5" />
                         </div>
                         <div className="min-w-0">
                           <p className="font-medium text-gray-900 truncate">{user.name}</p>

@@ -1,4 +1,5 @@
 const Category = require('../models/Category');
+const Product = require('../models/Product');
 
 const DEFAULT_PRODUCT_CATEGORIES = [
   {
@@ -7,46 +8,66 @@ const DEFAULT_PRODUCT_CATEGORIES = [
     sortOrder: 1,
   },
   {
-    name: 'Fashion',
-    description: 'Clothing, footwear, watches, and accessories.',
+    name: 'Books & Study Materials',
+    description: 'Textbooks, class notes, exam prep guides, and academic reading.',
     sortOrder: 2,
   },
   {
-    name: 'Home & Garden',
-    description: 'Furniture, decor, kitchen essentials, and home care items.',
+    name: 'Fashion & Clothing',
+    description: 'Clothing, footwear, watches, and student-friendly accessories.',
     sortOrder: 3,
   },
   {
-    name: 'Sports',
-    description: 'Fitness gear, sports equipment, and outdoor essentials.',
+    name: 'Hostel Essentials',
+    description: 'Daily-use dorm and hostel items, storage, and practical room supplies.',
     sortOrder: 4,
   },
   {
-    name: 'Books',
-    description: 'Academic books, novels, and study materials.',
+    name: 'Furniture & Decor',
+    description: 'Study tables, chairs, lamps, organisers, and room decor.',
     sortOrder: 5,
   },
   {
-    name: 'Vehicles',
-    description: 'Cars, bikes, scooters, and vehicle accessories.',
+    name: 'Sports & Fitness',
+    description: 'Sports gear, gym equipment, and fitness essentials for campus life.',
     sortOrder: 6,
   },
   {
-    name: 'Real Estate',
-    description: 'Hostel spaces, rooms, flats, and accommodation listings.',
+    name: 'Bags & Accessories',
+    description: 'Backpacks, laptop bags, wallets, and everyday carry accessories.',
     sortOrder: 7,
   },
   {
-    name: 'Services',
-    description: 'Freelance, tutoring, repair, and other service offerings.',
+    name: 'Cycles',
+    description: 'Bicycles, locks, helmets, and campus commuting gear.',
     sortOrder: 8,
   },
   {
-    name: 'Other',
-    description: 'Everything else that does not fit the main groups.',
+    name: 'Academic Tools',
+    description: 'Calculators, lab tools, project kits, and academic instruments.',
     sortOrder: 9,
   },
+  {
+    name: 'Student Services',
+    description: 'Tutoring, design help, repairs, gigs, and other student-focused services.',
+    sortOrder: 10,
+  },
+  {
+    name: 'Other',
+    description: 'Everything else that does not fit the main campus-focused groups.',
+    sortOrder: 11,
+  },
 ];
+
+const LEGACY_CATEGORY_RENAMES = {
+  Books: 'Books & Study Materials',
+  Fashion: 'Fashion & Clothing',
+  'Home & Garden': 'Furniture & Decor',
+  Sports: 'Sports & Fitness',
+  Vehicles: 'Cycles',
+  'Real Estate': 'Hostel Essentials',
+  Services: 'Student Services',
+};
 
 const slugify = (value = '') =>
   value
@@ -58,11 +79,13 @@ const slugify = (value = '') =>
     .replace(/^-|-$/g, '');
 
 const ensureDefaultCategories = async () => {
+  const desiredCategoryNames = new Set(DEFAULT_PRODUCT_CATEGORIES.map((category) => category.name));
+
   const operations = DEFAULT_PRODUCT_CATEGORIES.map((category) => ({
     updateOne: {
       filter: { name: category.name },
       update: {
-        $setOnInsert: {
+        $set: {
           ...category,
           slug: slugify(category.name),
           isActive: true,
@@ -79,10 +102,24 @@ const ensureDefaultCategories = async () => {
   if (operations.length) {
     await Category.bulkWrite(operations, { ordered: false });
   }
+
+  for (const [legacyName, nextName] of Object.entries(LEGACY_CATEGORY_RENAMES)) {
+    await Product.updateMany(
+      { category: legacyName },
+      { $set: { category: nextName } }
+    );
+
+    await Category.deleteMany({ name: legacyName });
+  }
+
+  await Category.deleteMany({
+    name: { $nin: [...desiredCategoryNames] },
+  });
 };
 
 module.exports = {
   DEFAULT_PRODUCT_CATEGORIES,
+  LEGACY_CATEGORY_RENAMES,
   ensureDefaultCategories,
   slugify,
 };

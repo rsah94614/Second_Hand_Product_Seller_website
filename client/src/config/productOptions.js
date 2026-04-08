@@ -1,12 +1,14 @@
 export const DEFAULT_PRODUCT_CATEGORIES = [
   'Electronics',
-  'Fashion',
-  'Home & Garden',
-  'Sports',
-  'Books',
-  'Vehicles',
-  'Real Estate',
-  'Services',
+  'Books & Study Materials',
+  'Fashion & Clothing',
+  'Hostel Essentials',
+  'Furniture & Decor',
+  'Sports & Fitness',
+  'Bags & Accessories',
+  'Cycles',
+  'Academic Tools',
+  'Student Services',
   'Other',
 ];
 

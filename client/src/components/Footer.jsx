@@ -68,11 +68,12 @@ const Footer = () => {
             <ul className="grid grid-cols-2 gap-x-4 gap-y-3">
               {[
                 ['Electronics', 'Electronics'],
-                ['Vehicles', 'Vehicles'],
-                ['Books', 'Books'],
-                ['Fashion', 'Fashion'],
-                ['Sports', 'Sports'],
-                ['Services', 'Services'],
+                ['Books & Study Materials', 'Books'],
+                ['Fashion & Clothing', 'Fashion'],
+                ['Furniture & Decor', 'Furniture'],
+                ['Cycles', 'Cycles'],
+                ['Academic Tools', 'Academic Tools'],
+                ['Student Services', 'Services'],
               ].map(([cat, label]) => (
                 <li key={cat}>
                   <Link
