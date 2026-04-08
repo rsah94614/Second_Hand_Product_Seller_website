@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { MapPin, Calendar, Heart } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { toggleWishlist } from '../features/users/api/userApi';
+import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../lib/fallbackImages';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
 
@@ -62,12 +63,10 @@ const ProductCard = ({ product, highlightLabel = '', highlightTone = 'bg-primary
           <div className="absolute inset-x-0 top-0 h-32 bg-linear-to-b from-black/40 to-transparent z-10" />
           <div className="absolute inset-x-0 bottom-0 h-32 bg-linear-to-t from-black/50 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <img
-            src={product.images[0] || '/placeholder-image.jpg'}
+            src={product.images?.[0] || PRODUCT_FALLBACK_IMAGE}
             alt={product.title}
             className="relative z-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-            onError={(e) => {
-              e.target.src = 'https://via.placeholder.com/400x400?text=No+Image';
-            }}
+            onError={setFallbackImage}
           />
           {product.isSold && (
             <Badge variant="destructive" className="absolute right-3 top-3 z-20 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] shadow-lg">

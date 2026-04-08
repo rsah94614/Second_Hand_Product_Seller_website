@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { ShieldCheck, Search, UserCog } from 'lucide-react';
+import { ShieldCheck, Search, UserCog, Loader2 } from 'lucide-react';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import { Badge } from '../../../components/ui/Badge';
@@ -33,20 +33,26 @@ const AdminUsersPage = () => {
     status: '',
   });
 
-  const queryString = useMemo(() => {
+  const fetchUsers = async ({ pageParam = null }) => {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
-      if (value) {
-        params.set(key, value);
-      }
+      if (value) params.set(key, value);
     });
+    if (pageParam) params.set('cursor', pageParam);
     params.set('limit', '50');
-    return params.toString();
-  }, [filters]);
+    return getAdminUsers(params.toString());
+  };
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin-users', queryString],
-    queryFn: () => getAdminUsers(queryString),
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['admin-users', filters],
+    queryFn: fetchUsers,
+    getNextPageParam: (lastPage) => lastPage.nextCursor || undefined,
   });
 
   const updateUserMutation = useMutation({
@@ -61,7 +67,9 @@ const AdminUsersPage = () => {
     },
   });
 
-  const users = data?.users || [];
+  const users = useMemo(() => {
+    return data?.pages.flatMap((page) => page.users) || [];
+  }, [data]);
 
   const handleRoleChange = (userId, role) => {
     updateUserMutation.mutate({ userId, payload: { role } });
@@ -161,75 +169,97 @@ const AdminUsersPage = () => {
               ))}
             </div>
           ) : users.length ? (
-            <Table className="min-w-full">
-              <TableHeader className="bg-gray-50">
-                <TableRow>
-                  <TableHead className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-gray-500">User</TableHead>
-                  <TableHead className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-gray-500">Role</TableHead>
-                  <TableHead className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-gray-500">Status</TableHead>
-                  <TableHead className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-gray-500">Verified</TableHead>
-                  <TableHead className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-gray-500">Joined</TableHead>
-                  <TableHead className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                  {users.map((user) => {
-                    const isActive = user.isActive !== false;
+            <>
+              <Table className="min-w-full">
+                <TableHeader className="bg-gray-50">
+                  <TableRow>
+                    <TableHead className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-gray-500">User</TableHead>
+                    <TableHead className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-gray-500">Role</TableHead>
+                    <TableHead className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-gray-500">Status</TableHead>
+                    <TableHead className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-gray-500">Verified</TableHead>
+                    <TableHead className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-gray-500">Joined</TableHead>
+                    <TableHead className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {users.map((user) => {
+                      const isActive = user.isActive !== false;
 
-                    return (
-                      <TableRow key={user._id} className="hover:bg-gray-50/80">
-                        <TableCell className="px-6 py-4">
-                          <p className="font-semibold text-gray-900">{user.name}</p>
-                          <p className="text-sm text-gray-500">{user.email}</p>
-                          <p className="text-sm text-gray-500">{user.location || 'No location set'}</p>
-                        </TableCell>
-                        <TableCell className="px-6 py-4">
-                          <Select value={user.role} onValueChange={(value) => handleRoleChange(user._id, value)}>
-                            <SelectTrigger className="w-[140px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="user">User</SelectItem>
-                              <SelectItem value="admin">Admin</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell className="px-6 py-4">
-                          <Badge variant={isActive ? 'success' : 'secondary'}>
-                            {isActive ? 'Active' : 'Inactive'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="px-6 py-4">
-                          <Badge variant={user.isVerified ? 'default' : 'outline'} className={user.isVerified ? '' : 'border-amber-200 text-amber-700'}>
-                            {user.isVerified ? 'Verified' : 'Pending'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="px-6 py-4 text-sm text-gray-500">{formatDate(user.createdAt)}</TableCell>
-                        <TableCell className="px-6 py-4">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => toggleVerified(user)}
-                              disabled={updateUserMutation.isPending}
-                            >
-                              {user.isVerified ? 'Unverify' : 'Verify'}
-                            </Button>
-                            <Button
-                              variant={isActive ? 'outline' : 'primary'}
-                              size="sm"
-                              onClick={() => toggleUserActive(user)}
-                              disabled={updateUserMutation.isPending}
-                            >
-                              {isActive ? 'Deactivate' : 'Activate'}
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-              </TableBody>
-            </Table>
+                      return (
+                        <TableRow key={user._id} className="hover:bg-gray-50/80">
+                          <TableCell className="px-6 py-4">
+                            <p className="font-semibold text-gray-900">{user.name}</p>
+                            <p className="text-sm text-gray-500">{user.email}</p>
+                            <p className="text-sm text-gray-500">{user.location || 'No location set'}</p>
+                          </TableCell>
+                          <TableCell className="px-6 py-4">
+                            <Select value={user.role} onValueChange={(value) => handleRoleChange(user._id, value)}>
+                              <SelectTrigger className="w-[140px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="user">User</SelectItem>
+                                <SelectItem value="admin">Admin</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell className="px-6 py-4">
+                            <Badge variant={isActive ? 'success' : 'secondary'}>
+                              {isActive ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="px-6 py-4">
+                            <Badge variant={user.isVerified ? 'default' : 'outline'} className={user.isVerified ? '' : 'border-amber-200 text-amber-700'}>
+                              {user.isVerified ? 'Verified' : 'Pending'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="px-6 py-4 text-sm text-gray-500">{formatDate(user.createdAt)}</TableCell>
+                          <TableCell className="px-6 py-4">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => toggleVerified(user)}
+                                disabled={updateUserMutation.isPending}
+                              >
+                                {user.isVerified ? 'Unverify' : 'Verify'}
+                              </Button>
+                              <Button
+                                variant={isActive ? 'outline' : 'primary'}
+                                size="sm"
+                                onClick={() => toggleUserActive(user)}
+                                disabled={updateUserMutation.isPending}
+                              >
+                                {isActive ? 'Deactivate' : 'Activate'}
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                </TableBody>
+              </Table>
+              
+              {hasNextPage && (
+                <div className="p-6 flex justify-center border-t border-gray-100">
+                  <Button
+                    variant="outline"
+                    onClick={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                    className="min-w-[200px]"
+                  >
+                    {isFetchingNextPage ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      'Load More Users'
+                    )}
+                  </Button>
+                </div>
+              )}
+            </>
           ) : (
             <div className="p-10 text-center text-gray-500">No users matched these filters.</div>
           )}

@@ -27,6 +27,33 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  campus: {
+    collegeName: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    department: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    year: {
+      type: String,
+      enum: ['', '1st', '2nd', '3rd', '4th', '5th', 'Alumni', 'Faculty'],
+      default: ''
+    },
+    enrollmentId: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    hostel: {
+      type: String,
+      trim: true,
+      default: ''
+    }
+  },
   avatar: {
     type: String,
     default: ''
@@ -65,7 +92,10 @@ const userSchema = new mongoose.Schema({
   },
   resetPasswordExpires: {
     type: Date
-  }
+  },
+  refreshTokens: [{
+    type: String
+  }]
 }, {
   timestamps: true
 });
@@ -73,7 +103,7 @@ const userSchema = new mongoose.Schema({
 // Hash password before saving
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
-  
+
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, Phone, MapPin } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Phone, MapPin, GraduationCap, Building2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext';
 import { Input } from '../../../components/ui/Input';
@@ -15,6 +15,12 @@ const SignUpPage = () => {
     phone: '',
     location: '',
   });
+  const [campusData, setCampusData] = useState({
+    collegeName: '',
+    department: '',
+    year: '',
+    hostel: '',
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -24,6 +30,13 @@ const SignUpPage = () => {
 
   const handleChange = (e) => {
     setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
+
+  const handleCampusChange = (e) => {
+    setCampusData((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
     }));
@@ -58,6 +71,11 @@ const SignUpPage = () => {
 
     const userData = { ...formData };
     delete userData.confirmPassword;
+    // Attach campus data if any field is filled
+    const hasCampus = Object.values(campusData).some((v) => v.trim());
+    if (hasCampus) {
+      userData.campus = campusData;
+    }
     const result = await register(userData);
 
     if (result.success) {
@@ -171,6 +189,70 @@ const SignUpPage = () => {
                     placeholder="Enter your city/location"
                   />
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 w-5 h-5" />
+                </div>
+              </div>
+
+              {/* Campus Details */}
+              <div className="pt-3 border-t border-gray-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <GraduationCap className="w-4 h-4 text-primary-600" />
+                  <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Campus Details (Optional)</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <div className="relative">
+                      <Input
+                        id="collegeName"
+                        name="collegeName"
+                        type="text"
+                        value={campusData.collegeName}
+                        onChange={handleCampusChange}
+                        className="pl-10 bg-white border-gray-800 placeholder:text-gray-600 text-sm"
+                        placeholder="College / University name"
+                      />
+                      <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 w-4 h-4" />
+                    </div>
+                  </div>
+                  <div>
+                    <Input
+                      id="department"
+                      name="department"
+                      type="text"
+                      value={campusData.department}
+                      onChange={handleCampusChange}
+                      className="bg-white border-gray-800 placeholder:text-gray-600 text-sm"
+                      placeholder="Department"
+                    />
+                  </div>
+                  <div>
+                    <select
+                      id="year"
+                      name="year"
+                      value={campusData.year}
+                      onChange={handleCampusChange}
+                      className="w-full h-10 rounded-lg border border-gray-800 bg-white px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      <option value="">Select Year</option>
+                      <option value="1st">1st Year</option>
+                      <option value="2nd">2nd Year</option>
+                      <option value="3rd">3rd Year</option>
+                      <option value="4th">4th Year</option>
+                      <option value="5th">5th Year</option>
+                      <option value="Alumni">Alumni</option>
+                      <option value="Faculty">Faculty</option>
+                    </select>
+                  </div>
+                  <div className="col-span-2">
+                    <Input
+                      id="hostel"
+                      name="hostel"
+                      type="text"
+                      value={campusData.hostel}
+                      onChange={handleCampusChange}
+                      className="bg-white border-gray-800 placeholder:text-gray-600 text-sm"
+                      placeholder="Hostel name (if applicable)"
+                    />
+                  </div>
                 </div>
               </div>
 

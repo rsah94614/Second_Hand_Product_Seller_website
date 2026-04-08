@@ -6,3 +6,6 @@ export const getConversations = () =>
 
 export const getConversationMessages = (userId) =>
   axios.get(`${API_BASE_URL}/api/chat/${userId}`).then((res) => res.data);
+
+export const markConversationAsRead = (userId) =>
+  axios.patch(`${API_BASE_URL}/api/chat/mark-read/${userId}`).then((res) => res.data);

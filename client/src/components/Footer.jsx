@@ -73,7 +73,7 @@ const Footer = () => {
                 ['Furniture & Decor', 'Furniture'],
                 ['Cycles', 'Cycles'],
                 ['Academic Tools', 'Academic Tools'],
-                ['Student Services', 'Services'],
+                ['Other', 'Other'],
               ].map(([cat, label]) => (
                 <li key={cat}>
                   <Link

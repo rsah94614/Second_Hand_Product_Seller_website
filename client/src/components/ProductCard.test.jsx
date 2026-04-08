@@ -30,8 +30,6 @@ const sampleProduct = {
   location: 'Kolkata',
   createdAt: '2026-03-20T00:00:00.000Z',
   images: ['https://example.com/chair.jpg'],
-  averageRating: 4.6,
-  reviewCount: 8,
   isSold: false,
 };
 
@@ -45,7 +43,7 @@ const renderProductCard = (product = sampleProduct) => {
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
-        <ProductCard product={product} highlightLabel="Trending" />
+        <ProductCard product={product} highlightLabel="Fresh" />
       </MemoryRouter>
     </QueryClientProvider>
   );
@@ -60,19 +58,18 @@ describe('ProductCard', () => {
     renderProductCard();
 
     expect(screen.getByText('Editorial Test Chair')).toBeInTheDocument();
-    expect(screen.getByText('Trending')).toBeInTheDocument();
+    expect(screen.getByText('Fresh')).toBeInTheDocument();
     expect(screen.getByText('Furniture & Decor')).toBeInTheDocument();
     expect(screen.getByText('Good')).toBeInTheDocument();
-    expect(screen.getByText(/₹12,500/)).toBeInTheDocument();
+    expect(screen.getByText(/\u20b912,500/)).toBeInTheDocument();
     expect(screen.getByText('Kolkata')).toBeInTheDocument();
+    expect(screen.getByText('Listed')).toBeInTheDocument();
   });
 
   it('shows a sold badge when the product is unavailable', () => {
     renderProductCard({
       ...sampleProduct,
       isSold: true,
-      averageRating: 0,
-      reviewCount: 0,
     });
 
     expect(screen.getByText('SOLD')).toBeInTheDocument();

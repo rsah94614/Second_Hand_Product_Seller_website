@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
-import { Search, ShieldCheck, Trash2 } from 'lucide-react';
+import { Search, ShieldCheck, Trash2, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
@@ -19,6 +19,7 @@ import {
 } from '../../../components/ui/Select';
 import { DEFAULT_PRODUCT_CATEGORIES } from '../../../config/productOptions';
 import { API_BASE_URL } from '../../../config/api';
+import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
 import {
   deleteAdminProduct,
   getAdminProducts,
@@ -33,20 +34,26 @@ const AdminProductsPage = () => {
     status: '',
   });
 
-  const queryString = useMemo(() => {
+  const fetchProducts = async ({ pageParam = null }) => {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
-      if (value) {
-        params.set(key, value);
-      }
+      if (value) params.set(key, value);
     });
+    if (pageParam) params.set('cursor', pageParam);
     params.set('limit', '50');
-    return params.toString();
-  }, [filters]);
+    return getAdminProducts(params.toString());
+  };
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin-products', queryString],
-    queryFn: () => getAdminProducts(queryString),
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['admin-products', filters],
+    queryFn: fetchProducts,
+    getNextPageParam: (lastPage) => lastPage.nextCursor || undefined,
   });
 
   const { data: categoryResponse } = useQuery({
@@ -80,7 +87,9 @@ const AdminProductsPage = () => {
     },
   });
 
-  const products = data?.products || [];
+  const products = useMemo(() => {
+    return data?.pages.flatMap((page) => page.products) || [];
+  }, [data]);
 
   const formatPrice = (value) =>
     new Intl.NumberFormat('en-IN', {
@@ -167,88 +176,111 @@ const AdminProductsPage = () => {
               <div key={index} className="h-32 rounded-2xl bg-white border border-gray-100 animate-pulse" />
             ))
           ) : products.length ? (
-            products.map((product) => {
-              const status = getStatusLabel(product);
+            <>
+              {products.map((product) => {
+                const status = getStatusLabel(product);
 
-              return (
-                <article
-                  key={product._id}
-                  className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 animate-fade-in"
-                >
-                  <div className="flex flex-col lg:flex-row gap-6">
-                    <img
-                      src={product.images?.[0] || 'https://via.placeholder.com/160?text=Product'}
-                      alt={product.title}
-                      className="w-full lg:w-40 h-40 object-cover rounded-2xl bg-gray-100"
-                    />
-                    <div className="flex-1">
-                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                        <div>
-                          <div className="flex items-center gap-3 flex-wrap">
-                            <h2 className="text-2xl font-bold text-gray-900">{product.title}</h2>
-                            <Badge className={status.tone}>
-                              {status.label}
-                            </Badge>
+                return (
+                  <article
+                    key={product._id}
+                    className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 animate-fade-in"
+                  >
+                    <div className="flex flex-col lg:flex-row gap-6">
+                      <img
+                        src={product.images?.[0] || PRODUCT_FALLBACK_IMAGE}
+                        alt={product.title}
+                        className="w-full lg:w-40 h-40 object-cover rounded-2xl bg-gray-100"
+                        onError={setFallbackImage}
+                      />
+                      <div className="flex-1">
+                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                          <div>
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <h2 className="text-2xl font-bold text-gray-900">{product.title}</h2>
+                              <Badge className={status.tone}>
+                                {status.label}
+                              </Badge>
+                            </div>
+                            <p className="text-gray-600 mt-2">
+                              {product.category} | {product.location}
+                            </p>
+                            <p className="text-gray-500 mt-1 text-sm">
+                              Owner: {product.seller?.name || 'Unknown'} ({product.seller?.email || 'No email'})
+                            </p>
                           </div>
-                          <p className="text-gray-600 mt-2">
-                            {product.category} | {product.location}
-                          </p>
-                          <p className="text-gray-500 mt-1 text-sm">
-                            Owner: {product.seller?.name || 'Unknown'} ({product.seller?.email || 'No email'})
-                          </p>
+                          <div className="text-left md:text-right">
+                            <p className="text-2xl font-bold text-gray-900">{formatPrice(product.price)}</p>
+                            <p className="text-sm text-gray-500 mt-1">{product.views || 0} views</p>
+                          </div>
                         </div>
-                        <div className="text-left md:text-right">
-                          <p className="text-2xl font-bold text-gray-900">{formatPrice(product.price)}</p>
-                          <p className="text-sm text-gray-500 mt-1">{product.views || 0} views</p>
-                        </div>
-                      </div>
 
-                      <div className="flex flex-wrap gap-3 mt-6">
-                        <Button
-                          variant={product.isActive ? 'outline' : 'primary'}
-                          size="sm"
-                          onClick={() =>
-                            updateProductMutation.mutate({
-                              productId: product._id,
-                              payload: { isActive: !product.isActive },
-                            })
-                          }
-                          disabled={updateProductMutation.isPending}
-                        >
-                          {product.isActive ? 'Deactivate Listing' : 'Activate Listing'}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            updateProductMutation.mutate({
-                              productId: product._id,
-                              payload: { isSold: !product.isSold },
-                            })
-                          }
-                          disabled={updateProductMutation.isPending}
-                        >
-                          {product.isSold ? 'Mark Unsold' : 'Mark Sold'}
-                        </Button>
-                        <Link to={`/products/${product._id}`}>
-                          <Button variant="ghost" size="sm">View Listing</Button>
-                        </Link>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-red-600 border-red-200 hover:bg-red-50"
-                          onClick={() => deleteProductMutation.mutate(product._id)}
-                          disabled={deleteProductMutation.isPending}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
-                        </Button>
+                        <div className="flex flex-wrap gap-3 mt-6">
+                          <Button
+                            variant={product.isActive ? 'outline' : 'primary'}
+                            size="sm"
+                            onClick={() =>
+                              updateProductMutation.mutate({
+                                productId: product._id,
+                                payload: { isActive: !product.isActive },
+                              })
+                            }
+                            disabled={updateProductMutation.isPending}
+                          >
+                            {product.isActive ? 'Deactivate Listing' : 'Activate Listing'}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              updateProductMutation.mutate({
+                                productId: product._id,
+                                payload: { isSold: !product.isSold },
+                              })
+                            }
+                            disabled={updateProductMutation.isPending}
+                          >
+                            {product.isSold ? 'Mark Unsold' : 'Mark Sold'}
+                          </Button>
+                          <Link to={`/products/${product._id}`}>
+                            <Button variant="ghost" size="sm">View Listing</Button>
+                          </Link>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 border-red-200 hover:bg-red-50"
+                            onClick={() => deleteProductMutation.mutate(product._id)}
+                            disabled={deleteProductMutation.isPending}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </article>
-              );
-            })
+                  </article>
+                );
+              })}
+              
+              {hasNextPage && (
+                <div className="py-6 flex justify-center">
+                  <Button
+                    variant="outline"
+                    onClick={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                    className="min-w-[200px]"
+                  >
+                    {isFetchingNextPage ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      'Load More Products'
+                    )}
+                  </Button>
+                </div>
+              )}
+            </>
           ) : (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center text-gray-500">
               No products matched these filters.

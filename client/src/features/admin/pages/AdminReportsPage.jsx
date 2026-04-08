@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Flag, ShieldCheck } from 'lucide-react';
+import { Flag, ShieldCheck, Loader2 } from 'lucide-react';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import { Badge } from '../../../components/ui/Badge';
@@ -32,19 +32,26 @@ const AdminReportsPage = () => {
   });
   const [notesByReport, setNotesByReport] = useState({});
 
-  const queryString = useMemo(() => {
+  const fetchReports = async ({ pageParam = null }) => {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
-      if (value) {
-        params.set(key, value);
-      }
+      if (value) params.set(key, value);
     });
-    return params.toString();
-  }, [filters]);
+    if (pageParam) params.set('cursor', pageParam);
+    params.set('limit', '50');
+    return getAdminReports(params.toString());
+  };
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin-reports', queryString],
-    queryFn: () => getAdminReports(queryString),
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['admin-reports', filters],
+    queryFn: fetchReports,
+    getNextPageParam: (lastPage) => lastPage.nextCursor || undefined,
   });
 
   const updateMutation = useMutation({
@@ -59,7 +66,9 @@ const AdminReportsPage = () => {
     },
   });
 
-  const reports = data?.reports || [];
+  const reports = useMemo(() => {
+    return data?.pages.flatMap((page) => page.reports) || [];
+  }, [data]);
 
   const handleStatusChange = (reportId, status) => {
     updateMutation.mutate({
@@ -126,90 +135,112 @@ const AdminReportsPage = () => {
               <div key={index} className="h-56 rounded-2xl border border-gray-100 bg-white animate-pulse" />
             ))
           ) : reports.length ? (
-            reports.map((report) => (
-              <Card key={report._id} className="rounded-2xl border-gray-100 shadow-sm animate-fade-in">
-                <CardHeader className="border-b border-gray-100 pb-4">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                      <CardTitle className="flex items-center gap-2 text-xl">
-                        <Flag className="h-5 w-5 text-red-600" />
-                        {report.targetType === 'product' ? 'Product Report' : 'User Report'}
-                      </CardTitle>
-                      <p className="mt-2 text-sm text-gray-500">
-                        Reported on {new Date(report.createdAt).toLocaleDateString('en-IN', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
+            <>
+              {reports.map((report) => (
+                <Card key={report._id} className="rounded-2xl border-gray-100 shadow-sm animate-fade-in">
+                  <CardHeader className="border-b border-gray-100 pb-4">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2 text-xl">
+                          <Flag className="h-5 w-5 text-red-600" />
+                          {report.targetType === 'product' ? 'Product Report' : 'User Report'}
+                        </CardTitle>
+                        <p className="mt-2 text-sm text-gray-500">
+                          Reported on {new Date(report.createdAt).toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </p>
+                      </div>
+                      <Badge className={`${statusTone[report.status] || statusTone.open} border-transparent px-3 py-1`}>
+                        {report.status}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-5 p-6">
+                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Reporter</p>
+                        <p className="mt-2 font-semibold text-gray-900">{report.reporter?.name || 'Unknown'}</p>
+                        <p className="text-sm text-gray-500">{report.reporter?.email || 'No email'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Reported Owner</p>
+                        <p className="mt-2 font-semibold text-gray-900">{report.reportedUser?.name || 'Unknown'}</p>
+                        <p className="text-sm text-gray-500">{report.reportedUser?.email || 'No email'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Listing</p>
+                        <p className="mt-2 font-semibold text-gray-900">{report.product?.title || 'Listing unavailable'}</p>
+                        <p className="text-sm text-gray-500">{report.product?.category || 'No category'}</p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl bg-gray-50 p-4">
+                      <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Reason</p>
+                      <p className="mt-2 text-gray-900 font-medium">{report.reason}</p>
+                      <p className="mt-2 text-sm leading-relaxed text-gray-600">
+                        {report.details || 'No additional details provided.'}
                       </p>
                     </div>
-                    <Badge className={`${statusTone[report.status] || statusTone.open} border-transparent px-3 py-1`}>
-                      {report.status}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-5 p-6">
-                  <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Reporter</p>
-                      <p className="mt-2 font-semibold text-gray-900">{report.reporter?.name || 'Unknown'}</p>
-                      <p className="text-sm text-gray-500">{report.reporter?.email || 'No email'}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Reported Owner</p>
-                      <p className="mt-2 font-semibold text-gray-900">{report.reportedUser?.name || 'Unknown'}</p>
-                      <p className="text-sm text-gray-500">{report.reportedUser?.email || 'No email'}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Listing</p>
-                      <p className="mt-2 font-semibold text-gray-900">{report.product?.title || 'Listing unavailable'}</p>
-                      <p className="text-sm text-gray-500">{report.product?.category || 'No category'}</p>
-                    </div>
-                  </div>
 
-                  <div className="rounded-2xl bg-gray-50 p-4">
-                    <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Reason</p>
-                    <p className="mt-2 text-gray-900 font-medium">{report.reason}</p>
-                    <p className="mt-2 text-sm leading-relaxed text-gray-600">
-                      {report.details || 'No additional details provided.'}
-                    </p>
-                  </div>
+                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[220px_1fr_160px]">
+                      <Select value={report.status} onValueChange={(value) => handleStatusChange(report._id, value)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="open">Open</SelectItem>
+                          <SelectItem value="reviewed">Reviewed</SelectItem>
+                          <SelectItem value="resolved">Resolved</SelectItem>
+                          <SelectItem value="dismissed">Dismissed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Textarea
+                        value={notesByReport[report._id] ?? report.adminNotes ?? ''}
+                        onChange={(event) => setNotesByReport((prev) => ({ ...prev, [report._id]: event.target.value }))}
+                        placeholder="Add admin notes for this report"
+                        className="min-h-[88px] bg-white"
+                      />
+                      <Button
+                        className="h-fit self-start"
+                        onClick={() => updateMutation.mutate({
+                          reportId: report._id,
+                          payload: {
+                            status: report.status,
+                            adminNotes: notesByReport[report._id] ?? report.adminNotes ?? '',
+                          },
+                        })}
+                        disabled={updateMutation.isPending}
+                      >
+                        Save Notes
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
 
-                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-[220px_1fr_160px]">
-                    <Select value={report.status} onValueChange={(value) => handleStatusChange(report._id, value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="open">Open</SelectItem>
-                        <SelectItem value="reviewed">Reviewed</SelectItem>
-                        <SelectItem value="resolved">Resolved</SelectItem>
-                        <SelectItem value="dismissed">Dismissed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Textarea
-                      value={notesByReport[report._id] ?? report.adminNotes ?? ''}
-                      onChange={(event) => setNotesByReport((prev) => ({ ...prev, [report._id]: event.target.value }))}
-                      placeholder="Add admin notes for this report"
-                      className="min-h-[88px] bg-white"
-                    />
-                    <Button
-                      className="h-fit self-start"
-                      onClick={() => updateMutation.mutate({
-                        reportId: report._id,
-                        payload: {
-                          status: report.status,
-                          adminNotes: notesByReport[report._id] ?? report.adminNotes ?? '',
-                        },
-                      })}
-                      disabled={updateMutation.isPending}
-                    >
-                      Save Notes
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+              {hasNextPage && (
+                <div className="py-6 flex justify-center">
+                  <Button
+                    variant="outline"
+                    onClick={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                    className="min-w-[200px]"
+                  >
+                    {isFetchingNextPage ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      'Load More Reports'
+                    )}
+                  </Button>
+                </div>
+              )}
+            </>
           ) : (
             <Card className="rounded-2xl border-gray-100 shadow-sm">
               <CardContent className="p-10 text-center text-gray-500">

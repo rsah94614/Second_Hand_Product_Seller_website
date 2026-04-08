@@ -8,7 +8,6 @@ export const DEFAULT_PRODUCT_CATEGORIES = [
   'Bags & Accessories',
   'Cycles',
   'Academic Tools',
-  'Student Services',
   'Other',
 ];
 

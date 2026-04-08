@@ -48,14 +48,9 @@ const DEFAULT_PRODUCT_CATEGORIES = [
     sortOrder: 9,
   },
   {
-    name: 'Student Services',
-    description: 'Tutoring, design help, repairs, gigs, and other student-focused services.',
-    sortOrder: 10,
-  },
-  {
     name: 'Other',
     description: 'Everything else that does not fit the main campus-focused groups.',
-    sortOrder: 11,
+    sortOrder: 10,
   },
 ];
 
@@ -66,7 +61,8 @@ const LEGACY_CATEGORY_RENAMES = {
   Sports: 'Sports & Fitness',
   Vehicles: 'Cycles',
   'Real Estate': 'Hostel Essentials',
-  Services: 'Student Services',
+  Services: 'Other',
+  'Student Services': 'Other',
 };
 
 const slugify = (value = '') =>

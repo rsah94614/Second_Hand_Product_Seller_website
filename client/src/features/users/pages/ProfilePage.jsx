@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { User, Mail, Phone, MapPin, Edit, Save, X, ShieldCheck, LogOut } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Edit, Save, X, ShieldCheck, LogOut, GraduationCap, Building2, CheckCircle2, BadgeCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext';
-import Header from '../../../components/Header';
-import Footer from '../../../components/Footer';
+import { PageShell } from '../../../components/layout/PageShell';
+import { Avatar } from '../../../components/ui/Avatar';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
 import { Card, CardContent } from '../../../components/ui/Card';
@@ -19,6 +19,13 @@ const ProfilePage = () => {
     phone: user?.phone || '',
     location: user?.location || '',
   });
+  const [campusForm, setCampusForm] = useState({
+    collegeName: user?.campus?.collegeName || '',
+    department: user?.campus?.department || '',
+    year: user?.campus?.year || '',
+    enrollmentId: user?.campus?.enrollmentId || '',
+    hostel: user?.campus?.hostel || '',
+  });
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -27,9 +34,16 @@ const ProfilePage = () => {
     }));
   };
 
+  const handleCampusFormChange = (e) => {
+    setCampusForm((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
+
   const handleSave = async () => {
     try {
-      await updateUserProfile(user.id, formData);
+      await updateUserProfile(user.id, { ...formData, campus: campusForm });
       toast.success('Profile updated successfully!');
       setIsEditing(false);
       window.location.reload();
@@ -44,6 +58,13 @@ const ProfilePage = () => {
       email: user?.email || '',
       phone: user?.phone || '',
       location: user?.location || '',
+    });
+    setCampusForm({
+      collegeName: user?.campus?.collegeName || '',
+      department: user?.campus?.department || '',
+      year: user?.campus?.year || '',
+      enrollmentId: user?.campus?.enrollmentId || '',
+      hostel: user?.campus?.hostel || '',
     });
     setIsEditing(false);
   };
@@ -63,19 +84,21 @@ const ProfilePage = () => {
     : '?';
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ec_0%,#f8fafc_24%,#f8fafc_100%)]">
-      <Header />
-      <div className="max-w-3xl mx-auto px-4 py-12">
+    <PageShell maxWidth="max-w-3xl">
+      <div className="py-12">
 
         {/* Profile Hero */}
         <div className="relative overflow-hidden rounded-4xl mb-6 bg-slate-900 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.2)]">
           <div className="absolute inset-0 bg-linear-to-br from-primary-900 via-indigo-900 to-blue-950 opacity-90" />
           <div className="absolute top-0 right-0 w-60 h-60 rounded-full bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] from-cyan-400/20 via-transparent to-transparent blur-3xl" />
-          <div className="relative z-10 p-8 flex items-center gap-6">
-            <div className="w-20 h-20 rounded-2xl bg-linear-to-br from-primary-400/30 to-indigo-400/20 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white text-3xl font-black shrink-0 shadow-xl">
-              {initials}
-            </div>
-            <div>
+          <div className="relative z-10 p-8 flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-6">
+            <Avatar 
+              src={user.avatar} 
+              fallback={user.name} 
+              size="2xl" 
+              className="border-4 border-white/20 shadow-xl" 
+            />
+          <div>
               <div className="flex items-center gap-2 mb-1">
                 <Badge
                   className={`text-xs font-bold px-3 py-1 border-0 ${
@@ -87,9 +110,26 @@ const ProfilePage = () => {
                   <ShieldCheck className="w-3 h-3 mr-1" />
                   {user.role}
                 </Badge>
+                {user.isVerified ? (
+                  <Badge className="text-xs font-bold px-3 py-1 border-0 bg-emerald-500/20 text-emerald-200 backdrop-blur-sm">
+                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                    Campus Verified
+                  </Badge>
+                ) : (
+                  <Badge className="text-xs font-bold px-3 py-1 border-0 bg-amber-500/20 text-amber-200 backdrop-blur-sm">
+                    Unverified
+                  </Badge>
+                )}
               </div>
               <h1 className="text-3xl font-black text-white tracking-tight">{user.name}</h1>
               <p className="text-primary-200/70 text-sm mt-0.5">{user.email}</p>
+              {user.campus?.collegeName && (
+                <p className="text-white/50 text-xs mt-1 flex items-center gap-1">
+                  <Building2 className="w-3 h-3" />
+                  {user.campus.collegeName}
+                  {user.campus.department && ` · ${user.campus.department}`}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -196,9 +236,79 @@ const ProfilePage = () => {
             </div>
           </CardContent>
         </Card>
+        {/* Campus Identity Card */}
+        <Card className="rounded-4xl border border-gray-100 shadow-sm animate-fade-in mt-6">
+          <CardContent className="p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                <GraduationCap className="w-5 h-5 text-indigo-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-gray-900 tracking-tight">Campus Identity</h2>
+                <p className="text-gray-500 text-sm">Your academic profile</p>
+              </div>
+            </div>
+
+            {isEditing ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">College / University</label>
+                  <Input name="collegeName" value={campusForm.collegeName} onChange={handleCampusFormChange} placeholder="e.g. Gauhati University" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Department</label>
+                  <Input name="department" value={campusForm.department} onChange={handleCampusFormChange} placeholder="e.g. Computer Science" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Year</label>
+                  <select name="year" value={campusForm.year} onChange={handleCampusFormChange}
+                    className="w-full h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="">Select Year</option>
+                    <option value="1st">1st Year</option>
+                    <option value="2nd">2nd Year</option>
+                    <option value="3rd">3rd Year</option>
+                    <option value="4th">4th Year</option>
+                    <option value="5th">5th Year</option>
+                    <option value="Alumni">Alumni</option>
+                    <option value="Faculty">Faculty</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Enrollment ID</label>
+                  <Input name="enrollmentId" value={campusForm.enrollmentId} onChange={handleCampusFormChange} placeholder="e.g. GU2023CS042" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Hostel</label>
+                  <Input name="hostel" value={campusForm.hostel} onChange={handleCampusFormChange} placeholder="e.g. PG Boys Hostel" />
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  { label: 'College', value: user.campus?.collegeName, icon: Building2 },
+                  { label: 'Department', value: user.campus?.department, icon: GraduationCap },
+                  { label: 'Year', value: user.campus?.year, icon: BadgeCheck },
+                  { label: 'Enrollment ID', value: user.campus?.enrollmentId, icon: ShieldCheck },
+                  { label: 'Hostel', value: user.campus?.hostel, icon: MapPin },
+                ].map((field) => (
+                  <div key={field.label} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50/60 border border-gray-100">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0 mt-0.5">
+                      <field.icon className="w-4 h-4 text-indigo-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-gray-400">{field.label}</p>
+                      <p className="text-gray-900 font-semibold text-sm mt-0.5">{field.value || 'Not provided'}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
       </div>
-      <Footer />
-    </div>
+    </PageShell>
   );
 };
 

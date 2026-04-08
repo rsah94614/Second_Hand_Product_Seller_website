@@ -13,6 +13,7 @@ import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import { Button } from '../../../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
+import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
 
 const CartPage = () => {
   const { user } = useAuth();
@@ -173,10 +174,11 @@ const CartPage = () => {
                       <img
                         src={
                           item.product?.images?.[0] ||
-                          'https://via.placeholder.com/150'
+                          PRODUCT_FALLBACK_IMAGE
                         }
                         alt={item.product?.title}
                         className="w-full h-full object-cover rounded-xl"
+                        onError={setFallbackImage}
                       />
                     </div>
                     <div className="flex-1 flex flex-col justify-between">

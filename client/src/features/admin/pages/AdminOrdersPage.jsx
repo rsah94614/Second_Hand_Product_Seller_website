@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import {
   PackageCheck,
@@ -7,12 +7,14 @@ import {
   ShieldCheck,
   Truck,
   User,
+  Loader2,
 } from 'lucide-react';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import { Badge } from '../../../components/ui/Badge';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
+import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
 import {
   Select,
   SelectContent,
@@ -36,20 +38,27 @@ const AdminOrdersPage = () => {
     status: '',
   });
 
-  const queryString = useMemo(() => {
+  const fetchOrders = async ({ pageParam = null }) => {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
-      if (value) {
-        params.set(key, value);
-      }
+      if (value) params.set(key, value);
     });
+    if (pageParam) params.set('cursor', pageParam);
     params.set('limit', '50');
-    return params.toString();
-  }, [filters]);
+    return getAdminOrders(params.toString());
+  };
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['admin-orders', queryString],
-    queryFn: () => getAdminOrders(queryString),
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+    error,
+  } = useInfiniteQuery({
+    queryKey: ['admin-orders', filters],
+    queryFn: fetchOrders,
+    getNextPageParam: (lastPage) => lastPage.nextCursor || undefined,
   });
 
   const updateOrderMutation = useMutation({
@@ -64,7 +73,9 @@ const AdminOrdersPage = () => {
     },
   });
 
-  const orders = data?.orders || [];
+  const orders = useMemo(() => {
+    return data?.pages.flatMap((page) => page.orders) || [];
+  }, [data]);
 
   const formatPrice = (value = 0) =>
     new Intl.NumberFormat('en-IN', {
@@ -140,133 +151,156 @@ const AdminOrdersPage = () => {
               <div key={index} className="h-44 rounded-2xl bg-white border border-gray-100 animate-pulse" />
             ))
           ) : orders.length ? (
-            orders.map((order) => (
-              <article
-                key={order._id}
-                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 animate-fade-in"
-              >
-                <div className="flex flex-col xl:flex-row xl:items-start gap-6">
-                  <div className="flex-1">
-                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <h2 className="text-2xl font-bold text-gray-900">
-                            #{order._id.slice(-6).toUpperCase()}
-                          </h2>
-                          <Badge className={statusStyles[order.status] || statusStyles.processing}>
-                            {order.status}
-                          </Badge>
+            <>
+              {orders.map((order) => (
+                <article
+                  key={order._id}
+                  className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 animate-fade-in"
+                >
+                  <div className="flex flex-col xl:flex-row xl:items-start gap-6">
+                    <div className="flex-1">
+                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                        <div>
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <h2 className="text-2xl font-bold text-gray-900">
+                              #{order._id.slice(-6).toUpperCase()}
+                            </h2>
+                            <Badge className={statusStyles[order.status] || statusStyles.processing}>
+                              {order.status}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-gray-500 mt-2">
+                            Placed on {formatDate(order.createdAt || order.placedAt)}
+                          </p>
                         </div>
-                        <p className="text-sm text-gray-500 mt-2">
-                          Placed on {formatDate(order.createdAt || order.placedAt)}
-                        </p>
-                      </div>
-                      <div className="text-left md:text-right">
-                        <p className="text-2xl font-bold text-gray-900">{formatPrice(order.total)}</p>
-                        <p className="text-sm text-gray-500 mt-1">{order.items?.length || 0} item(s)</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
-                      <div className="rounded-2xl border border-gray-100 p-4">
-                        <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">User</p>
-                        <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center">
-                            <User className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-gray-900">{order.user?.name || 'Unknown user'}</p>
-                            <p className="text-sm text-gray-500">{order.user?.email || 'No email'}</p>
-                            {order.user?.phone && <p className="text-sm text-gray-500">{order.user.phone}</p>}
-                          </div>
+                        <div className="text-left md:text-right">
+                          <p className="text-2xl font-bold text-gray-900">{formatPrice(order.total)}</p>
+                          <p className="text-sm text-gray-500 mt-1">{order.items?.length || 0} item(s)</p>
                         </div>
                       </div>
 
-                      <div className="rounded-2xl border border-gray-100 p-4 lg:col-span-2">
-                        <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Items</p>
-                        <div className="space-y-3">
-                          {(order.items || []).map((item, index) => (
-                            <div key={`${order._id}-${index}`} className="flex items-center gap-3">
-                              <img
-                                src={item.image || 'https://via.placeholder.com/60?text=Item'}
-                                alt={item.title}
-                                className="w-14 h-14 rounded-xl object-cover bg-gray-100"
-                              />
-                              <div className="flex-1">
-                                <p className="font-medium text-gray-900">{item.title}</p>
-                                <p className="text-sm text-gray-500">
-                                  Qty {item.quantity} | {formatPrice(item.price)}
-                                </p>
-                              </div>
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
+                        <div className="rounded-2xl border border-gray-100 p-4">
+                          <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">User</p>
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center">
+                              <User className="w-4 h-4" />
                             </div>
-                          ))}
+                            <div>
+                              <p className="font-semibold text-gray-900">{order.user?.name || 'Unknown user'}</p>
+                              <p className="text-sm text-gray-500">{order.user?.email || 'No email'}</p>
+                              {order.user?.phone && <p className="text-sm text-gray-500">{order.user.phone}</p>}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-gray-100 p-4 lg:col-span-2">
+                          <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Items</p>
+                          <div className="space-y-3">
+                            {(order.items || []).map((item, index) => (
+                              <div key={`${order._id}-${index}`} className="flex items-center gap-3">
+                                <img
+                                  src={item.image || PRODUCT_FALLBACK_IMAGE}
+                                  alt={item.title}
+                                  className="w-14 h-14 rounded-xl object-cover bg-gray-100"
+                                  onError={setFallbackImage}
+                                />
+                                <div className="flex-1">
+                                  <p className="font-medium text-gray-900">{item.title}</p>
+                                  <p className="text-sm text-gray-500">
+                                    Qty {item.quantity} | {formatPrice(item.price)}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {order.shippingDetails?.fullName && (
+                        <div className="rounded-2xl border border-gray-100 p-4 mt-4">
+                          <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Shipping</p>
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center">
+                              <Truck className="w-4 h-4" />
+                            </div>
+                            <div className="text-sm text-gray-700">
+                              <p className="font-semibold text-gray-900">{order.shippingDetails.fullName}</p>
+                              {order.shippingDetails.phone && <p>{order.shippingDetails.phone}</p>}
+                              {order.shippingDetails.email && <p>{order.shippingDetails.email}</p>}
+                              <p>
+                                {[
+                                  order.shippingDetails.addressLine1,
+                                  order.shippingDetails.addressLine2,
+                                  order.shippingDetails.landmark,
+                                ].filter(Boolean).join(', ')}
+                              </p>
+                              <p>
+                                {[
+                                  order.shippingDetails.city,
+                                  order.shippingDetails.state,
+                                  order.shippingDetails.postalCode,
+                                  order.shippingDetails.country,
+                                ].filter(Boolean).join(', ')}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="xl:w-64 rounded-2xl border border-gray-100 p-4 h-fit">
+                      <div className="flex items-center gap-2 text-gray-900 font-semibold mb-4">
+                        <PackageCheck className="w-4 h-4 text-primary-600" />
+                        Update Status
+                      </div>
+                      <div className="space-y-3">
+                        <Select
+                          value={order.status}
+                          onValueChange={(value) =>
+                            updateOrderMutation.mutate({ orderId: order._id, status: value })
+                          }
+                          disabled={updateOrderMutation.isPending}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="processing">Processing</SelectItem>
+                            <SelectItem value="shipped">Shipped</SelectItem>
+                            <SelectItem value="delivered">Delivered</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <div className="rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-600">
+                          Admin can manage fulfillment state across the platform from here.
                         </div>
                       </div>
                     </div>
-
-                    {order.shippingDetails?.fullName && (
-                      <div className="rounded-2xl border border-gray-100 p-4 mt-4">
-                        <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Shipping</p>
-                        <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center">
-                            <Truck className="w-4 h-4" />
-                          </div>
-                          <div className="text-sm text-gray-700">
-                            <p className="font-semibold text-gray-900">{order.shippingDetails.fullName}</p>
-                            {order.shippingDetails.phone && <p>{order.shippingDetails.phone}</p>}
-                            {order.shippingDetails.email && <p>{order.shippingDetails.email}</p>}
-                            <p>
-                              {[
-                                order.shippingDetails.addressLine1,
-                                order.shippingDetails.addressLine2,
-                                order.shippingDetails.landmark,
-                              ].filter(Boolean).join(', ')}
-                            </p>
-                            <p>
-                              {[
-                                order.shippingDetails.city,
-                                order.shippingDetails.state,
-                                order.shippingDetails.postalCode,
-                                order.shippingDetails.country,
-                              ].filter(Boolean).join(', ')}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                  </div>
+                </article>
+              ))}
+              
+              {hasNextPage && (
+                <div className="py-6 flex justify-center">
+                  <Button
+                    variant="outline"
+                    onClick={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                    className="min-w-[200px]"
+                  >
+                    {isFetchingNextPage ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      'Load More Orders'
                     )}
-                  </div>
-
-                  <div className="xl:w-64 rounded-2xl border border-gray-100 p-4 h-fit">
-                    <div className="flex items-center gap-2 text-gray-900 font-semibold mb-4">
-                      <PackageCheck className="w-4 h-4 text-primary-600" />
-                      Update Status
-                    </div>
-                    <div className="space-y-3">
-                      <Select
-                        value={order.status}
-                        onValueChange={(value) =>
-                          updateOrderMutation.mutate({ orderId: order._id, status: value })
-                        }
-                        disabled={updateOrderMutation.isPending}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="processing">Processing</SelectItem>
-                          <SelectItem value="shipped">Shipped</SelectItem>
-                          <SelectItem value="delivered">Delivered</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <div className="rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-600">
-                        Admin can manage fulfillment state across the platform from here.
-                      </div>
-                    </div>
-                  </div>
+                  </Button>
                 </div>
-              </article>
-            ))
+              )}
+            </>
           ) : (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center text-gray-500">
               No orders matched these filters.

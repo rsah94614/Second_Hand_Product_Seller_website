@@ -25,6 +25,7 @@ import AdminProductsPage from '../features/admin/pages/AdminProductsPage';
 import AdminCategoriesPage from '../features/admin/pages/AdminCategoriesPage';
 import AdminOrdersPage from '../features/admin/pages/AdminOrdersPage';
 import AdminReportsPage from '../features/admin/pages/AdminReportsPage';
+import AdminAuditLogsPage from '../features/admin/pages/AdminAuditLogsPage';
 
 const AppRouter = () => (
   <Routes>
@@ -46,6 +47,7 @@ const AppRouter = () => (
     <Route path="/admin/categories" element={<ProtectedRoute allowedRoles={['admin']}><AdminCategoriesPage /></ProtectedRoute>} />
     <Route path="/admin/orders" element={<ProtectedRoute allowedRoles={['admin']}><AdminOrdersPage /></ProtectedRoute>} />
     <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={['admin']}><AdminReportsPage /></ProtectedRoute>} />
+    <Route path="/admin/audit-logs" element={<ProtectedRoute allowedRoles={['admin']}><AdminAuditLogsPage /></ProtectedRoute>} />
     <Route path="/create-product" element={<ProtectedRoute allowedRoles={['user']}><CreateProductPage /></ProtectedRoute>} />
     <Route path="/edit-product/:id" element={<ProtectedRoute allowedRoles={['user']}><EditProductPage /></ProtectedRoute>} />
     <Route path="/my-products" element={<ProtectedRoute allowedRoles={['user']}><MyProductsPage /></ProtectedRoute>} />

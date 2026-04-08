@@ -6,10 +6,9 @@ import ProductCard from '../../../components/ProductCard.jsx';
 import {
   Users, Package, Sparkles, ArrowRight,
   ShieldCheck, Zap, BookOpen, Cpu, Coffee, Shirt, Music, Camera, Bike, Home,
-  Wrench,
 } from 'lucide-react';
-import Header from '../../../components/Header.jsx';
-import Footer from '../../../components/Footer.jsx';
+import { PageShell } from '../../../components/layout/PageShell.jsx';
+import { Skeleton } from '../../../components/ui/Skeleton.jsx';
 import { Button } from '../../../components/ui/Button.jsx';
 import { API_BASE_URL } from '../../../config/api.js';
 import { DEFAULT_PRODUCT_CATEGORIES } from '../../../config/productOptions.js';
@@ -31,7 +30,6 @@ const CATEGORY_META = {
   'Bags & Accessories': { icon: Camera, color: 'from-fuchsia-500 to-pink-600', text: 'text-fuchsia-600' },
   'Cycles': { icon: Bike, color: 'from-red-500 to-rose-600', text: 'text-red-600' },
   'Academic Tools': { icon: Music, color: 'from-violet-500 to-purple-600', text: 'text-violet-600' },
-  'Student Services': { icon: Wrench, color: 'from-cyan-500 to-sky-600', text: 'text-cyan-600' },
   'Other': { icon: Package, color: 'from-slate-500 to-gray-600', text: 'text-slate-600' },
 };
 const getCategoryMeta = (name) =>
@@ -67,12 +65,14 @@ const SectionShell = ({ title, description, icon, accent = 'text-primary-600', v
 const SkeletonGrid = () => (
   <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
     {[...Array(8)].map((_, i) => (
-      <div key={i} className="overflow-hidden rounded-[1.75rem] bg-white shadow-sm animate-pulse">
-        <div className="aspect-4/3 bg-gray-100" />
+      <div key={i} className="overflow-hidden rounded-[1.75rem] bg-white shadow-sm border border-gray-100">
+        <div className="aspect-4/3 w-full bg-gray-50 flex items-center justify-center">
+          <Skeleton className="w-full h-full" />
+        </div>
         <div className="space-y-3 p-5">
-          <div className="h-4 rounded-full bg-gray-100 w-1/3" />
-          <div className="h-5 rounded-full bg-gray-100" />
-          <div className="h-7 rounded-full bg-gray-100 w-2/3" />
+          <Skeleton variant="text" width="40%" height="0.75rem" />
+          <Skeleton variant="text" width="100%" height="1.25rem" />
+          <Skeleton variant="text" width="60%" height="1.5rem" />
         </div>
       </div>
     ))}
@@ -134,12 +134,12 @@ const HomePage = () => {
     );
 
   const recentlyViewed = (recentlyViewedResponse?.products || []).slice(0, 4);
+  const liveListingCount = latestProducts?.total ?? 0;
+  const budgetPickCount = budgetProducts?.products?.length ?? 0;
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ec_0%,#f8fafc_28%,#f8fafc_100%)]">
-      <Header />
-
-      {/* ── HERO ── */}
+    <PageShell maxWidth="max-w-none" containerClassName="px-0 pb-0">
+      {/* ── HERO SECTION ── */}
       <section className="relative overflow-hidden px-4 pb-10 pt-8 lg:px-12">
         <div className="mx-auto max-w-7xl overflow-hidden rounded-4xl bg-slate-900 shadow-[0_30px_90px_-15px_rgba(15,23,42,0.28)] relative">
           {/* Gradient base */}
@@ -153,7 +153,7 @@ const HomePage = () => {
             <div>
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white/80 backdrop-blur-sm">
                 <span className="flex h-2 w-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_6px_rgba(34,211,238,0.8)]" />
-                CampusMitra — Marketplace 2025
+                CampusMitra Marketplace
               </div>
               <h1 className="max-w-2xl text-4xl font-black leading-none tracking-[-0.04em] text-white sm:text-5xl md:text-[3.5rem] animate-fade-in">
                 Buy useful campus essentials before they are gone.
@@ -232,7 +232,7 @@ const HomePage = () => {
                     {category}
                   </span>
                   <span className={`mt-1 block text-xs font-medium ${text} opacity-70`}>
-                    Browse listings →
+                    Browse listings <ArrowRight className="inline-block h-3 w-3" />
                   </span>
                 </button>
               );
@@ -331,8 +331,8 @@ const HomePage = () => {
             <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] from-cyan-400/15 via-transparent to-transparent blur-3xl" />
             <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-white/10">
               {[
-                { icon: Users, value: '100+', label: 'Active Students', color: 'text-cyan-300' },
-                { icon: Package, value: '50+', label: 'Products Listed', color: 'text-amber-300' },
+                { icon: Users, value: `${liveListingCount}+`, label: 'Live Listings', color: 'text-cyan-300' },
+                { icon: Package, value: `${budgetPickCount}`, label: 'Budget Picks', color: 'text-amber-300' },
                 { icon: ShieldCheck, value: `${categories.length}+`, label: 'Browse Categories', color: 'text-emerald-300' },
               ].map((item) => (
                 <div key={item.label} className="flex flex-col items-center justify-center gap-3 py-12 px-8 text-center">
@@ -348,8 +348,7 @@ const HomePage = () => {
         </div>
       </section>
 
-      <Footer />
-    </div>
+    </PageShell>
   );
 };
 

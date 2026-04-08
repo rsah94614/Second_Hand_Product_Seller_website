@@ -1,5 +1,22 @@
 const mongoose = require('mongoose');
 
+const CAMPUS_LOCATIONS = [
+  'Main Gate',
+  'Library',
+  'Boys Hostel',
+  'Girls Hostel',
+  'Canteen',
+  'Department Building',
+  'Sports Complex',
+  'Parking Area',
+  'Student Union',
+  'Admin Block',
+  'Academic Building',
+  'Lab Complex',
+  'Auditorium',
+  'Other',
+];
+
 const reviewSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
@@ -100,3 +117,4 @@ const productSchema = new mongoose.Schema({
 productSchema.index({ title: 'text', description: 'text', category: 'text' });
 
 module.exports = mongoose.model('Product', productSchema);
+module.exports.CAMPUS_LOCATIONS = CAMPUS_LOCATIONS;

@@ -7,7 +7,7 @@ import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import Header from '../../../components/Header';
 import { SOCKET_URL } from '../../../config/api';
-import { getConversationMessages, getConversations } from '../api/chatApi';
+import { getConversationMessages, getConversations, markConversationAsRead } from '../api/chatApi';
 
 function ChatPage() {
   const { user } = useAuth();
@@ -18,6 +18,7 @@ function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [showMobileChat, setShowMobileChat] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState({});
   const scrollRef = useRef();
 
   useEffect(() => {
@@ -92,37 +93,78 @@ function ChatPage() {
             );
           });
 
-          if (exists) {
-            return prev;
-          }
-
+          if (exists) return prev;
           return [...prev, message];
         });
+        
+        // Mark read immediately if we are viewing the chat
+        if (messageSenderId === currentChat._id) {
+          markConversationAsRead(currentChat._id).catch(console.error);
+        }
+      } else {
+        // Increment unread count for the other conversation
+        setConversations((prev) => prev.map((conv) => {
+          if (conv._id === messageSenderId) {
+            return {
+              ...conv,
+              lastMessage: message.content,
+              timestamp: message.timestamp,
+              unreadCount: (conv.unreadCount || 0) + 1
+            };
+          }
+          return conv;
+        }));
       }
 
       fetchConversations();
     };
 
     socket.on('receive_message', handleReceiveMessage);
+    
+    socket.on('presence_batch', (presenceData) => {
+      setOnlineUsers((prev) => ({ ...prev, ...presenceData }));
+    });
+
+    socket.on('user_online', ({ userId }) => {
+      setOnlineUsers((prev) => ({ ...prev, [userId]: true }));
+    });
+
+    socket.on('user_offline', ({ userId }) => {
+      setOnlineUsers((prev) => ({ ...prev, [userId]: false }));
+    });
 
     return () => {
       socket.off('receive_message', handleReceiveMessage);
+      socket.off('presence_batch');
+      socket.off('user_online');
+      socket.off('user_offline');
     };
   }, [socket, currentChat, user]);
 
   useEffect(() => {
+    if (socket && conversations.length > 0) {
+      const userIds = conversations.map(c => c._id);
+      socket.emit('get_presence', userIds);
+    }
+  }, [socket, conversations]);
+
+  useEffect(() => {
     const fetchMessages = async () => {
-      if (!currentChat) {
-        return;
-      }
+      if (!currentChat) return;
 
       try {
-        if (!localStorage.getItem('token')) {
-          return;
-        }
+        if (!localStorage.getItem('token')) return;
 
         const response = await getConversationMessages(currentChat._id);
         setMessages(response);
+        
+        // Optimistic clear unread
+        setConversations(prev => prev.map(conv => 
+          conv._id === currentChat._id ? { ...conv, unreadCount: 0 } : conv
+        ));
+        
+        // Mark as read in backend
+        await markConversationAsRead(currentChat._id);
       } catch (error) {
         console.error('Error fetching messages:', error);
       }
@@ -208,31 +250,43 @@ function ChatPage() {
                 <div
                   key={conversation._id}
                   onClick={() => handleChatSelect(conversation)}
-                  className={`p-3 rounded-xl cursor-pointer flex items-center gap-3 transition-all duration-200 group ${
+                  className={`p-3 rounded-xl cursor-pointer flex items-center gap-3 transition-all duration-200 group relative ${
                     currentChat?._id === conversation._id
                       ? 'bg-primary-50 shadow-sm border border-primary-100'
                       : 'hover:bg-white hover:shadow-sm border border-transparent'
                   }`}
                 >
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold shadow-sm transition-colors ${
-                    currentChat?._id === conversation._id
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-white text-primary-600 border border-primary-100 group-hover:border-primary-200'
-                  }`}>
-                    {conversation.name ? conversation.name[0].toUpperCase() : '?'}
+                  <div className="relative">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold shadow-sm transition-colors ${
+                      currentChat?._id === conversation._id
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-white text-primary-600 border border-primary-100 group-hover:border-primary-200'
+                    }`}>
+                      {conversation.name ? conversation.name[0].toUpperCase() : '?'}
+                    </div>
+                    {onlineUsers[conversation._id] && (
+                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></div>
+                    )}
                   </div>
                   <div className="overflow-hidden flex-1">
                     <div className="flex justify-between items-center">
                       <p className={`font-semibold truncate ${currentChat?._id === conversation._id ? 'text-primary-900' : 'text-gray-700'}`}>
                         {conversation.name}
                       </p>
-                      {conversation.timestamp && (
-                        <span className="text-[10px] text-gray-400">
-                          {new Date(conversation.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      )}
+                      <div className="flex flex-col items-end">
+                        {conversation.timestamp && (
+                          <span className="text-[10px] text-gray-400">
+                            {new Date(conversation.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        )}
+                        {conversation.unreadCount > 0 && currentChat?._id !== conversation._id && (
+                          <div className="mt-1 bg-primary-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-5 text-center shadow-sm">
+                            {Math.min(conversation.unreadCount, 99)}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-500 truncate">
+                    <p className={`text-xs truncate ${conversation.unreadCount > 0 && currentChat?._id !== conversation._id ? 'text-gray-800 font-semibold' : 'text-gray-500'}`}>
                       {conversation.lastMessage || 'Click to start chatting'}
                     </p>
                   </div>
@@ -262,15 +316,26 @@ function ChatPage() {
                       <ArrowLeft className="w-5 h-5 text-gray-700" />
                     </button>
 
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white flex items-center justify-center font-bold shadow-md">
-                      {currentChat.name ? currentChat.name[0].toUpperCase() : '?'}
+                    <div className="relative">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white flex items-center justify-center font-bold shadow-md">
+                        {currentChat.name ? currentChat.name[0].toUpperCase() : '?'}
+                      </div>
+                      {onlineUsers[currentChat._id] && (
+                        <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full" />
+                      )}
                     </div>
                     <div>
                       <h3 className="font-bold text-gray-800">{currentChat.name}</h3>
-                      <div className="flex items-center gap-1 text-xs text-green-500">
-                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                        Online
-                      </div>
+                      {onlineUsers[currentChat._id] ? (
+                        <div className="flex items-center gap-1 text-xs text-emerald-500 font-medium">
+                          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                          Online
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-xs text-gray-400">
+                          Offline
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="hidden md:flex gap-2 text-gray-400">

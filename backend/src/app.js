@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -63,6 +64,24 @@ const createApp = () => {
   app.use(cors({ origin: clientUrl, credentials: true }));
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+  app.use(cookieParser());
+
+  // Observability: Log all incoming requests
+  const requestLogger = require('./shared/middleware/requestLogger.middleware');
+  app.use(requestLogger);
+
+  // Health check endpoint
+  app.get('/health', (req, res) => {
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+    });
+  });
+  // Rate Limiting
+  const { apiLimiter } = require('./shared/middleware/rateLimiter.middleware');
+  app.use('/api', apiLimiter);
 
   app.use('/api/auth', require('./modules/auth/auth.route'));
   app.use('/api/products', require('./modules/products/product.route'));
@@ -74,10 +93,34 @@ const createApp = () => {
   app.use('/api/categories', require('./modules/categories/category.route'));
   app.use('/api/notifications', require('./modules/notifications/notification.route'));
 
+  // Global Error Handler
+  const errorHandler = require('./shared/middleware/error.middleware');
+  app.use(errorHandler);
+
+  // Presence Tracking
+  const onlineUsers = new Map();
+
   io.on('connection', (socket) => {
     const userId = socket.user._id.toString();
     socket.join(userId);
-    console.log('User connected:', socket.id, 'User:', userId);
+    
+    // Add to presence map via Set
+    if (!onlineUsers.has(userId)) {
+      onlineUsers.set(userId, new Set());
+    }
+    onlineUsers.get(userId).add(socket.id);
+    
+    // Broadcast presence update
+    io.emit('user_online', { userId });
+    console.log(`User connected: ${socket.id}, User: ${userId}. Online: ${onlineUsers.size}`);
+
+    socket.on('get_presence', (targetUserIds) => {
+      const presence = {};
+      targetUserIds.forEach(id => {
+        presence[id] = onlineUsers.has(id) && onlineUsers.get(id).size > 0;
+      });
+      socket.emit('presence_batch', presence);
+    });
 
     socket.on('send_message', async (data) => {
       const { receiver, content } = data;
@@ -101,8 +144,8 @@ const createApp = () => {
         });
 
         await newMessage.save();
-        await newMessage.populate('sender', 'name email');
-        await newMessage.populate('receiver', 'name email');
+        await newMessage.populate('sender', 'name email avatar');
+        await newMessage.populate('receiver', 'name email avatar');
 
         await createNotification({
           userId: receiver,
@@ -129,7 +172,15 @@ const createApp = () => {
     });
 
     socket.on('disconnect', () => {
-      console.log('User disconnected', socket.id);
+      const userSockets = onlineUsers.get(userId);
+      if (userSockets) {
+        userSockets.delete(socket.id);
+        if (userSockets.size === 0) {
+          onlineUsers.delete(userId);
+          io.emit('user_offline', { userId });
+        }
+      }
+      console.log(`User disconnected: ${socket.id}. Online: ${onlineUsers.size}`);
     });
   });
 

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
+import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
 import { getAdminOverview } from '../api/adminApi';
 
 const AdminDashboardPage = () => {
@@ -90,6 +91,12 @@ const AdminDashboardPage = () => {
       description: 'Handle product and user reports submitted by marketplace members.',
       to: '/admin/reports',
       icon: Flag,
+    },
+    {
+      label: 'Observability & Audit',
+      description: 'Monitor server health status and track immutable administrative audit logs.',
+      to: '/admin/audit-logs',
+      icon: ShieldCheck,
     },
   ];
 
@@ -190,9 +197,10 @@ const AdminDashboardPage = () => {
                     className="flex flex-col md:flex-row md:items-center gap-4 rounded-2xl border border-gray-100 p-4"
                   >
                     <img
-                      src={product.images?.[0] || 'https://via.placeholder.com/120?text=Product'}
+                      src={product.images?.[0] || PRODUCT_FALLBACK_IMAGE}
                       alt={product.title}
                       className="w-full md:w-24 h-24 object-cover rounded-2xl bg-gray-100"
+                      onError={setFallbackImage}
                     />
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold text-gray-900">{product.title}</h3>

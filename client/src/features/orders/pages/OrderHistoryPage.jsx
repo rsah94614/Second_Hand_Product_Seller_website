@@ -16,6 +16,7 @@ import { Button } from '../../../components/ui/Button';
 import { Card, CardContent } from '../../../components/ui/Card';
 import Footer from '../../../components/Footer';
 import Header from '../../../components/Header';
+import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
 import { cancelOrder, getOrders } from '../api/orderApi';
 
 const statusStyles = {
@@ -188,9 +189,10 @@ const OrderHistoryPage = () => {
                     {order.items?.map((item, index) => (
                       <div key={`${order._id}-${index}`} className="flex items-center space-x-4">
                         <img
-                          src={item.image || 'https://via.placeholder.com/80?text=Product'}
+                          src={item.image || PRODUCT_FALLBACK_IMAGE}
                           alt={item.title}
                           className="w-20 h-20 object-cover rounded-xl"
+                          onError={setFallbackImage}
                         />
                         <div className="flex-1">
                           <h3 className="text-lg font-semibold text-gray-800">

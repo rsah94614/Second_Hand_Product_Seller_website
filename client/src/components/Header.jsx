@@ -10,6 +10,7 @@ import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Badge } from './ui/Badge';
 import { API_BASE_URL, SOCKET_URL } from '../config/api';
+import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../lib/fallbackImages';
 import {
   getNotifications,
   markAllNotificationsRead,
@@ -436,9 +437,10 @@ const Header = () => {
                       className="flex w-full items-center gap-3 border-b border-gray-100 px-4 py-3 text-left transition-colors hover:bg-gray-50 last:border-b-0"
                     >
                       <img
-                        src={product.images?.[0] || 'https://via.placeholder.com/56?text=Item'}
+                        src={product.images?.[0] || PRODUCT_FALLBACK_IMAGE}
                         alt={product.title}
                         className="h-12 w-12 rounded-xl object-cover bg-gray-100"
+                        onError={setFallbackImage}
                       />
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-semibold text-gray-900">{product.title}</p>
