@@ -160,7 +160,7 @@ function ChatPage() {
         
         // Optimistic clear unread
         setConversations(prev => prev.map(conv => 
-          conv._id === currentChat._id ? { ...conv, unreadCount: 0 } : conv
+          (conv._id === currentChat._id && conv.unreadCount !== 0) ? { ...conv, unreadCount: 0 } : conv
         ));
         
         // Mark as read in backend
@@ -179,6 +179,10 @@ function ChatPage() {
 
   useEffect(() => {
     if (location.state?.sellerId && location.state?.sellerName) {
+      if (currentChat?._id === location.state.sellerId) {
+        return;
+      }
+      
       const existing = conversations.find((conversation) => conversation._id === location.state.sellerId);
       if (existing) {
         setCurrentChat(existing);
@@ -189,7 +193,7 @@ function ChatPage() {
         });
       }
     }
-  }, [location.state, conversations]);
+  }, [location.state, conversations, currentChat?._id]);
 
   const sendMessage = (e) => {
     e.preventDefault();

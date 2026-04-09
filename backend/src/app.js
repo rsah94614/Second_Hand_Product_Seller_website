@@ -9,7 +9,6 @@ const Message = require('../models/Message');
 const User = require('../models/User');
 const {
   setNotificationIO,
-  createNotification,
 } = require('./shared/utils/notification.utils');
 
 const createApp = () => {
@@ -67,8 +66,8 @@ const createApp = () => {
   app.use(cookieParser());
 
   // Observability: Log all incoming requests
-  const requestLogger = require('./shared/middleware/requestLogger.middleware');
-  app.use(requestLogger);
+  // const requestLogger = require('./shared/middleware/requestLogger.middleware');
+  // app.use(requestLogger);
 
   // Health check endpoint
   app.get('/health', (req, res) => {
@@ -146,22 +145,6 @@ const createApp = () => {
         await newMessage.save();
         await newMessage.populate('sender', 'name email avatar');
         await newMessage.populate('receiver', 'name email avatar');
-
-        await createNotification({
-          userId: receiver,
-          actorId: sender,
-          type: 'new_message',
-          title: `New message from ${socket.user.name}`,
-          message: content.trim().length > 80
-            ? `${content.trim().slice(0, 77)}...`
-            : content.trim(),
-          link: '/chat',
-          metadata: {
-            senderId: sender,
-            receiverId: receiver,
-            messageId: newMessage._id.toString(),
-          },
-        });
 
         io.to(receiver).emit('receive_message', newMessage);
         io.to(sender).emit('receive_message', newMessage);

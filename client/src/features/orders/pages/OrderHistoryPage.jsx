@@ -18,6 +18,7 @@ import Footer from '../../../components/Footer';
 import Header from '../../../components/Header';
 import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
 import { cancelOrder, getOrders } from '../api/orderApi';
+import { ErrorState } from '../../../components/ui/ErrorState';
 
 const statusStyles = {
   processing: 'bg-yellow-100 text-yellow-700',
@@ -30,7 +31,7 @@ const OrderHistoryPage = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['orders'],
     queryFn: getOrders,
     enabled: !!user,
@@ -110,6 +111,24 @@ const OrderHistoryPage = () => {
   }
 
   const orders = data || [];
+
+  if (isError) {
+    return (
+      <div>
+        <Header />
+        <div className="min-h-screen bg-gray-50 py-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <ErrorState
+              title="Could not load orders"
+              description="There was a problem fetching your order history. Please try again."
+              onRetry={refetch}
+            />
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div>

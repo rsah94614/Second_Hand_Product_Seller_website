@@ -8,14 +8,31 @@ import ProductCard from '../../../components/ProductCard';
 import { Button } from '../../../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { getWishlist } from '../api/userApi';
+import { ErrorState } from '../../../components/ui/ErrorState';
 
 const WishlistPage = () => {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['wishlist'],
     queryFn: getWishlist,
   });
 
   const products = data?.products || [];
+
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+          <ErrorState
+            title="Could not load saved items"
+            description="There was a problem fetching your saved items. Please try again."
+            onRetry={refetch}
+          />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

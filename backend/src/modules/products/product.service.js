@@ -72,7 +72,7 @@ const uploadImages = async (files) => {
   const uploadedImages = [];
   for (const file of files) {
     const result = await cloudinary.uploader.upload(file.path, {
-      folder: 'olx-products',
+      folder: 'campusmitra-products',
     });
     uploadedImages.push(result.secure_url);
   }

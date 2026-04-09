@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Briefcase, Eye, Plus, Package, CheckCircle2, Clock3, ArrowRight, TrendingUp, Sparkles } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { Briefcase, Eye, Plus, Package, CheckCircle2, Clock3, ArrowRight, TrendingUp, Sparkles, Lightbulb } from 'lucide-react';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import { Badge } from '../../../components/ui/Badge';
@@ -9,12 +10,13 @@ import { Button } from '../../../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { useAuth } from '../../../context/AuthContext';
 import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
-import { getUserProducts } from '../api/productApi';
+import { getUserProducts, patchProduct } from '../api/productApi';
+import { ErrorState } from '../../../components/ui/ErrorState';
 
 const DashboardPage = () => {
   const { user } = useAuth();
 
-  const { data: products = [], isLoading } = useQuery({
+  const { data: products = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['user-dashboard-products', user?.id],
     queryFn: () => getUserProducts(user?.id),
     enabled: !!user?.id,
@@ -35,14 +37,33 @@ const DashboardPage = () => {
 
       return acc;
     },
-    {
-      totalListings: 0,
-      activeListings: 0,
-      inactiveListings: 0,
-      soldListings: 0,
-      totalViews: 0,
-    }
+    { totalListings: 0, activeListings: 0, soldListings: 0, inactiveListings: 0, totalViews: 0 }
   );
+
+  const markAsSold = async (e, productId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm('Mark this item as sold?')) return;
+    try {
+      await patchProduct(productId, { isSold: true, isActive: false });
+      toast.success('Item marked as sold');
+      refetch();
+    } catch {
+      toast.error('Failed to mark as sold');
+    }
+  };
+
+  const actionableInsights = () => {
+    const zeroViews = products.filter(p => p.isActive && !p.isSold && (p.views || 0) === 0);
+    if (zeroViews.length > 0) {
+      return `You have ${zeroViews.length} active listing(s) with 0 views. Consider improving your titles or photos.`;
+    }
+    const stagnant = products.filter(p => !p.isActive && !p.isSold);
+    if (stagnant.length > 0) {
+      return `You have ${stagnant.length} inactive listing(s). Reactivate them to find buyers.`;
+    }
+    return "All your active listings are getting views! Keep up the good work.";
+  };
 
   const recentProducts = [...products]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -83,6 +104,22 @@ const DashboardPage = () => {
     },
   ];
 
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <ErrorState
+            title="Could not load your dashboard"
+            description="There was a problem fetching your listings. Please try again."
+            onRetry={refetch}
+          />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ec_0%,#f8fafc_24%,#f8fafc_100%)]">
       <Header />
@@ -97,7 +134,7 @@ const DashboardPage = () => {
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-xs font-semibold text-white/80 mb-4">
                 <Sparkles className="w-3.5 h-3.5" />
-                User Workspace
+                Seller Dashboard
               </div>
               <h1 className="text-4xl font-black text-white leading-tight tracking-tight">
                 Welcome back,{' '}
@@ -114,7 +151,7 @@ const DashboardPage = () => {
               <Link to="/create-product">
                 <Button className="gap-2 rounded-full px-6 py-3 bg-white text-primary-700 hover:bg-white/90 shadow-xl font-bold border-0">
                   <Plus className="w-4 h-4" />
-                  Add Product
+                  List an Item
                 </Button>
               </Link>
               <Link to="/my-products">
@@ -235,6 +272,16 @@ const DashboardPage = () => {
                       >
                         {product.isSold ? 'Sold' : product.isActive ? 'Active' : 'Inactive'}
                       </Badge>
+                      {!product.isSold && (
+                        <Button
+                          onClick={(e) => markAsSold(e, product._id)}
+                          variant="outline"
+                          size="sm"
+                          className="shrink-0 gap-1.5 rounded-xl text-xs text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:border-emerald-300"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Sold
+                        </Button>
+                      )}
                     </Link>
                   ))}
                 </div>
@@ -253,7 +300,7 @@ const DashboardPage = () => {
                   {[
                     { to: '/create-product', label: 'Create a new listing', icon: Plus },
                     { to: '/my-products', label: 'Manage my products', icon: Package },
-                    { to: '/chat', label: 'Open chat', icon: TrendingUp },
+                    { to: '/chat', label: 'Messages', icon: TrendingUp },
                     { to: '/profile', label: 'Edit profile', icon: ArrowRight },
                   ].map((item) => (
                     <Link
@@ -273,22 +320,16 @@ const DashboardPage = () => {
               </CardContent>
             </Card>
 
-            {/* Promo Card */}
-            <Card className="rounded-3xl border-0 shadow-sm overflow-hidden relative">
-              <div className="absolute inset-0 bg-linear-to-br from-indigo-600 to-primary-700" />
+            {/* Actionable Tip Card */}
+            <Card className="rounded-3xl border-gray-100 shadow-sm overflow-hidden relative bg-amber-50">
               <CardContent className="p-6 relative z-10">
-                <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-4">
-                  <Sparkles className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center mb-4">
+                  <Lightbulb className="w-5 h-5 text-amber-600" />
                 </div>
-                <h3 className="text-white font-black text-lg tracking-tight">Keep growing</h3>
-                <p className="text-primary-200 text-sm mt-2 leading-relaxed">
-                  Add detailed descriptions &amp; high-quality photos to attract more buyers.
+                <h3 className="text-gray-900 font-black text-lg tracking-tight">Seller Tip</h3>
+                <p className="text-gray-700 text-sm mt-2 leading-relaxed">
+                  {actionableInsights()}
                 </p>
-                <Link to="/create-product">
-                  <Button className="mt-5 w-full rounded-xl bg-white text-primary-700 hover:bg-white/95 font-bold border-0 shadow-lg">
-                    <Plus className="w-4 h-4 mr-2" /> New Listing
-                  </Button>
-                </Link>
               </CardContent>
             </Card>
           </div>

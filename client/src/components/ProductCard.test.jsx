@@ -63,7 +63,6 @@ describe('ProductCard', () => {
     expect(screen.getByText('Good')).toBeInTheDocument();
     expect(screen.getByText(/\u20b912,500/)).toBeInTheDocument();
     expect(screen.getByText('Kolkata')).toBeInTheDocument();
-    expect(screen.getByText('Listed')).toBeInTheDocument();
   });
 
   it('shows a sold badge when the product is unavailable', () => {

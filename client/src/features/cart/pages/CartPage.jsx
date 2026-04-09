@@ -14,23 +14,25 @@ import Footer from '../../../components/Footer';
 import { Button } from '../../../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
+import { API_BASE_URL } from '../../../config/api';
+import { ErrorState } from '../../../components/ui/ErrorState';
 
 const CartPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['cart'],
     queryFn: () =>
-      axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/cart`).then((res) => res.data),
+      axios.get(`${API_BASE_URL}/api/cart`).then((res) => res.data),
     enabled: !!user,
   });
 
   const removeItem = useMutation({
     mutationFn: (productId) =>
       axios.delete(
-        `${import.meta.env.VITE_BACKEND_URL}/api/cart/${productId}`
+        `${API_BASE_URL}/api/cart/${productId}`
       ),
 
     onSuccess: () => {
@@ -45,7 +47,7 @@ const CartPage = () => {
 
   const checkout = useMutation({
     mutationFn: () =>
-      axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/cart/checkout`),
+      axios.post(`${API_BASE_URL}/api/cart/checkout`),
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
@@ -125,6 +127,24 @@ const CartPage = () => {
 
   const items = data?.items || [];
   const summary = data?.summary || { itemCount: 0, totalAmount: 0 };
+
+  if (isError) {
+    return (
+      <div>
+        <Header />
+        <div className="min-h-screen bg-gray-50 py-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <ErrorState
+              title="Could not load your cart"
+              description="There was a problem fetching your cart. Please try again."
+              onRetry={refetch}
+            />
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div>

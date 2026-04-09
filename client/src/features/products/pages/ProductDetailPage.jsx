@@ -21,7 +21,7 @@ import {
   Flag,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
-import { assets } from '../../../assets/assets';
+import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import { Badge } from '../../../components/ui/Badge';
@@ -301,12 +301,10 @@ const ProductDetailPage = () => {
             <div className="space-y-5">
               <div className="relative w-full overflow-hidden rounded-4xl bg-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] border border-gray-100" style={{aspectRatio:'1/1'}}>
                 <img
-                  src={product.images[currentImageIndex] || '/placeholder-image.jpg'}
+                  src={product.images[currentImageIndex] || PRODUCT_FALLBACK_IMAGE}
                   alt={product.title}
                   className="w-full h-full object-contain p-3"
-                  onError={(e) => {
-                    e.target.src = assets.img;
-                  }}
+                  onError={setFallbackImage}
                 />
                 {product.isSold && (
                   <Badge variant="destructive" className="absolute top-6 right-6 px-5 py-2.5 text-sm font-bold tracking-widest shadow-xl">
@@ -362,50 +360,28 @@ const ProductDetailPage = () => {
                   )}
                 </div>
 
-                <p className="text-4xl font-black text-primary-600 mb-5">
+                <p className="text-4xl font-black text-primary-600 mb-4">
                   {formatPrice(product.price)}
                 </p>
 
-                <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-8">
-                  <div className="flex items-center bg-white px-3 py-1.5 rounded-full border border-gray-200 shadow-sm">
-                    <MapPin className="w-4 h-4 mr-2 text-primary-500" />
-                    <span>{product.location}</span>
-                  </div>
-                  <div className="flex items-center bg-white px-3 py-1.5 rounded-full border border-gray-200 shadow-sm">
-                    <Calendar className="w-4 h-4 mr-2 text-primary-500" />
-                    <span>{formatDate(product.createdAt)}</span>
-                  </div>
-                  <div className="flex items-center bg-white px-3 py-1.5 rounded-full border border-gray-200 shadow-sm">
-                    <Eye className="w-4 h-4 mr-2 text-primary-500" />
-                    <span>{product.views} views</span>
-                  </div>
-                </div>
-
-                <div className="flex gap-3 mb-8">
-                  <Badge variant="secondary" className="px-4 py-1.5 text-sm font-medium">
-                    {product.category}
-                  </Badge>
+                <div className="flex flex-wrap items-center gap-3 mb-8">
                   <Badge className="border border-blue-100 bg-blue-50 px-4 py-1.5 text-sm font-medium text-blue-700">
                     {product.condition}
                   </Badge>
-                  <Badge className="border border-amber-100 bg-amber-50 px-4 py-1.5 text-sm font-medium text-amber-700">
-                    <Star className="mr-1 h-3.5 w-3.5 fill-current" />
-                    {product.averageRating ? `${product.averageRating}/5` : 'No ratings'}
+                  <Badge variant="secondary" className="px-4 py-1.5 text-sm font-medium">
+                    {product.category}
                   </Badge>
+                  <div className="flex items-center text-sm font-medium text-gray-600 ml-2">
+                    <MapPin className="w-4 h-4 mr-1 text-gray-400" />
+                    <span>{product.location}</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="mb-8">
-                <h3 className="text-lg font-bold text-gray-900 mb-3">Description</h3>
-                <div className="prose prose-gray max-w-none">
-                  <p className="text-gray-600 whitespace-pre-wrap leading-relaxed">{product.description}</p>
-                </div>
-              </div>
-
-              <Card className="mb-8 rounded-4xl border-0 shadow-[0_20px_80px_-20px_rgba(0,0,0,0.08)] bg-[linear-gradient(135deg,#ffffff_0%,#f8fafc_100%)] relative overflow-hidden">
+<Card className="mb-8 rounded-4xl border-0 shadow-[0_20px_80px_-20px_rgba(0,0,0,0.08)] bg-[linear-gradient(135deg,#ffffff_0%,#f8fafc_100%)] relative overflow-hidden">
                 <div className="absolute right-0 top-0 w-32 h-32 bg-primary-200/30 rounded-full blur-3xl" />
                 <CardContent className="p-8 relative z-10">
-                <h3 className="text-xl font-black tracking-tight text-gray-900 mb-6">Listing Owner</h3>
+                <h3 className="text-xl font-black tracking-tight text-gray-900 mb-6">Seller</h3>
                 <div className="flex items-center gap-5 mb-8">
                   <div className="w-14 h-14 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center font-bold text-xl">
                     {product.seller.name?.[0] || <User className="w-6 h-6" />}
@@ -447,7 +423,87 @@ const ProductDetailPage = () => {
                 </CardContent>
               </Card>
 
-              <Card className="mb-8 rounded-2xl border-gray-100 shadow-sm animate-fade-up-delayed">
+              <div className="mb-8">
+                <h3 className="text-lg font-bold text-gray-900 mb-3">Description</h3>
+                <div className="prose prose-gray max-w-none">
+                  <p className="text-gray-600 whitespace-pre-wrap leading-relaxed">{product.description}</p>
+                </div>
+              </div>
+
+              <div className="mt-auto">
+                {!isOwner && (
+                  <Card className="rounded-t-3xl md:rounded-4xl rounded-b-none md:rounded-b-4xl border-0 shadow-[0_-20px_80px_-20px_rgba(0,0,0,0.12)] sticky bottom-0 md:bottom-6 bg-white/90 backdrop-blur-xl animate-fade-up-delayed p-1 z-40">
+                    <CardContent className="p-5">
+                    <div className="space-y-4">
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <Button
+                          onClick={handleAddToCart}
+                          disabled={addToCart.isPending || !isAvailable}
+                          className="flex-1 h-14 text-lg font-bold rounded-2xl"
+                          variant="secondary"
+                        >
+                          {addToCart.isPending ? 'Adding...' : (
+                            <>
+                              <ShoppingCart className="w-5 h-5 mr-3" />
+                              Add to Cart
+                            </>
+                          )}
+                        </Button>
+
+                        <Button
+                          onClick={handleOrderNow}
+                          disabled={!isAvailable}
+                          className="flex-1 h-14 text-lg font-bold rounded-2xl shadow-xl shadow-primary-600/30 hover:-translate-y-1 transition-transform"
+                          variant="primary"
+                        >
+                          <Package className="w-5 h-5 mr-3" />
+                          Order Now
+                        </Button>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <Button
+                          onClick={handleWishlist}
+                          disabled={wishlistMutation.isPending}
+                          variant="outline"
+                          className="flex-1 h-11"
+                        >
+                          <Heart className={`w-4 h-4 mr-2 ${isWishlisted ? 'fill-current text-rose-500' : ''}`} />
+                          {isWishlisted ? 'Saved' : 'Save Item'}
+                        </Button>
+                        <Button
+                          onClick={() => navigate('/chat', { state: { sellerId: product.seller._id, sellerName: product.seller.name } })}
+                          variant="outline"
+                          className="flex-1 h-11"
+                        >
+                          <MessageSquare className="w-4 h-4 mr-2" />
+                          Message Seller
+                        </Button>
+                        <Button
+                          onClick={handleShare}
+                          variant="outline"
+                          size="icon"
+                          className="h-11 w-11 shrink-0"
+                          title="Share"
+                        >
+                          <Share2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Secondary Info: Reviews & Report */}
+        <div className="mt-16 grid grid-cols-1 lg:grid-cols-2 gap-10">
+          <div className="space-y-8">
+
+
+              <Card className="rounded-2xl border-gray-100 shadow-sm animate-fade-up-delayed">
                 <CardContent className="p-6">
                   <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -527,9 +583,12 @@ const ProductDetailPage = () => {
                   )}
                 </CardContent>
               </Card>
+          </div>
+          <div className="space-y-8">
+
 
               {!isOwner && (
-                <Card className="mb-8 rounded-2xl border-gray-100 shadow-sm animate-fade-up-delayed">
+                <Card className="rounded-2xl border-gray-100 shadow-sm animate-fade-up-delayed">
                   <CardContent className="p-6">
                     <div className="mb-4 flex items-center gap-2 text-gray-900">
                       <Flag className="h-5 w-5 text-red-600" />
@@ -574,72 +633,6 @@ const ProductDetailPage = () => {
                   </CardContent>
                 </Card>
               )}
-
-              <div className="mt-auto">
-                {!isOwner && (
-                  <Card className="rounded-4xl border-0 shadow-[0_-20px_80px_-20px_rgba(0,0,0,0.12)] sticky bottom-6 bg-white/90 backdrop-blur-xl animate-fade-up-delayed p-1 z-40">
-                    <CardContent className="p-5">
-                    <div className="space-y-4">
-                      <div className="flex flex-col sm:flex-row gap-3">
-                        <Button
-                          onClick={handleAddToCart}
-                          disabled={addToCart.isPending || !isAvailable}
-                          className="flex-1 h-14 text-lg font-bold rounded-2xl"
-                          variant="secondary"
-                        >
-                          {addToCart.isPending ? 'Adding...' : (
-                            <>
-                              <ShoppingCart className="w-5 h-5 mr-3" />
-                              Add to Cart
-                            </>
-                          )}
-                        </Button>
-
-                        <Button
-                          onClick={handleOrderNow}
-                          disabled={!isAvailable}
-                          className="flex-1 h-14 text-lg font-bold rounded-2xl shadow-xl shadow-primary-600/30 hover:-translate-y-1 transition-transform"
-                          variant="primary"
-                        >
-                          <Package className="w-5 h-5 mr-3" />
-                          Order Now
-                        </Button>
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <Button
-                          onClick={handleWishlist}
-                          disabled={wishlistMutation.isPending}
-                          variant="outline"
-                          className="flex-1 h-11"
-                        >
-                          <Heart className={`w-4 h-4 mr-2 ${isWishlisted ? 'fill-current text-rose-500' : ''}`} />
-                          {isWishlisted ? 'Saved' : 'Save Item'}
-                        </Button>
-                        <Button
-                          onClick={() => navigate('/chat', { state: { sellerId: product.seller._id, sellerName: product.seller.name } })}
-                          variant="outline"
-                          className="flex-1 h-11"
-                        >
-                          <MessageSquare className="w-4 h-4 mr-2" />
-                          Chat with Owner
-                        </Button>
-                        <Button
-                          onClick={handleShare}
-                          variant="outline"
-                          size="icon"
-                          className="h-11 w-11 shrink-0"
-                          title="Share"
-                        >
-                          <Share2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            </div>
           </div>
         </div>
 
@@ -647,7 +640,7 @@ const ProductDetailPage = () => {
           <section className="mt-16">
             <div className="mb-6 flex items-end justify-between gap-4">
               <div>
-                <h2 className="text-3xl font-bold text-gray-900">You May Also Like</h2>
+                <h2 className="text-3xl font-bold text-gray-900">Similar Items</h2>
                 <p className="mt-2 text-gray-600">
                   Similar listings based on category, price range, popularity, and rating.
                 </p>

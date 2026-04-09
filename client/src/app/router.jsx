@@ -51,9 +51,9 @@ const AppRouter = () => (
     <Route path="/create-product" element={<ProtectedRoute allowedRoles={['user']}><CreateProductPage /></ProtectedRoute>} />
     <Route path="/edit-product/:id" element={<ProtectedRoute allowedRoles={['user']}><EditProductPage /></ProtectedRoute>} />
     <Route path="/my-products" element={<ProtectedRoute allowedRoles={['user']}><MyProductsPage /></ProtectedRoute>} />
-    <Route path="/order/:id" element={<PlaceOrderPage />} />
-    <Route path="/cart" element={<CartPage />} />
-    <Route path="/orders" element={<OrderHistoryPage />} />
+    <Route path="/order/:id" element={<ProtectedRoute><PlaceOrderPage /></ProtectedRoute>} />
+    <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
+    <Route path="/orders" element={<ProtectedRoute><OrderHistoryPage /></ProtectedRoute>} />
     <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
   </Routes>
 );

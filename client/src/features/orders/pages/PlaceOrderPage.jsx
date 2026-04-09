@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui
 import { Input } from '../../../components/ui/Input';
 import Footer from '../../../components/Footer';
 import Header from '../../../components/Header';
+import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
 import { getProduct } from '../../products/api/productApi';
 import { placeOrder } from '../api/orderApi';
 
@@ -280,7 +281,7 @@ const PlaceOrderPage = () => {
               <CardContent className="p-8 pt-2">
               <div className="space-y-6">
                 <div className="relative group">
-                  <img src={product.images?.[0] || '/placeholder-image.jpg'} alt={product.title} className="w-full h-64 object-cover rounded-xl shadow-sm" />
+                  <img src={product.images?.[0] || PRODUCT_FALLBACK_IMAGE} alt={product.title} className="w-full h-64 object-cover rounded-xl shadow-sm" onError={setFallbackImage} />
                   {product.isSold && (
                     <Badge variant="destructive" className="absolute top-4 right-4 px-3 py-1 text-sm shadow-sm">
                       Sold

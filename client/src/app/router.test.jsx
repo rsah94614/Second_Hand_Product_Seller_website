@@ -10,8 +10,8 @@ vi.mock('../context/AuthContext', () => ({
 }));
 
 vi.mock('../features/home/pages/HomePage', () => ({ default: () => <div>Home Screen</div> }));
-vi.mock('../features/auth/pages/LoginPage', () => ({ default: () => <div>Login Screen</div> }));
-vi.mock('../features/auth/pages/RegisterPage', () => ({ default: () => <div>Register Screen</div> }));
+vi.mock('../features/auth/pages/Sign-In', () => ({ default: () => <div>Login Screen</div> }));
+vi.mock('../features/auth/pages/Sign-Up', () => ({ default: () => <div>Register Screen</div> }));
 vi.mock('../features/products/pages/ProductListPage', () => ({ default: () => <div>Product List Screen</div> }));
 vi.mock('../features/products/pages/ProductDetailPage', () => ({ default: () => <div>Product Detail Screen</div> }));
 vi.mock('../features/users/pages/ProfilePage', () => ({ default: () => <div>Profile Screen</div> }));

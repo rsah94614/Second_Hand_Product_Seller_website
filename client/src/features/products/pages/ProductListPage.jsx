@@ -123,22 +123,10 @@ const ProductListPage = () => {
 
       {/* ── TOP FILTER BAR ── */}
       <div className="sticky top-16 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-sm">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center gap-3">
-
-          {/* Search */}
-          {/* <div className="relative flex-1 min-w-[180px] max-w-xs">
-            <Input
-              type="text"
-              value={filters.search}
-              onChange={(e) => handleFilterChange('search', e.target.value)}
-              placeholder="Search products..."
-              className="pl-9 h-9 text-sm rounded-full"
-            />
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-          </div> */}
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex flex-col md:flex-row md:items-center gap-3">
 
           {/* Category quick pills */}
-          <div className="hidden md:flex items-center gap-2 overflow-x-auto scrollbar-hide">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1 md:pb-0 w-full md:flex-1">
             <button
               onClick={() => handleFilterChange('category', '')}
               className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
@@ -160,7 +148,7 @@ const ProductListPage = () => {
             ))}
           </div>
 
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex items-center justify-between md:justify-end gap-2 w-full md:w-auto">
             {/* Sort */}
             <Select
               value={`${filters.sortBy}-${filters.sortOrder}`}

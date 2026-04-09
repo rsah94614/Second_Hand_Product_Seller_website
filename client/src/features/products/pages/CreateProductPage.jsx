@@ -85,8 +85,28 @@ const CreateProductPage = () => {
   };
 
   const handleImageChange = (e) => {
+    const MAX_FILE_SIZE_MB = 5;
     const files = Array.from(e.target.files || []);
-    const nextImages = files.map((file) => ({
+    const validFiles = [];
+    const rejected = [];
+
+    files.forEach((file) => {
+      if (!file.type.startsWith('image/')) {
+        rejected.push(`${file.name} (not an image)`);
+        return;
+      }
+      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+        rejected.push(`${file.name} (over ${MAX_FILE_SIZE_MB}MB)`);
+        return;
+      }
+      validFiles.push(file);
+    });
+
+    if (rejected.length > 0) {
+      toast.error(`Skipped: ${rejected.join(', ')}`);
+    }
+
+    const nextImages = validFiles.map((file) => ({
       file,
       preview: URL.createObjectURL(file),
       id: Math.random().toString(36).slice(2, 11),
@@ -160,7 +180,7 @@ const CreateProductPage = () => {
         <div className="mx-auto max-w-5xl">
           <Card className="rounded-3xl border-gray-100 shadow-sm animate-fade-in">
             <CardHeader className="pb-2 text-center">
-              <CardTitle className="text-3xl text-gray-800">List Your Product</CardTitle>
+              <CardTitle className="text-3xl text-gray-800">Create Listing</CardTitle>
             </CardHeader>
             <CardContent className="p-8 pt-4">
 
@@ -238,7 +258,7 @@ const CreateProductPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label htmlFor="price" className="form-label">
-                    Price (Rs.) *
+                    Price (₹) *
                   </label>
                   <Input
                     type="number"
@@ -352,7 +372,7 @@ const CreateProductPage = () => {
                   disabled={isLoading}
                   className="mb-4 w-2/4"
                 >
-                  {isLoading ? 'Creating...' : 'Create Product'}
+                  {isLoading ? 'Creating...' : 'Create Listing'}
                 </Button>
                 <Button
                   type="button"

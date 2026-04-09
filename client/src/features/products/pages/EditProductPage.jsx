@@ -205,7 +205,7 @@ const EditProductPage = () => {
         <div className="mx-auto max-w-5xl">
           <Card className="rounded-3xl border-gray-100 shadow-sm animate-fade-in">
             <CardHeader className="pb-2">
-              <CardTitle className="text-3xl text-gray-800">Edit Product</CardTitle>
+              <CardTitle className="text-3xl text-gray-800">Edit Listing</CardTitle>
             </CardHeader>
             <CardContent className="p-8 pt-4">
 
@@ -248,7 +248,7 @@ const EditProductPage = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="flex flex-col">
-                  <label htmlFor="price" className="form-label">Price (Rs.) *</label>
+                  <label htmlFor="price" className="form-label">Price (₹) *</label>
                   <Input type="number" id="price" name="price" required min="0" value={formData.price} onChange={handleChange} placeholder="0" />
                 </div>
 
@@ -308,7 +308,7 @@ const EditProductPage = () => {
 
               <div className="flex flex-col items-center justify-center gap-3">
                 <Button type="submit" disabled={isLoading}>
-                  {isLoading ? 'Updating...' : 'Update Product'}
+                  {isLoading ? 'Updating...' : 'Update Listing'}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => navigate(`/products/${id}`)}>
                   Cancel

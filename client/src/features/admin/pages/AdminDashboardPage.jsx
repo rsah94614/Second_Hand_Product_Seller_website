@@ -121,8 +121,7 @@ const AdminDashboardPage = () => {
                 Platform Overview
               </h1>
               <p className="text-gray-600 mt-3 max-w-2xl">
-                This admin foundation gives you visibility into users, products, orders,
-                and platform activity. We&apos;ll build moderation and deeper controls on top of this next.
+                Monitor users, products, orders, reports, and platform activity. Use the tools below to moderate the marketplace and keep it running smoothly.
               </p>
             </div>
             <div className="inline-flex items-center gap-2 rounded-full bg-red-50 text-red-700 px-4 py-2 font-semibold">

@@ -143,7 +143,7 @@ const SignInPage = () => {
         </div>
 
         {/* Left Graphic Section */}
-        <div className="hidden lg:flex w-1/2 p-16 flex-col justify-between relative overflow-hidden group">
+        <div className="hidden lg:flex w-1/2 p-16 flex-col justify-between items-center relative overflow-hidden group">
           <div className="absolute inset-0 bg-slate-900 z-0" />
           <div className="absolute inset-0 bg-linear-to-br from-primary-900 via-indigo-900 to-blue-950 z-0 opacity-90" />
 

@@ -73,7 +73,7 @@ const Header = () => {
     refetchInterval: user ? 15000 : false,
   });
 
-  const markNotificationMutation = useMutation({
+  const { mutateAsync: markNotificationAsRead } = useMutation({
     mutationFn: markNotificationRead,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications-preview'] });
@@ -94,11 +94,11 @@ const Header = () => {
 
   const openNotification = useCallback(async (notification) => {
     if (!notification.isRead) {
-      await markNotificationMutation.mutateAsync(notification._id);
+      await markNotificationAsRead(notification._id);
     }
 
     navigate(notification.link || '/notifications');
-  }, [markNotificationMutation, navigate]);
+  }, [markNotificationAsRead, navigate]);
 
   useEffect(() => {
     if (!user) {
@@ -478,7 +478,7 @@ const Header = () => {
                       size="sm"
                     >
                       <Plus className="w-4 h-4" />
-                      <span className="font-semibold text-[14px]">List Product</span>
+                      <span className="font-semibold text-[14px]">List Item</span>
                     </Button>
                   </Link>
                 )}

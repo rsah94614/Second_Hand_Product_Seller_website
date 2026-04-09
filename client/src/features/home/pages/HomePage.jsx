@@ -170,7 +170,7 @@ const HomePage = () => {
                 </Link>
                 <Link to={user ? '/create-product' : '/register'}>
                   <Button variant="outline" className="h-12 px-7 rounded-full border-white/25 hover:text-primary-700 text-white bg-white/10">
-                    {user ? 'List Your Item' : 'Start Selling'}
+                    {user ? 'List an Item' : 'Start Selling'}
                   </Button>
                 </Link>
               </div>
@@ -283,45 +283,6 @@ const HomePage = () => {
         </SectionShell>
       )}
 
-      <section className="px-4 py-8 lg:px-12">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-8 max-w-2xl">
-            <p className="mb-2 text-xs font-bold uppercase tracking-widest text-gray-400">How It Works</p>
-            <h2 className="text-3xl font-black tracking-tight text-gray-900">Why students use CampusMitra</h2>
-            <p className="mt-2 text-sm leading-relaxed text-gray-500">
-              Everything here is designed to help you find useful second-hand items quickly and contact the seller without wasting time.
-            </p>
-          </div>
-
-          <div className="grid gap-5 md:grid-cols-3">
-            {[
-              {
-                icon: Sparkles,
-                title: 'See fresh listings first',
-                description: 'Recently posted items appear up front, so you can catch good deals before someone else does.',
-              },
-              {
-                icon: Package,
-                title: 'Browse by category',
-                description: 'Jump straight to books, electronics, hostel items, furniture, and other things you actually need.',
-              },
-              {
-                icon: ShieldCheck,
-                title: 'Connect with the seller quickly',
-                description: 'Open a listing, check the essentials, and reach out directly when the item feels right for you.',
-              },
-            ].map((item) => (
-              <div key={item.title} className="rounded-3xl border border-gray-100 bg-white p-7 shadow-sm">
-                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 text-white">
-                  <item.icon className="h-6 w-6" />
-                </div>
-                <h3 className="text-xl font-black tracking-tight text-gray-900">{item.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-gray-500">{item.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ── STATS BAND ── */}
       <section className="px-4 pb-20 pt-4 lg:px-12">
@@ -331,9 +292,9 @@ const HomePage = () => {
             <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] from-cyan-400/15 via-transparent to-transparent blur-3xl" />
             <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-white/10">
               {[
-                { icon: Users, value: `${liveListingCount}+`, label: 'Live Listings', color: 'text-cyan-300' },
-                { icon: Package, value: `${budgetPickCount}`, label: 'Budget Picks', color: 'text-amber-300' },
-                { icon: ShieldCheck, value: `${categories.length}+`, label: 'Browse Categories', color: 'text-emerald-300' },
+                { icon: Users, value: liveListingCount, label: 'Live Listings', color: 'text-cyan-300' },
+                { icon: Package, value: budgetPickCount, label: 'Budget Picks Today', color: 'text-amber-300' },
+                { icon: ShieldCheck, value: categories.length, label: 'Categories', color: 'text-emerald-300' },
               ].map((item) => (
                 <div key={item.label} className="flex flex-col items-center justify-center gap-3 py-12 px-8 text-center">
                   <div className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 ${item.color}`}>

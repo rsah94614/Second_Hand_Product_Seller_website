@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Plus, Edit, Trash2, Eye, Package, ToggleLeft, ToggleRight, MapPin } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, ToggleLeft, ToggleRight, MapPin, Eye, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
@@ -14,6 +14,7 @@ import { deleteProduct, getUserProducts, patchProduct } from '../api/productApi'
 
 const MyProductsPage = () => {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('All');
 
   const { data: products, isLoading, refetch } = useQuery({
     queryKey: ['user-products', user?.id],
@@ -35,10 +36,21 @@ const MyProductsPage = () => {
   const toggleProductStatus = async (productId, currentStatus) => {
     try {
       await patchProduct(productId, { isActive: !currentStatus });
-      toast.success(`Product ${!currentStatus ? 'activated' : 'deactivated'} successfully`);
+      toast.success(`Listing ${!currentStatus ? 'activated' : 'deactivated'}`);
       refetch();
     } catch {
-      toast.error('Failed to update product status');
+      toast.error('Failed to update listing status');
+    }
+  };
+
+  const markAsSold = async (productId) => {
+    if (!window.confirm('Mark this item as sold? It will be removed from the marketplace.')) return;
+    try {
+      await patchProduct(productId, { isSold: true, isActive: false });
+      toast.success('Item marked as sold');
+      refetch();
+    } catch {
+      toast.error('Failed to mark as sold');
     }
   };
 
@@ -67,10 +79,28 @@ const MyProductsPage = () => {
           <Link to="/create-product">
             <Button className="gap-2 rounded-full px-5">
               <Plus className="w-4 h-4" />
-              Add New Product
+              List an Item
             </Button>
           </Link>
         </div>
+
+        {!isLoading && products?.length > 0 && (
+          <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+            {['All', 'Active', 'Sold', 'Inactive'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors shrink-0 ${
+                  activeTab === tab
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        )}
 
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
@@ -94,15 +124,33 @@ const MyProductsPage = () => {
             <p className="text-gray-500 mb-8 text-sm">Start selling by listing your first product!</p>
             <Link to="/create-product">
               <Button className="rounded-full px-8 gap-2">
-                <Plus className="w-4 h-4" /> Create Your First Product
+                <Plus className="w-4 h-4" /> List Your First Item
               </Button>
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {products?.map((product) => (
-              <div
-                key={product._id}
+          (() => {
+            const filteredProducts = products?.filter(p => {
+              if (activeTab === 'All') return true;
+              if (activeTab === 'Active') return p.isActive && !p.isSold;
+              if (activeTab === 'Sold') return p.isSold;
+              if (activeTab === 'Inactive') return !p.isActive && !p.isSold;
+              return true;
+            });
+
+            if (filteredProducts?.length === 0) {
+              return (
+                <div className="rounded-3xl border border-dashed border-gray-300 bg-white/50 p-12 text-center">
+                  <p className="text-gray-500 font-medium">No products found for "{activeTab}".</p>
+                </div>
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                {filteredProducts?.map((product) => (
+                  <div
+                    key={product._id}
                 className="group rounded-[1.75rem] bg-white border border-gray-100 shadow-sm overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-gray-200"
               >
                 {/* Image */}
@@ -150,16 +198,21 @@ const MyProductsPage = () => {
 
                   {/* Action row */}
                   <div className="flex gap-2 mb-2">
-                    <Link to={`/products/${product._id}`} className="flex-1">
-                      <Button variant="outline" size="sm" className="w-full gap-1.5 rounded-xl text-xs">
-                        <Eye className="w-3.5 h-3.5" /> View
-                      </Button>
-                    </Link>
                     <Link to={`/edit-product/${product._id}`} className="flex-1">
                       <Button variant="outline" size="sm" className="w-full gap-1.5 rounded-xl text-xs">
                         <Edit className="w-3.5 h-3.5" /> Edit
                       </Button>
                     </Link>
+                    {!product.isSold && (
+                      <Button
+                        onClick={() => markAsSold(product._id)}
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 gap-1.5 rounded-xl text-xs text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:border-emerald-300"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Sold
+                      </Button>
+                    )}
                     <Button
                       onClick={() => handleDelete(product._id)}
                       variant="outline"
@@ -188,8 +241,10 @@ const MyProductsPage = () => {
                 </div>
               </div>
             ))}
-          </div>
-        )}
+            </div>
+          );
+        })()
+      )}
       </div>
       <Footer />
     </div>

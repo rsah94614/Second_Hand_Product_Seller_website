@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { MapPin, Calendar, Heart } from 'lucide-react';
+import { MapPin, Heart } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { toggleWishlist } from '../features/users/api/userApi';
 import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../lib/fallbackImages';
@@ -23,13 +23,6 @@ const ProductCard = ({ product, highlightLabel = '', highlightTone = 'bg-primary
     }).format(price);
   };
 
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  };
 
   const wishlistMutation = useMutation({
     mutationFn: () => toggleWishlist(product._id),
@@ -114,19 +107,9 @@ const ProductCard = ({ product, highlightLabel = '', highlightTone = 'bg-primary
             {formatPrice(product.price)}
           </p>
 
-          <div className="mb-5 flex items-center text-sm font-medium text-stone-600">
+          <div className="mb-4 flex items-center text-sm font-medium text-stone-600">
             <MapPin className="mr-1.5 h-4 w-4 shrink-0 text-stone-400" />
             <span className="truncate">{product.location}</span>
-          </div>
-
-          <div className="mt-auto border-t border-stone-100 pt-4 text-xs text-stone-500">
-            <div className="rounded-xl bg-stone-50 px-3 py-2">
-              <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-stone-400">
-                <Calendar className="h-3.5 w-3.5 text-stone-400" />
-                <span>Listed</span>
-              </div>
-              <span>{formatDate(product.createdAt)}</span>
-            </div>
           </div>
         </div>
       </article>

@@ -320,7 +320,7 @@ const SignUpPage = () => {
         </div>
 
         {/* Left Graphic Section (reversed) */}
-        <div className="hidden lg:flex w-1/2 p-16 flex-col justify-between relative overflow-hidden group">
+        <div className="hidden lg:flex w-1/2 p-16 flex-col justify-center items-center relative overflow-hidden group">
           <div className="absolute inset-0 bg-slate-900 z-0" />
           <div className="absolute inset-0 bg-linear-to-br from-indigo-900 via-primary-900 to-cyan-950 z-0 opacity-90" />
 
