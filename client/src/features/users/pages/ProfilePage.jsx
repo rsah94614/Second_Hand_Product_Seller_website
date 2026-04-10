@@ -79,19 +79,15 @@ const ProfilePage = () => {
     );
   }
 
-  const initials = user.name
-    ? user.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
-    : '?';
-
   return (
     <PageShell maxWidth="max-w-3xl">
-      <div className="py-12">
+      <div className="px-4 sm:px-6 py-6 md:py-12">
 
         {/* Profile Hero */}
         <div className="relative overflow-hidden rounded-4xl mb-6 bg-slate-900 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.2)]">
           <div className="absolute inset-0 bg-linear-to-br from-primary-900 via-indigo-900 to-blue-950 opacity-90" />
           <div className="absolute top-0 right-0 w-60 h-60 rounded-full bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] from-cyan-400/20 via-transparent to-transparent blur-3xl" />
-          <div className="relative z-10 p-8 flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-6">
+          <div className="relative z-10 p-5 md:p-8 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 md:gap-6">
             <Avatar 
               src={user.avatar} 
               fallback={user.name} 
@@ -136,8 +132,8 @@ const ProfilePage = () => {
 
         {/* Edit Card */}
         <Card className="rounded-4xl border border-gray-100 shadow-sm animate-fade-in">
-          <CardContent className="p-8">
-            <div className="flex items-center justify-between mb-8">
+          <CardContent className="p-5 md:p-8">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-6 md:mb-8">
               <div>
                 <h2 className="text-2xl font-black text-gray-900 tracking-tight">Account Details</h2>
                 <p className="text-gray-500 text-sm mt-1">Manage your personal information</p>
@@ -238,7 +234,8 @@ const ProfilePage = () => {
         </Card>
         {/* Campus Identity Card */}
         <Card className="rounded-4xl border border-gray-100 shadow-sm animate-fade-in mt-6">
-          <CardContent className="p-8">
+          <CardContent className="p-5 md:p-8">
+
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
                 <GraduationCap className="w-5 h-5 text-indigo-600" />
@@ -262,7 +259,7 @@ const ProfilePage = () => {
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Year</label>
                   <select name="year" value={campusForm.year} onChange={handleCampusFormChange}
-                    className="w-full h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full h-11 rounded-xl border border-gray-800 bg-white px-4 py-2 text-[15px] text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="">Select Year</option>
                     <option value="1st">1st Year</option>

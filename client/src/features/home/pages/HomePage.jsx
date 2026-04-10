@@ -36,9 +36,9 @@ const getCategoryMeta = (name) =>
   CATEGORY_META[name] || { icon: Package, color: 'from-gray-400 to-gray-500', text: 'text-gray-500' };
 
 const SectionShell = ({ title, description, icon, accent = 'text-primary-600', viewAllTo = '/products', children }) => (
-  <section className="px-4 py-14 lg:px-12">
+  <section className="px-4 py-8 md:py-14 lg:px-12">
     <div className="mx-auto max-w-7xl">
-      <div className="mb-10 flex items-end justify-between gap-4">
+      <div className="mb-6 md:mb-10 flex items-end justify-between gap-4">
         <div>
           <div className={`mb-2 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-widest ${accent} bg-current/5`}
             style={{ backgroundColor: 'transparent' }}
@@ -46,7 +46,7 @@ const SectionShell = ({ title, description, icon, accent = 'text-primary-600', v
             {React.createElement(icon, { className: `h-4 w-4 ${accent}` })}
             <span className={accent}>{title}</span>
           </div>
-          <h2 className="text-3xl font-black tracking-tight text-gray-900">{title}</h2>
+          <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-gray-900">{title}</h2>
           <p className="mt-2 max-w-xl text-gray-500 text-sm leading-relaxed">{description}</p>
         </div>
         <Link to={viewAllTo} className="hidden md:inline-flex shrink-0">
@@ -149,13 +149,13 @@ const HomePage = () => {
           <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[160%] rounded-full bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] from-cyan-400/20 via-transparent to-transparent blur-3xl" />
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIuNSIgZmlsbD0iI2ZmZmZmZiIgZmlsbC1vcGFjaXR5PSIwLjA0Ii8+PC9zdmc+')] opacity-60" />
 
-          <div className="relative z-10 grid gap-10 px-8 py-16 md:px-14 lg:grid-cols-[1.3fr_0.7fr] lg:py-20">
+          <div className="relative z-10 grid gap-8 md:gap-10 px-5 py-10 sm:px-8 sm:py-14 md:px-14 lg:grid-cols-[1.3fr_0.7fr] lg:py-20">
             <div>
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white/80 backdrop-blur-sm">
                 <span className="flex h-2 w-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_6px_rgba(34,211,238,0.8)]" />
                 CampusMitra Marketplace
               </div>
-              <h1 className="max-w-2xl text-4xl font-black leading-none tracking-[-0.04em] text-white sm:text-5xl md:text-[3.5rem] animate-fade-in">
+              <h1 className="max-w-2xl text-3xl font-black leading-none tracking-[-0.04em] text-white sm:text-4xl md:text-[3.5rem] animate-fade-in">
                 Buy useful campus essentials before they are gone.
               </h1>
               <p className="mt-6 max-w-xl text-base leading-7 text-white/65 md:text-lg">
@@ -207,7 +207,7 @@ const HomePage = () => {
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 flex items-end justify-between gap-4">
             <div>
-              <h2 className="text-3xl font-black tracking-tight text-gray-900">Browse by Category</h2>
+              <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-gray-900">Browse by Category</h2>
             </div>
             <Link to="/products" className="hidden md:block">
               <Button variant="outline" className="gap-2 rounded-full text-sm">

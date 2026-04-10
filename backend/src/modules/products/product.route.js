@@ -15,6 +15,7 @@ router.post('/:id/report', userAuth, productController.reportProduct);
 router.post('/', userAuth, upload.array('images', 5), productController.createProduct);
 
 router.put('/:id', userAuth, upload.array('images', 5), productController.updateProduct);
+router.patch('/:id/status', userAuth, productController.updateProductStatus);
 
 router.delete('/:id', userAuth, productController.deleteProduct);
 

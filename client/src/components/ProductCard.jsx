@@ -86,29 +86,29 @@ const ProductCard = ({ product, highlightLabel = '', highlightTone = 'bg-primary
           </Button>
         </div>
 
-        <div className="flex flex-1 flex-col px-6 pb-6 pt-5 bg-white relative z-20">
-          <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="flex flex-1 flex-col px-3 pb-4 pt-3 sm:px-6 sm:pb-6 sm:pt-5 bg-white relative z-20">
+          <div className="mb-2 sm:mb-3 flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-gray-600">
+              <div className="mb-2 sm:mb-3 flex flex-wrap items-center gap-1.5">
+                <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 sm:px-3 sm:py-1.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-gray-600">
                   {product.category}
                 </span>
-                <span className="inline-flex items-center rounded-full bg-primary-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-primary-700">
+                <span className="inline-flex items-center rounded-full bg-primary-100 px-2 py-1 sm:px-3 sm:py-1.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-primary-700">
                   {product.condition}
                 </span>
               </div>
-              <h3 className="line-clamp-2 text-xl font-bold leading-tight tracking-tight text-gray-900 transition-colors">
+              <h3 className="line-clamp-2 text-base sm:text-xl font-bold leading-tight tracking-tight text-gray-900 transition-colors">
                 {product.title}
               </h3>
             </div>
           </div>
 
-          <p className="mb-4 text-[1.9rem] font-black leading-none tracking-[-0.04em] text-stone-950">
+          <p className="mb-3 sm:mb-4 text-[1.4rem] sm:text-[1.9rem] font-black leading-none tracking-[-0.04em] text-stone-950">
             {formatPrice(product.price)}
           </p>
 
-          <div className="mb-4 flex items-center text-sm font-medium text-stone-600">
-            <MapPin className="mr-1.5 h-4 w-4 shrink-0 text-stone-400" />
+          <div className="mb-2 sm:mb-4 flex items-center text-xs sm:text-sm font-medium text-stone-600">
+            <MapPin className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 text-stone-400" />
             <span className="truncate">{product.location}</span>
           </div>
         </div>

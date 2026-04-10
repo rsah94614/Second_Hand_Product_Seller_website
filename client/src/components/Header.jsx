@@ -1,15 +1,15 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { io } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 import { Search, Plus, User, LogOut, Menu, Briefcase, ShoppingCart, History, MessageCircle, LayoutDashboard, ShieldCheck, Users, FolderTree, Package, Heart, Flag, Bell, CheckCheck } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Badge } from './ui/Badge';
-import { API_BASE_URL, SOCKET_URL } from '../config/api';
+import { API_BASE_URL } from '../config/api';
 import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../lib/fallbackImages';
 import {
   getNotifications,
@@ -35,11 +35,13 @@ import {
 
 const Header = () => {
   const { user, logout, isUser, isAdmin } = useAuth();
+  const socket = useSocket();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const location = useLocation();
   const seenToastIdsRef = useRef(new Set());
 
   useEffect(() => {
@@ -50,20 +52,19 @@ const Header = () => {
     return () => window.clearTimeout(timeoutId);
   }, [searchQuery]);
 
-  const { data: suggestionResponse } = useQuery({
-    queryKey: ['header-search-suggestions', debouncedSearch],
+  const { data: globalSearchData } = useQuery({
+    queryKey: ['global-search', debouncedSearch],
     queryFn: () =>
-      axios.get(`${API_BASE_URL}/api/products`, {
-        params: {
-          search: debouncedSearch,
-          limit: 5,
-        },
+      axios.get(`${API_BASE_URL}/api/search`, {
+        params: { q: debouncedSearch, limit: 5 },
       }).then((res) => res.data),
     enabled: debouncedSearch.length >= 2,
     staleTime: 60 * 1000,
   });
 
-  const suggestions = suggestionResponse?.products || [];
+  const searchProducts = globalSearchData?.products || [];
+  const searchUsers = globalSearchData?.users || [];
+  const hasResults = searchProducts.length > 0 || searchUsers.length > 0;
 
   const { data: notificationPreview } = useQuery({
     queryKey: ['notifications-preview'],
@@ -101,21 +102,9 @@ const Header = () => {
   }, [markNotificationAsRead, navigate]);
 
   useEffect(() => {
-    if (!user) {
+    if (!socket || !user) {
       return undefined;
     }
-
-    const token = localStorage.getItem('token');
-    if (!token) {
-      return undefined;
-    }
-
-    const notificationSocket = io(SOCKET_URL, {
-      auth: {
-        token: `Bearer ${token}`,
-      },
-      transports: ['websocket'],
-    });
 
     const handleNewNotification = (notification) => {
       queryClient.setQueryData(['notifications-preview'], (current) => {
@@ -204,15 +193,14 @@ const Header = () => {
       });
     };
 
-    notificationSocket.on('notification:new', handleNewNotification);
-    notificationSocket.on('notification:unread_count', handleUnreadCount);
+    socket.on('notification:new', handleNewNotification);
+    socket.on('notification:unread_count', handleUnreadCount);
 
     return () => {
-      notificationSocket.off('notification:new', handleNewNotification);
-      notificationSocket.off('notification:unread_count', handleUnreadCount);
-      notificationSocket.close();
+      socket.off('notification:new', handleNewNotification);
+      socket.off('notification:unread_count', handleUnreadCount);
     };
-  }, [user, queryClient, openNotification]);
+  }, [socket, user, queryClient, openNotification]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -423,31 +411,65 @@ const Header = () => {
                 className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/15 focus:border-white/30 transition-all"
               />
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40 group-hover:text-white/70 transition-colors w-4 h-4" />
-              {debouncedSearch.length >= 2 && suggestions.length > 0 && (
+              {debouncedSearch.length >= 2 && hasResults && (
                 <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl animate-soft-pop">
-                  {suggestions.map((product) => (
-                    <button
-                      key={product._id}
-                      type="button"
-                      onClick={() => {
-                        navigate(`/products/${product._id}`);
-                        setSearchQuery('');
-                        setDebouncedSearch('');
-                      }}
-                      className="flex w-full items-center gap-3 border-b border-gray-100 px-4 py-3 text-left transition-colors hover:bg-gray-50 last:border-b-0"
-                    >
-                      <img
-                        src={product.images?.[0] || PRODUCT_FALLBACK_IMAGE}
-                        alt={product.title}
-                        className="h-12 w-12 rounded-xl object-cover bg-gray-100"
-                        onError={setFallbackImage}
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-semibold text-gray-900">{product.title}</p>
-                        <p className="truncate text-sm text-gray-500">{product.category} | {product.location}</p>
+                  {searchUsers.length > 0 && (
+                    <>
+                      <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+                        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">People</p>
                       </div>
-                    </button>
-                  ))}
+                      {searchUsers.map((u) => (
+                        <button
+                          key={u._id}
+                          type="button"
+                          onClick={() => {
+                            navigate('/chat', { state: { sellerId: u._id, sellerName: u.name } });
+                            setSearchQuery('');
+                            setDebouncedSearch('');
+                          }}
+                          className="flex w-full items-center gap-3 border-b border-gray-100 px-4 py-3 text-left transition-colors hover:bg-gray-50 last:border-b-0"
+                        >
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-600 font-bold">
+                            {u.name?.[0]?.toUpperCase() || '?'}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-semibold text-gray-900">{u.name}</p>
+                            <p className="truncate text-sm text-gray-500">{u.email}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </>
+                  )}
+                  {searchProducts.length > 0 && (
+                    <>
+                      <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+                        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Products</p>
+                      </div>
+                      {searchProducts.map((product) => (
+                        <button
+                          key={product._id}
+                          type="button"
+                          onClick={() => {
+                            navigate(`/products/${product._id}`);
+                            setSearchQuery('');
+                            setDebouncedSearch('');
+                          }}
+                          className="flex w-full items-center gap-3 border-b border-gray-100 px-4 py-3 text-left transition-colors hover:bg-gray-50 last:border-b-0"
+                        >
+                          <img
+                            src={product.images?.[0] || PRODUCT_FALLBACK_IMAGE}
+                            alt={product.title}
+                            className="h-12 w-12 rounded-xl object-cover bg-gray-100"
+                            onError={setFallbackImage}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-semibold text-gray-900">{product.title}</p>
+                            <p className="truncate text-sm text-gray-500">{product.category} | {product.location}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -566,15 +588,20 @@ const Header = () => {
 
                       {[...primaryLinks, ...(isUser ? userMenuLinks : []), ...(isAdmin ? adminManageLinks : []), ...(isUser ? [{ to: '/create-product', label: 'List Product', icon: Plus }] : []), ...utilityLinks].map((link) => {
                         const Icon = link.icon;
+                        const isActive = location.pathname === link.to;
                         return (
                           <Link
                             key={link.to}
                             to={link.to}
                             onClick={() => setIsMenuOpen(false)}
-                            className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-primary-50 hover:text-primary-600 rounded-xl transition-colors"
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
+                              isActive 
+                                ? 'bg-primary-50 text-primary-600 font-bold' 
+                                : 'text-gray-700 hover:bg-primary-50 hover:text-primary-600 font-medium'
+                            }`}
                           >
                             <Icon className="w-5 h-5" />
-                            <span className="font-medium">{link.label}</span>
+                            <span>{link.label}</span>
                           </Link>
                         );
                       })}

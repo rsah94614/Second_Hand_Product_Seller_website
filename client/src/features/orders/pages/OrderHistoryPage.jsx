@@ -92,8 +92,8 @@ const OrderHistoryPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-10">
-        <div className="container space-y-4">
+      <div className="min-h-screen bg-gray-50 py-6 md:py-10">
+        <div className="max-w-7xl mx-auto px-4 space-y-4">
           {[...Array(3)].map((_, index) => (
             <div
               key={index}
@@ -133,11 +133,11 @@ const OrderHistoryPage = () => {
   return (
     <div>
       <Header />
-      <div className="min-h-screen bg-gray-50 py-12">
+      <div className="min-h-screen bg-gray-50 py-8 md:py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-800 flex items-center">
-              <History className="w-8 h-8 mr-3 text-primary-600" />
+          <div className="mb-6 md:mb-8">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center">
+              <History className="w-6 h-6 md:w-8 md:h-8 mr-3 text-primary-600" />
               Order History
             </h1>
             <p className="text-gray-600 mt-2">
@@ -206,18 +206,18 @@ const OrderHistoryPage = () => {
 
                   <div className="space-y-4 border-t border-gray-100 pt-4">
                     {order.items?.map((item, index) => (
-                      <div key={`${order._id}-${index}`} className="flex items-center space-x-4">
+                      <div key={`${order._id}-${index}`} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                         <img
                           src={item.image || PRODUCT_FALLBACK_IMAGE}
                           alt={item.title}
-                          className="w-20 h-20 object-cover rounded-xl"
+                          className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-xl shrink-0"
                           onError={setFallbackImage}
                         />
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-800">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-800 truncate">
                             {item.title}
                           </h3>
-                          <div className="flex items-center text-sm text-gray-600 space-x-4">
+                          <div className="flex flex-wrap items-center text-sm text-gray-600 gap-x-4 gap-y-1 mt-1">
                             <span className="flex items-center">
                               <Package className="w-4 h-4 mr-1" />
                               Qty {item.quantity}
@@ -228,9 +228,9 @@ const OrderHistoryPage = () => {
                             </span>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm text-gray-500">Price</p>
-                          <p className="text-xl font-semibold text-gray-800">
+                        <div className="text-left sm:text-right shrink-0">
+                          <p className="text-xs text-gray-500">Price</p>
+                          <p className="text-lg sm:text-xl font-semibold text-gray-800">
                             {formatPrice(item.price * item.quantity)}
                           </p>
                         </div>

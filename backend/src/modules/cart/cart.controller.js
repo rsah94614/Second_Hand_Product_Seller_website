@@ -21,6 +21,14 @@ const getCart = async (req, res) => {
     }
 
     await populateCart(cart);
+
+    // Auto-clean any ghost products that have been deleted permanently from the db
+    const ghostItems = cart.items.filter((item) => item.product == null);
+    if (ghostItems.length > 0) {
+      cart.items = cart.items.filter((item) => item.product != null);
+      await cart.save();
+    }
+
     return res.json(formatCartResponse(cart));
   } catch (error) {
     return res.status(500).json({ message: error.message });

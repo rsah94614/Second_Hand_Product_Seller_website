@@ -1,14 +1,17 @@
 import React from 'react';
 import { AuthProvider } from '../context/AuthContext';
+import { SocketProvider } from '../context/SocketContext';
 import AppRouter from './router';
 
 const App = () => (
   <AuthProvider>
-    <div className="App">
-      <main>
-        <AppRouter />
-      </main>
-    </div>
+    <SocketProvider>
+      <div className="App">
+        <main>
+          <AppRouter />
+        </main>
+      </div>
+    </SocketProvider>
   </AuthProvider>
 );
 

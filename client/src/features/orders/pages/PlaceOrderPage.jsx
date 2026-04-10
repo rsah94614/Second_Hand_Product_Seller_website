@@ -171,12 +171,12 @@ const PlaceOrderPage = () => {
   return (
     <div>
       <Header />
-      <div className="min-h-screen bg-gray-50 py-12">
+      <div className="min-h-screen bg-gray-50 py-6 md:py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Button
             onClick={() => navigate(-1)}
             variant="ghost"
-            className="mb-8 px-0 text-sm font-medium text-gray-600 hover:text-primary-600 hover:bg-transparent"
+            className="mb-5 md:mb-8 px-0 text-sm font-medium text-gray-600 hover:text-primary-600 hover:bg-transparent"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Product
@@ -185,9 +185,9 @@ const PlaceOrderPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
             <Card className="rounded-2xl border-gray-100 shadow-sm animate-fade-in">
               <CardHeader className="pb-2">
-                <CardTitle className="text-2xl text-gray-900">Shipping Details</CardTitle>
+                <CardTitle className="text-xl md:text-2xl text-gray-900">Shipping Details</CardTitle>
               </CardHeader>
-              <CardContent className="p-8 pt-2">
+              <CardContent className="p-4 md:p-8 pt-2">
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -274,11 +274,11 @@ const PlaceOrderPage = () => {
               </CardContent>
             </Card>
 
-            <Card className="sticky top-24 h-fit rounded-2xl border-gray-100 shadow-sm animate-fade-up-delayed">
+            <Card className="md:sticky md:top-24 h-fit rounded-2xl border-gray-100 shadow-sm animate-fade-up-delayed">
               <CardHeader className="pb-2">
-                <CardTitle className="text-2xl text-gray-900">Order Summary</CardTitle>
+                <CardTitle className="text-xl md:text-2xl text-gray-900">Order Summary</CardTitle>
               </CardHeader>
-              <CardContent className="p-8 pt-2">
+              <CardContent className="p-4 md:p-8 pt-2">
               <div className="space-y-6">
                 <div className="relative group">
                   <img src={product.images?.[0] || PRODUCT_FALLBACK_IMAGE} alt={product.title} className="w-full h-64 object-cover rounded-xl shadow-sm" onError={setFallbackImage} />

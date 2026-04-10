@@ -28,7 +28,7 @@ export const updateProduct = (productId, formData) =>
   }).then((res) => res.data);
 
 export const patchProduct = (productId, payload) =>
-  axios.put(`${API_BASE_URL}/api/products/${productId}`, payload).then((res) => res.data);
+  axios.patch(`${API_BASE_URL}/api/products/${productId}/status`, payload).then((res) => res.data);
 
 export const deleteProduct = (productId) =>
   axios.delete(`${API_BASE_URL}/api/products/${productId}`).then((res) => res.data);

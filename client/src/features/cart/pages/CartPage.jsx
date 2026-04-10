@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
@@ -16,11 +16,36 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui
 import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
 import { API_BASE_URL } from '../../../config/api';
 import { ErrorState } from '../../../components/ui/ErrorState';
+import { Input } from '../../../components/ui/Input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/Dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../../../components/ui/AlertDialog';
 
 const CartPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [shippingDetails, setShippingDetails] = useState({
+    fullName: user?.name || '',
+    phone: user?.phone || '',
+    addressLine1: '',
+    landmark: '',
+    city: '',
+    state: '',
+    postalCode: '',
+  });
+
+  useEffect(() => {
+    if (user) {
+      setShippingDetails(prev => ({
+        ...prev,
+        fullName: prev.fullName || user.name || '',
+        phone: prev.phone || user.phone || ''
+      }));
+    }
+  }, [user]);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['cart'],
@@ -46,8 +71,8 @@ const CartPage = () => {
   });
 
   const checkout = useMutation({
-    mutationFn: () =>
-      axios.post(`${API_BASE_URL}/api/cart/checkout`),
+    mutationFn: (details) =>
+      axios.post(`${API_BASE_URL}/api/cart/checkout`, { shippingDetails: details }),
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
@@ -128,6 +153,10 @@ const CartPage = () => {
   const items = data?.items || [];
   const summary = data?.summary || { itemCount: 0, totalAmount: 0 };
 
+  const hasUnavailableItems = items.some(
+    (item) => !item.product || item.product.isSold || item.product.isActive === false
+  );
+
   if (isError) {
     return (
       <div>
@@ -185,10 +214,12 @@ const CartPage = () => {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-6">
-                {items.map((item, index) => (
+                {items.map((item, index) => {
+                  const isItemUnavailable = !item.product || item.product.isSold || item.product.isActive === false;
+                  return (
                   <div
                     key={item._id || item.product?._id || index}
-                    className="p-6 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-6 group hover:shadow-md transition-shadow"
+                    className={`p-6 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-6 group transition-shadow ${isItemUnavailable ? 'opacity-60 bg-gray-50/50' : 'hover:shadow-md'}`}
                   >
                     <div className="relative w-full sm:w-32 h-32 shrink-0">
                       <img
@@ -196,7 +227,7 @@ const CartPage = () => {
                           item.product?.images?.[0] ||
                           PRODUCT_FALLBACK_IMAGE
                         }
-                        alt={item.product?.title}
+                        alt={item.product?.title || 'Unknown Product'}
                         className="w-full h-full object-cover rounded-xl"
                         onError={setFallbackImage}
                       />
@@ -204,35 +235,42 @@ const CartPage = () => {
                     <div className="flex-1 flex flex-col justify-between">
                       <div>
                         <div className="flex justify-between items-start">
-                          <h3 className="text-lg font-bold text-gray-900 mb-1 line-clamp-1">
-                            {item.product?.title}
-                          </h3>
+                          <div>
+                            <h3 className="text-lg font-bold text-gray-900 mb-1 line-clamp-1">
+                              {item.product?.title || 'Product removed'}
+                            </h3>
+                            {isItemUnavailable && (
+                              <span className="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-600/10 mb-2">
+                                Currently Unavailable
+                              </span>
+                            )}
+                          </div>
                           <button
                             className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                            onClick={() => removeItem.mutate(item.product?._id)}
+                            onClick={() => removeItem.mutate(item.product?._id || item._id)}
                             title="Remove item"
                           >
                             <Trash2 className="w-5 h-5" />
                           </button>
                         </div>
                         <p className="text-sm text-gray-500 mb-4 flex items-center">
-                          {item.product?.location}
+                          {item.product?.location || 'Location unavailable'}
                         </p>
                       </div>
 
                       <div className="flex items-end justify-between">
                         <div className="text-right">
-                          <p className="text-xl font-bold text-primary-600">
+                          <p className={`text-xl font-bold ${isItemUnavailable ? 'text-gray-500 line-through' : 'text-primary-600'}`}>
                             {formatPrice(item.subtotal)}
                           </p>
                         </div>
                       </div>
                     </div>
                   </div>
-                ))}
+                )})}
               </div>
 
-              <Card className="sticky top-24 h-fit rounded-2xl border-gray-100 shadow-sm animate-fade-up-delayed">
+              <Card className="md:sticky md:top-24 h-fit rounded-2xl border-gray-100 shadow-sm animate-fade-up-delayed">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xl text-gray-900">Order Summary</CardTitle>
                 </CardHeader>
@@ -253,8 +291,8 @@ const CartPage = () => {
                   </div>
                   <Button
                     className="w-full py-4 shadow-lg shadow-primary-600/20"
-                    onClick={() => checkout.mutate()}
-                    disabled={checkout.isLoading}
+                    onClick={() => setIsAddressModalOpen(true)}
+                    disabled={checkout.isLoading || checkout.isPending || hasUnavailableItems}
                   >
                     {checkout.isLoading ? (
                       'Processing...'
@@ -265,6 +303,11 @@ const CartPage = () => {
                       </>
                     )}
                   </Button>
+                  {hasUnavailableItems && (
+                    <p className="mt-4 text-xs font-semibold text-red-600 text-center bg-red-50 border border-red-100 p-2.5 rounded-xl">
+                      Remove unavailable items from your cart to proceed.
+                    </p>
+                  )}
                   <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-500">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -278,6 +321,73 @@ const CartPage = () => {
         </div>
       </div>
       <Footer />
+
+      <Dialog open={isAddressModalOpen} onOpenChange={setIsAddressModalOpen}>
+        <DialogContent className="sm:max-w-[500px] p-6 rounded-3xl z-50">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Shipping Address</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold">Full Name</label>
+                <Input value={shippingDetails.fullName} onChange={e => setShippingDetails(prev => ({...prev, fullName: e.target.value}))} placeholder="John Doe" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold">Phone Number</label>
+                <Input value={shippingDetails.phone} onChange={e => setShippingDetails(prev => ({...prev, phone: e.target.value}))} placeholder="+91 9876543210" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Address Line 1</label>
+              <Input value={shippingDetails.addressLine1} onChange={e => setShippingDetails(prev => ({...prev, addressLine1: e.target.value}))} placeholder="Street address, P.O. box, etc." />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Locality / Landmark</label>
+              <Input value={shippingDetails.landmark} onChange={e => setShippingDetails(prev => ({...prev, landmark: e.target.value}))} placeholder="Apartment, suite, unit, building, floor, etc." />
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold">City</label>
+                <Input value={shippingDetails.city} onChange={e => setShippingDetails(prev => ({...prev, city: e.target.value}))} placeholder="Delhi" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold">State</label>
+                <Input value={shippingDetails.state} onChange={e => setShippingDetails(prev => ({...prev, state: e.target.value}))} placeholder="Delhi" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold">Pincode</label>
+                <Input value={shippingDetails.postalCode} onChange={e => setShippingDetails(prev => ({...prev, postalCode: e.target.value}))} placeholder="110001" />
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button variant="ghost" onClick={() => setIsAddressModalOpen(false)}>Cancel</Button>
+            <Button onClick={() => {
+              setIsAddressModalOpen(false);
+              setTimeout(() => setIsAlertOpen(true), 350);
+            }}>Confirm Address</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+        <AlertDialogContent className="z-50 rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm your order</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to place the order with this address? Your cart will be checked out immediately.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              setIsAlertOpen(false);
+              checkout.mutate(shippingDetails);
+            }} className="bg-primary-600 hover:bg-primary-700">Place Order</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

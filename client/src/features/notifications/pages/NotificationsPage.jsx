@@ -195,7 +195,7 @@ const NotificationsPage = () => {
                   <SlidersHorizontal className="h-4 w-4 text-primary-600" />
                   Category Filters
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                   {notificationCategoryOptions.map((category) => {
                     const isActive = activeCategory === category.value;
                     const count = category.value === 'all'
@@ -207,7 +207,7 @@ const NotificationsPage = () => {
                         key={category.value}
                         type="button"
                         onClick={() => setActiveCategory(category.value)}
-                        className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all ${
+                        className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all ${
                           isActive
                             ? 'border-primary-600 bg-primary-600 text-white shadow-sm'
                             : 'border-gray-200 bg-white text-gray-600 hover:border-primary-200 hover:text-primary-700'

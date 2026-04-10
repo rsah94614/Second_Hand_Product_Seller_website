@@ -16,7 +16,11 @@ const getConversationsAggregation = async (userId) => {
         _id: {
           $cond: [{ $eq: ['$sender', userObjectId] }, '$receiver', '$sender'],
         },
-        lastMessage: { $first: '$content' },
+        lastMessage: {
+          $first: {
+            $cond: [{ $eq: ['$isDeleted', true] }, 'This message was deleted', '$content'],
+          },
+        },
         timestamp: { $first: '$timestamp' },
         unreadCount: {
           $sum: {

@@ -219,13 +219,6 @@ const ProductDetailPage = () => {
       maximumFractionDigits: 0,
     }).format(price);
 
-  const formatDate = (date) =>
-    new Date(date).toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-
   const existingReview = product?.reviews?.find((review) => review.user?._id === user?.id);
 
   useEffect(() => {
@@ -250,7 +243,7 @@ const ProductDetailPage = () => {
           <div className="animate-pulse">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
               <div className="space-y-4">
-                <div className="h-[500px] bg-gray-200 rounded-2xl" />
+                <div className="h-[280px] sm:h-[400px] md:h-[500px] bg-gray-200 rounded-2xl" />
                 <div className="flex space-x-4">
                   {[...Array(4)].map((_, index) => (
                     <div key={index} className="h-24 w-24 bg-gray-200 rounded-xl" />
@@ -339,7 +332,7 @@ const ProductDetailPage = () => {
             <div className="flex flex-col animate-fade-in">
               <div className="mb-8">
                 <div className="flex items-start justify-between mb-4">
-                <h1 className="text-3xl lg:text-4xl font-black text-gray-900 leading-tight tracking-tight">{product.title}</h1>
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-gray-900 leading-tight tracking-tight">{product.title}</h1>
                   {isOwner && (
                     <div className="flex gap-2">
                       <Link to={`/edit-product/${product._id}`}>
@@ -461,29 +454,29 @@ const ProductDetailPage = () => {
                         </Button>
                       </div>
 
-                      <div className="flex flex-col sm:flex-row gap-4">
+                      <div className="flex flex-col xs:flex-row gap-3">
                         <Button
                           onClick={handleWishlist}
                           disabled={wishlistMutation.isPending}
                           variant="outline"
-                          className="flex-1 h-11"
+                          className="flex-1 h-11 min-w-0"
                         >
-                          <Heart className={`w-4 h-4 mr-2 ${isWishlisted ? 'fill-current text-rose-500' : ''}`} />
+                          <Heart className={`w-4 h-4 mr-2 shrink-0 ${isWishlisted ? 'fill-current text-rose-500' : ''}`} />
                           {isWishlisted ? 'Saved' : 'Save Item'}
                         </Button>
                         <Button
                           onClick={() => navigate('/chat', { state: { sellerId: product.seller._id, sellerName: product.seller.name } })}
                           variant="outline"
-                          className="flex-1 h-11"
+                          className="flex-1 h-11 min-w-0"
                         >
-                          <MessageSquare className="w-4 h-4 mr-2" />
+                          <MessageSquare className="w-4 h-4 mr-2 shrink-0" />
                           Message Seller
                         </Button>
                         <Button
                           onClick={handleShare}
                           variant="outline"
                           size="icon"
-                          className="h-11 w-11 shrink-0"
+                          className="h-11 w-11 shrink-0 self-end xs:self-auto"
                           title="Share"
                         >
                           <Share2 className="w-4 h-4" />
@@ -496,10 +489,9 @@ const ProductDetailPage = () => {
               </div>
             </div>
           </div>
-        </div>
 
         {/* Secondary Info: Reviews & Report */}
-        <div className="mt-16 grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <div className="mt-16 grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
           <div className="space-y-8">
 
 
@@ -640,7 +632,7 @@ const ProductDetailPage = () => {
           <section className="mt-16">
             <div className="mb-6 flex items-end justify-between gap-4">
               <div>
-                <h2 className="text-3xl font-bold text-gray-900">Similar Items</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Similar Items</h2>
                 <p className="mt-2 text-gray-600">
                   Similar listings based on category, price range, popularity, and rating.
                 </p>
@@ -656,6 +648,7 @@ const ProductDetailPage = () => {
             </div>
           </section>
         )}
+        </div>
       </main>
       <Footer />
     </div>

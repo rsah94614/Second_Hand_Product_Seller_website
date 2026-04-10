@@ -384,6 +384,68 @@ const updateProduct = async (req, res) => {
   }
 };
 
+const updateProductStatus = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    if (product.seller.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to update this product' });
+    }
+
+    const previousIsActive = product.isActive;
+    const previousIsSold = product.isSold;
+
+    if (req.body.isActive !== undefined) {
+      product.isActive = req.body.isActive;
+    }
+    
+    if (req.body.isSold !== undefined) {
+      product.isSold = req.body.isSold;
+    }
+
+    await product.save();
+
+    if (previousIsActive !== product.isActive || previousIsSold !== product.isSold) {
+      let title = 'Saved listing updated';
+      let message = `"${product.title}" was updated.`;
+      let type = 'wishlist_listing_update';
+
+      if (product.isSold) {
+        title = 'Saved item was marked sold';
+        message = `"${product.title}" is no longer available because it was marked sold.`;
+        type = 'wishlist_item_sold';
+      } else if (product.isActive === false) {
+        title = 'Saved item became unavailable';
+        message = `"${product.title}" is currently unavailable.`;
+        type = 'wishlist_item_unavailable';
+      } else if (product.isActive && !product.isSold) {
+        title = 'Saved item is available again';
+        message = `"${product.title}" is active again.`;
+        type = 'wishlist_item_available';
+      }
+
+      await notifyWishlistUsers({
+        productId: product._id,
+        actorId: req.user._id,
+        type,
+        title,
+        message,
+        link: `/products/${product._id}`,
+        metadata: { isActive: product.isActive, isSold: product.isSold },
+        excludeUserIds: [req.user._id],
+      });
+    }
+
+    const populatedProduct = await Product.findById(product._id).populate('seller', 'name phone location');
+    return res.json(populatedProduct);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
 const deleteProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -425,5 +487,6 @@ module.exports = {
   reportProduct,
   createProduct,
   updateProduct,
+  updateProductStatus,
   deleteProduct,
 };

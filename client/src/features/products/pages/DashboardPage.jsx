@@ -149,13 +149,13 @@ const DashboardPage = () => {
 
             <div className="flex flex-col sm:flex-row gap-3 shrink-0">
               <Link to="/create-product">
-                <Button className="gap-2 rounded-full px-6 py-3 bg-white text-primary-700 hover:bg-white/90 shadow-xl font-bold border-0">
+                <Button variant="outline" className="gap-2 rounded-full px-6 py-3 border-white/30 text-white bg-indigo-900 hover:border-white/50 hover:bg-indigo-950">
                   <Plus className="w-4 h-4" />
                   List an Item
                 </Button>
               </Link>
               <Link to="/my-products">
-                <Button variant="outline" className="gap-2 rounded-full px-6 py-3 border-white/30 text-white hover:bg-white/10 hover:border-white/50">
+                <Button variant="outline" className="gap-2 rounded-full px-6 py-3 border-white/30 text-white bg-indigo-900 hover:border-white/50 hover:bg-indigo-950">
                   Manage Listings
                   <ArrowRight className="w-4 h-4" />
                 </Button>

@@ -90,16 +90,16 @@ const SignUpPage = () => {
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ec_0%,#f8fafc_24%,#f8fafc_100%)] flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-[1100px] min-h-[700px] overflow-hidden rounded-[2.5rem] bg-white shadow-[0_20px_80px_-20px_rgba(15,23,42,0.15)] flex flex-col lg:flex-row-reverse animate-fade-in border border-stone-100/50">
+      <div className="w-full max-w-[1100px] min-h-[700px] overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] bg-white shadow-[0_20px_80px_-20px_rgba(15,23,42,0.15)] flex flex-col lg:flex-row-reverse animate-fade-in border border-stone-100/50">
 
         {/* Right Form Section */}
-        <div className="w-full lg:w-1/2 p-10 sm:p-14 lg:px-16 lg:py-12 flex flex-col justify-center bg-white relative z-10">
-          <div className='flex flex-col items-center'>
-            <div className="inline-flex mb-10 items-center group">
-              <div className="text-2xl w-26 h-12 bg-linear-to-br from-primary-600 to-indigo-600 rounded-lg flex items-center justify-center text-white font-black shadow-md shadow-primary-600/20 group-hover:scale-105 transition-transform duration-300">Campus</div>
+        <div className="w-full lg:w-1/2 p-6 sm:p-14 lg:px-16 lg:py-12 flex flex-col justify-center bg-white relative z-10">
+          <div className='flex flex-col items-center text-center'>
+            <div className="inline-flex mb-8 sm:mb-10 items-center group">
+              <div className="text-2xl w-24 h-12 sm:w-26 bg-linear-to-br from-primary-600 to-indigo-600 rounded-lg flex items-center justify-center text-white font-black shadow-md shadow-primary-600/20 group-hover:scale-105 transition-transform duration-300">Campus</div>
               <div className="text-2xl font-display font-black bg-clip-text text-transparent bg-linear-to-r from-gray-900 to-gray-600 tracking-tight ml-0.5">Mitra</div>
             </div>
-            <h2 className="text-3xl font-black text-gray-900 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight text-center">
               Create your account
             </h2>
             <p className="mt-3 text-sm text-gray-600">

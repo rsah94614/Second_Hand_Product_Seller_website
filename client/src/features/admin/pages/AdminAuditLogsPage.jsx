@@ -50,18 +50,18 @@ const AdminAuditLogsPage = () => {
 
   return (
     <PageShell maxWidth="max-w-5xl">
-      <div className="py-8">
-        <div className="mb-8 flex items-center justify-between">
+      <div className="px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-gray-900 flex items-center gap-3">
-              <ShieldCheck className="w-8 h-8 text-primary-600" />
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-gray-900 flex items-center gap-3">
+              <ShieldCheck className="w-7 h-7 sm:w-8 sm:h-8 text-primary-600" />
               Observability & Audit
             </h1>
-            <p className="text-gray-500 mt-2">Monitor server health and track administrative actions across the platform.</p>
+            <p className="text-gray-500 mt-2 text-sm sm:text-base">Monitor server health and track administrative actions across the platform.</p>
           </div>
           <button 
             onClick={() => { refetch(); refetchHealth(); }} 
-            className="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-full px-5 py-2 text-sm font-semibold transition-colors"
+            className="inline-flex w-full sm:w-auto justify-center items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-full px-5 py-2.5 sm:py-2 text-sm font-semibold transition-colors"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} /> Refresh
           </button>
@@ -106,7 +106,7 @@ const AdminAuditLogsPage = () => {
         )}
 
         {/* Audit Logs Filter */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
           <button
             onClick={() => setTargetTypeFilter('')}
             className={`px-4 py-2 text-sm font-semibold rounded-full whitespace-nowrap transition-colors ${

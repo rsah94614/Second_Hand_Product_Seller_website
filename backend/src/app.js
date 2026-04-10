@@ -91,6 +91,7 @@ const createApp = () => {
   app.use('/api/admin', require('./modules/admin/admin.route'));
   app.use('/api/categories', require('./modules/categories/category.route'));
   app.use('/api/notifications', require('./modules/notifications/notification.route'));
+  app.use('/api/search', require('./modules/search/search.route'));
 
   // Global Error Handler
   const errorHandler = require('./shared/middleware/error.middleware');
@@ -109,16 +110,39 @@ const createApp = () => {
     }
     onlineUsers.get(userId).add(socket.id);
     
-    // Broadcast presence update
-    io.emit('user_online', { userId });
-    console.log(`User connected: ${socket.id}, User: ${userId}. Online: ${onlineUsers.size}`);
+    // Broadcast presence only to users who have chatted with this user
+    (async () => {
+      try {
+        const partnerIds = await Message.distinct('sender', { receiver: userId });
+        const receiverIds = await Message.distinct('receiver', { sender: userId });
+        const uniquePartners = [...new Set([...partnerIds.map(String), ...receiverIds.map(String)])];
+        uniquePartners.forEach(partnerId => {
+          if (partnerId !== userId) {
+            io.to(partnerId).emit('user_online', { userId });
+          }
+        });
+      } catch { /* ignore */ }
+    })();
 
     socket.on('get_presence', (targetUserIds) => {
+      if (!Array.isArray(targetUserIds)) return;
       const presence = {};
       targetUserIds.forEach(id => {
         presence[id] = onlineUsers.has(id) && onlineUsers.get(id).size > 0;
       });
       socket.emit('presence_batch', presence);
+    });
+
+    socket.on('typing_start', ({ receiverId }) => {
+      if (receiverId && typeof receiverId === 'string') {
+        io.to(receiverId).emit('user_typing', { userId });
+      }
+    });
+
+    socket.on('typing_stop', ({ receiverId }) => {
+      if (receiverId && typeof receiverId === 'string') {
+        io.to(receiverId).emit('user_stop_typing', { userId });
+      }
     });
 
     socket.on('send_message', async (data) => {
@@ -135,11 +159,17 @@ const createApp = () => {
         return;
       }
 
+      const trimmed = content.trim();
+      if (trimmed.length > 2000) {
+        socket.emit('error', { message: 'Message too long (max 2000 chars)' });
+        return;
+      }
+
       try {
         const newMessage = new Message({
           sender,
           receiver,
-          content: content.trim(),
+          content: trimmed,
         });
 
         await newMessage.save();
@@ -154,16 +184,84 @@ const createApp = () => {
       }
     });
 
+    socket.on('edit_message', async ({ messageId, newContent }) => {
+      try {
+        if (!newContent?.trim() || newContent.trim().length > 2000) {
+          return socket.emit('error', { message: 'Invalid message content' });
+        }
+
+        const message = await Message.findById(messageId);
+        if (!message) return socket.emit('error', { message: 'Message not found' });
+        if (message.sender.toString() !== userId) return socket.emit('error', { message: 'Unauthorized' });
+        if (message.isDeleted) return socket.emit('error', { message: 'Cannot edit deleted message' });
+        
+        message.content = newContent.trim();
+        message.isEdited = true;
+        await message.save();
+        await message.populate('sender', 'name email avatar');
+        await message.populate('receiver', 'name email avatar');
+        
+        io.to(message.receiver._id.toString()).emit('message_edited', message);
+        io.to(userId).emit('message_edited', message);
+      } catch (error) {
+        console.error('Error editing message:', error);
+        socket.emit('error', { message: 'Failed to edit message' });
+      }
+    });
+
+    socket.on('delete_message', async ({ messageId }) => {
+      try {
+        const message = await Message.findById(messageId);
+        if (!message) return socket.emit('error', { message: 'Message not found' });
+        if (message.sender.toString() !== userId) return socket.emit('error', { message: 'Unauthorized' });
+        
+        message.isDeleted = true;
+        message.content = '';
+        await message.save();
+        await message.populate('sender', 'name email avatar');
+        await message.populate('receiver', 'name email avatar');
+        
+        io.to(message.receiver._id.toString()).emit('message_deleted', message);
+        io.to(userId).emit('message_deleted', message);
+      } catch (error) {
+        console.error('Error deleting message:', error);
+        socket.emit('error', { message: 'Failed to delete message' });
+      }
+    });
+
+    socket.on('mark_seen', async ({ receiverId }) => {
+      try {
+        await Message.updateMany(
+          { sender: receiverId, receiver: userId, read: false },
+          { $set: { read: true } }
+        );
+        io.to(receiverId).emit('messages_read', { receiverId: userId });
+      } catch (error) {
+        console.error('Error marking seen:', error);
+      }
+    });
+
     socket.on('disconnect', () => {
       const userSockets = onlineUsers.get(userId);
       if (userSockets) {
         userSockets.delete(socket.id);
         if (userSockets.size === 0) {
           onlineUsers.delete(userId);
-          io.emit('user_offline', { userId });
+          // Scoped offline broadcast
+          (async () => {
+            try {
+              const partnerIds = await Message.distinct('sender', { receiver: userId });
+              const receiverIds = await Message.distinct('receiver', { sender: userId });
+              const uniquePartners = [...new Set([...partnerIds.map(String), ...receiverIds.map(String)])];
+              uniquePartners.forEach(partnerId => {
+                if (partnerId !== userId) {
+                  io.to(partnerId).emit('user_offline', { userId });
+                }
+              });
+            } catch { /* ignore */ }
+          })();
         }
       }
-      console.log(`User disconnected: ${socket.id}. Online: ${onlineUsers.size}`);
     });
   });
 
