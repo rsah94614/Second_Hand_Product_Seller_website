@@ -1,16 +1,18 @@
 const nodemailer = require('nodemailer');
 
 const sendResetEmail = async (toEmail, resetUrl) => {
-  // If no credentials are provided in the environment, fallback to console logging
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.warn('⚠️ [DEV WARNING] EMAIL_USER or EMAIL_PASS not found in .env variables.');
-    console.warn(`⚠️ [DEV ONLY] Falling back to terminal. URL for ${toEmail}: ${resetUrl}`);
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('SMTP credentials are missing');
+    }
+
+    console.warn('[DEV WARNING] EMAIL_USER or EMAIL_PASS not found in .env variables.');
+    console.warn(`[DEV ONLY] Password reset URL for ${toEmail}: ${resetUrl}`);
     return;
   }
 
-  // Create reusable transporter object using the default SMTP transport
   const transporter = nodemailer.createTransport({
-    service: 'gmail', // This is set up seamlessly for Gmail App Passwords
+    service: 'gmail',
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
@@ -42,9 +44,9 @@ const sendResetEmail = async (toEmail, resetUrl) => {
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log(`✅ Password reset email successfully dispatched to ${toEmail}`);
+    console.log(`Password reset email successfully dispatched to ${toEmail}`);
   } catch (error) {
-    console.error(`❌ Failed to dispatch password reset email to ${toEmail}:`, error);
+    console.error(`Failed to dispatch password reset email to ${toEmail}:`, error);
     throw new Error('Failed to send email');
   }
 };

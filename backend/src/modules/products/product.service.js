@@ -1,12 +1,10 @@
 const Product = require('../../../models/Product');
 const Category = require('../../../models/Category');
 const User = require('../../../models/User');
-const Report = require('../../../models/Report');
 const { v2: cloudinary } = require('cloudinary');
 const fs = require('fs');
 const { ensureDefaultCategories } = require('../../../utils/categoryDefaults');
 const {
-  createNotification,
   createNotifications,
 } = require('../../shared/utils/notification.utils');
 

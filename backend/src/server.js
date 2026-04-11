@@ -2,9 +2,11 @@ const dotenv = require('dotenv');
 const createApp = require('./app');
 const connectDB = require('./config/db');
 const connectCloudinary = require('./config/cloudinary');
+const { validateEnvironment } = require('./config/env');
 const { ensureDefaultCategories } = require('../utils/categoryDefaults');
 
 dotenv.config();
+validateEnvironment();
 
 const { server } = createApp();
 

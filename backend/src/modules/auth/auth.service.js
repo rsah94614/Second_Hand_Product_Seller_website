@@ -1,7 +1,4 @@
-const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
-const User = require('../../../models/User');
-const { sendResetEmail } = require('../../shared/utils/emailService');
 
 // Known college email domains → auto-verified with college name
 const COLLEGE_DOMAINS = {

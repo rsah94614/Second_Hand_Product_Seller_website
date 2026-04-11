@@ -133,10 +133,22 @@ CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
 CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 CLIENT_URL=http://localhost:5173
+SERVE_CLIENT=false
+EMAIL_USER=your-email@example.com
+EMAIL_PASS=your-email-app-password
+COOKIE_SAME_SITE=strict
+COOKIE_SECURE=false
 ADMIN_EMAIL=admin@example.com
 ```
 
 You can also copy from [`.env.example`](/d:/sem%20project%20GU/backend/.env.example).
+
+For production:
+
+- Set `EMAIL_USER` and `EMAIL_PASS` so password reset emails can actually be sent.
+- If your frontend and backend are hosted on different sites, set `COOKIE_SAME_SITE=none` and `COOKIE_SECURE=true`.
+- If you are deploying backend separately, keep `SERVE_CLIENT=false`.
+- Only set `SERVE_CLIENT=true` when this backend should serve the built frontend from `client/dist`.
 
 ## Installation
 

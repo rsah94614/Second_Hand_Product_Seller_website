@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -15,6 +16,9 @@ const createApp = () => {
   const app = express();
   const server = http.createServer(app);
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+  const clientDistPath = path.join(__dirname, '../../client/dist');
+  const shouldServeClient =
+    process.env.SERVE_CLIENT === 'true' && fs.existsSync(clientDistPath);
 
   const getSocketToken = (socket) => {
     const authToken = socket.handshake.auth?.token;
@@ -265,11 +269,13 @@ const createApp = () => {
     });
   });
 
-  app.use(express.static(path.join(__dirname, '../../client/dist')));
+  if (shouldServeClient) {
+    app.use(express.static(clientDistPath));
 
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
-  });
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(clientDistPath, 'index.html'));
+    });
+  }
 
   return { app, server, io };
 };

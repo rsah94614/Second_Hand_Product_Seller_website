@@ -4,6 +4,26 @@ const User = require('../../../models/User');
 const { sendResetEmail } = require('../../shared/utils/emailService');
 const { detectCollegeDomain, buildAuthUser, signAccessToken, signRefreshToken } = require('./auth.service');
 
+const getRefreshCookieOptions = () => {
+  const sameSite = (process.env.COOKIE_SAME_SITE || (process.env.NODE_ENV === 'production' ? 'lax' : 'strict')).toLowerCase();
+  const secure = process.env.COOKIE_SECURE
+    ? process.env.COOKIE_SECURE === 'true'
+    : sameSite === 'none' || process.env.NODE_ENV === 'production';
+
+  return {
+    httpOnly: true,
+    secure,
+    sameSite,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  };
+};
+
+const getRefreshCookieClearOptions = () => {
+  const cookieOptions = getRefreshCookieOptions();
+  delete cookieOptions.maxAge;
+  return cookieOptions;
+};
+
 const register = async (req, res) => {
   try {
     const { name, email, password, phone, location, campus } = req.body;
@@ -37,12 +57,7 @@ const register = async (req, res) => {
     user.refreshTokens = [refreshToken];
     await user.save();
 
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
+    res.cookie('refreshToken', refreshToken, getRefreshCookieOptions());
 
     return res.status(201).json({
       message: 'User created successfully',
@@ -83,12 +98,7 @@ const login = async (req, res) => {
     user.refreshTokens.push(refreshToken);
     await user.save();
 
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
+    res.cookie('refreshToken', refreshToken, getRefreshCookieOptions());
 
     return res.json({
       message: 'Login successful',
@@ -121,12 +131,13 @@ const forgotPassword = async (req, res) => {
     user.resetPasswordExpires = Date.now() + 3600000;
     await user.save();
 
-    const resetUrl = `http://localhost:5173/reset-password?token=${resetToken}`;
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    const resetUrl = new URL(`/reset-password?token=${resetToken}`, clientUrl).toString();
 
     try {
       await sendResetEmail(email, resetUrl);
       return res.json({ message: 'Password reset link securely sent to your email.' });
-    } catch (emailError) {
+    } catch (error) {
       user.resetPasswordToken = undefined;
       user.resetPasswordExpires = undefined;
       await user.save();
@@ -197,11 +208,7 @@ const logout = async (req, res) => {
       }
     }
     
-    res.clearCookie('refreshToken', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-    });
+    res.clearCookie('refreshToken', getRefreshCookieClearOptions());
     
     return res.json({ message: 'Logged out successfully' });
   } catch (error) {

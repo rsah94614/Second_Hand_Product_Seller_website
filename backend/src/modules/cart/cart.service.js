@@ -1,5 +1,3 @@
-const Cart = require('../../../models/Cart');
-const Product = require('../../../models/Product');
 
 const normalizeQuantity = (quantity = 1) => {
   const qty = Number(quantity);
