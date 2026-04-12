@@ -4,6 +4,16 @@ const User = require('../../../models/User');
 const { sendResetEmail } = require('../../shared/utils/emailService');
 const { detectCollegeDomain, buildAuthUser, signAccessToken, signRefreshToken } = require('./auth.service');
 
+const isMobileClient = (req) =>
+  String(req.get('X-Client') || '').toLowerCase() === 'mobile';
+
+const getRefreshFromRequest = (req) => {
+  if (req.cookies?.refreshToken) return req.cookies.refreshToken;
+  if (req.body?.refreshToken) return req.body.refreshToken;
+  const auth = req.header('Authorization')?.replace(/^Bearer\s+/i, '');
+  return auth || null;
+};
+
 const getRefreshCookieOptions = () => {
   const sameSite = (process.env.COOKIE_SAME_SITE || (process.env.NODE_ENV === 'production' ? 'lax' : 'strict')).toLowerCase();
   const secure = process.env.COOKIE_SECURE
@@ -59,11 +69,13 @@ const register = async (req, res) => {
 
     res.cookie('refreshToken', refreshToken, getRefreshCookieOptions());
 
-    return res.status(201).json({
+    const body = {
       message: 'User created successfully',
       token: accessToken,
       user: buildAuthUser(user),
-    });
+    };
+    if (isMobileClient(req)) body.refreshToken = refreshToken;
+    return res.status(201).json(body);
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -100,11 +112,13 @@ const login = async (req, res) => {
 
     res.cookie('refreshToken', refreshToken, getRefreshCookieOptions());
 
-    return res.json({
+    const body = {
       message: 'Login successful',
       token: accessToken,
       user: buildAuthUser(user),
-    });
+    };
+    if (isMobileClient(req)) body.refreshToken = refreshToken;
+    return res.json(body);
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -174,7 +188,7 @@ const resetPassword = async (req, res) => {
 
 const refreshToken = async (req, res) => {
   try {
-    const token = req.cookies.refreshToken;
+    const token = getRefreshFromRequest(req);
     if (!token) return res.status(401).json({ message: 'Refresh token missing' });
 
     let decoded;
@@ -198,7 +212,7 @@ const refreshToken = async (req, res) => {
 
 const logout = async (req, res) => {
   try {
-    const token = req.cookies.refreshToken;
+    const token = req.cookies.refreshToken || req.body?.refreshToken;
     if (token) {
       const decoded = jwt.decode(token);
       if (decoded && decoded.userId) {

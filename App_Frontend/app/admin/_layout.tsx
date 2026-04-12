@@ -1,0 +1,52 @@
+import { Redirect, Stack } from "expo-router";
+import { useAuth } from "../../context/AuthContext";
+import { Loading } from "../../components/Loading";
+import { View } from "react-native";
+import { useColorScheme } from "nativewind";
+
+export default function AdminLayout() {
+  const { user, loading } = useAuth();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+
+  if (loading) {
+    return (
+      <View className="flex-1 bg-slate-50 dark:bg-slate-950">
+        <Loading />
+      </View>
+    );
+  }
+
+  if (!user) {
+    return <Redirect href="/(auth)/login" />;
+  }
+
+  if (user.role !== "admin") {
+    return <Redirect href={"/" as never} />;
+  }
+
+  return (
+    <Stack
+      screenOptions={{
+        headerBackTitle: "Back",
+        headerTitleStyle: { fontFamily: "Outfit-SemiBold", fontSize: 18 },
+        headerTintColor: isDark ? "#ffffff" : "#1e293b",
+        headerStyle: {
+          backgroundColor: isDark ? "#0f172a" : "#ffffff",
+        },
+        contentStyle: {
+          backgroundColor: isDark ? "#020617" : "#f8fafc",
+        },
+        animation: "slide_from_right",
+      }}
+    >
+      <Stack.Screen name="index" options={{ title: "Admin" }} />
+      <Stack.Screen name="users" options={{ title: "Users" }} />
+      <Stack.Screen name="products" options={{ title: "Products" }} />
+      <Stack.Screen name="categories" options={{ title: "Categories" }} />
+      <Stack.Screen name="orders" options={{ title: "Orders" }} />
+      <Stack.Screen name="reports" options={{ title: "Reports" }} />
+      <Stack.Screen name="audit" options={{ title: "Audit Logs" }} />
+    </Stack>
+  );
+}

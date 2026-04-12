@@ -135,6 +135,15 @@ const removeFromCart = async (req, res) => {
 const checkout = async (req, res) => {
   try {
     const { shippingDetails = {} } = req.body;
+    const requiredFields = ['fullName', 'phone', 'addressLine1', 'city', 'state', 'postalCode'];
+    const missingFields = requiredFields.filter((field) => !shippingDetails[field]);
+
+    if (missingFields.length) {
+      return res.status(400).json({
+        message: `Missing required shipping fields: ${missingFields.join(', ')}`,
+      });
+    }
+
     const cart = await Cart.findOne({ user: req.user._id }).populate(
       'items.product'
     );

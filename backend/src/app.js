@@ -12,10 +12,26 @@ const {
   setNotificationIO,
 } = require('./shared/utils/notification.utils');
 
+const parseAllowedOrigins = () => {
+  const main = process.env.CLIENT_URL || 'http://localhost:5173';
+  const extra = (process.env.ADDITIONAL_CORS_ORIGINS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return [...new Set([main, ...extra])];
+};
+
+const corsOriginHandler = (allowedList) => (origin, callback) => {
+  if (!origin) return callback(null, true);
+  if (allowedList.includes(origin)) return callback(null, true);
+  if (process.env.NODE_ENV !== 'production') return callback(null, true);
+  callback(new Error('Not allowed by CORS'));
+};
+
 const createApp = () => {
   const app = express();
   const server = http.createServer(app);
-  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+  const allowedOrigins = parseAllowedOrigins();
   const clientDistPath = path.join(__dirname, '../../client/dist');
   const shouldServeClient =
     process.env.SERVE_CLIENT === 'true' && fs.existsSync(clientDistPath);
@@ -36,7 +52,7 @@ const createApp = () => {
 
   const io = new Server(server, {
     cors: {
-      origin: clientUrl,
+      origin: corsOriginHandler(allowedOrigins),
       methods: ['GET', 'POST'],
     },
   });
@@ -64,7 +80,12 @@ const createApp = () => {
     }
   });
 
-  app.use(cors({ origin: clientUrl, credentials: true }));
+  app.use(
+    cors({
+      origin: corsOriginHandler(allowedOrigins),
+      credentials: true,
+    })
+  );
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(cookieParser());
