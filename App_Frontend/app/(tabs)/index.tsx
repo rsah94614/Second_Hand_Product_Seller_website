@@ -176,7 +176,7 @@ export default function HomeScreen() {
         <View className="flex-row items-center justify-between mb-3">
           <View>
             <Text className="text-[12px] font-outfit-m text-primary-200 uppercase tracking-widest">
-              {user ? `Hey, ${user.name?.split(" ")[0]} 👋` : "Welcome to"}
+              {user ? `Hey, ${user.name?.split(" ")[0]}` : `Welcome to`}
             </Text>
             <Text className="text-[24px] font-outfit-bl text-white leading-tight">
               Campus Mitra
@@ -189,14 +189,7 @@ export default function HomeScreen() {
             >
               <Ionicons name="notifications-outline" size={19} color="#ffffff" />
             </Pressable>
-            {user ? (
-              <Pressable
-                onPress={() => router.push("/(tabs)/profile" as never)}
-                className="h-10 w-10 rounded-full bg-white items-center justify-center border border-white/80"
-              >
-                <Text className="text-[13px] font-outfit-b text-primary-700">{userInitials}</Text>
-              </Pressable>
-            ) : (
+            {user == null && (
               <Pressable
                 onPress={() => router.push("/(auth)/login" as never)}
                 className="rounded-full bg-white px-4 py-2 active:bg-white/90"
@@ -222,11 +215,6 @@ export default function HomeScreen() {
               returnKeyType="search"
             />
           </View>
-          <Link href="/products" asChild>
-            <Pressable className="h-[46px] w-[46px] rounded-2xl bg-black/10 border border-white/20 items-center justify-center active:bg-black/20">
-              <Ionicons name="options" size={19} color="#ffffff" />
-            </Pressable>
-          </Link>
         </View>
       </View>
 

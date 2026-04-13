@@ -20,9 +20,8 @@ import {
   getProduct,
   getRelatedProducts,
   reportProduct,
-  submitProductReview,
 } from "../../lib/api/products";
-import { toggleWishlist } from "../../lib/api/users";
+import { submitSellerReview, toggleWishlist } from "../../lib/api/users";
 import { PRODUCT_FALLBACK_IMAGE } from "../../lib/fallbackImage";
 import { formatInr } from "../../lib/format";
 import { getImageUri } from "../../lib/product-image";
@@ -82,14 +81,15 @@ export default function ProductDetailScreen() {
 
   const reviewM = useMutation({
     mutationFn: () =>
-      submitProductReview(String(id), {
+      submitSellerReview(String(sellerId), {
         rating: Math.min(5, Math.max(1, parseInt(reviewRating, 10) || 5)),
         comment: reviewComment.trim(),
+        productId: String(id),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["product", id] });
       setReviewComment("");
-      Alert.alert("Thanks", "Review submitted.");
+      Alert.alert("Thanks", "Seller review submitted.");
     },
     onError: (e: { response?: { data?: { message?: string } } }) => {
       Alert.alert("Error", e.response?.data?.message || "Review failed.");
@@ -135,6 +135,25 @@ export default function ProductDetailScreen() {
   const relatedProducts: ProductListItem[] = related?.products || [];
 
   const sellerName = product.seller && typeof product.seller === "object" ? (product.seller as { name?: string }).name : "";
+  const sellerAverageRating =
+    product.seller && typeof product.seller === "object"
+      ? Number((product.seller as { averageRating?: number }).averageRating || 0)
+      : 0;
+  const sellerReviewCount =
+    product.seller && typeof product.seller === "object"
+      ? Number((product.seller as { reviewCount?: number }).reviewCount || 0)
+      : 0;
+  const sellerReviews =
+    product.seller && typeof product.seller === "object"
+      ? ((product.seller as {
+          reviews?: {
+            _id: string;
+            rating?: number;
+            comment?: string;
+            user?: { name?: string };
+          }[];
+        }).reviews || [])
+      : [];
 
   return (
     <Screen className="bg-white dark:bg-slate-950" safeAreaTop={false}>
@@ -191,6 +210,12 @@ export default function ProductDetailScreen() {
                <View className="flex-1">
                  <Text className="text-[12px] font-outfit-m text-slate-500 uppercase tracking-widest">Sold By</Text>
                  <Text className="text-[16px] font-outfit-b text-slate-900 dark:text-white">{sellerName}</Text>
+                 <View className="mt-1 flex-row items-center gap-1">
+                   <Ionicons name="star" size={14} color="#fbbf24" />
+                   <Text className="text-[13px] font-outfit-m text-slate-600 dark:text-slate-300">
+                     {sellerReviewCount > 0 ? `${sellerAverageRating.toFixed(1)} (${sellerReviewCount} review${sellerReviewCount === 1 ? "" : "s"})` : "No seller reviews yet"}
+                   </Text>
+                 </View>
                </View>
                {user && sellerId && sellerId !== user.id && (
                   <Pressable onPress={() => router.push(`/chat/${sellerId}` as never)} className="h-10 w-10 rounded-full bg-primary-50 dark:bg-primary-900/40 items-center justify-center active:scale-95">
@@ -217,9 +242,9 @@ export default function ProductDetailScreen() {
             </View>
           )}
 
-          {user && sellerId !== user.id && (
+          {user && sellerId && sellerId !== user.id && (
              <View className="mt-8 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm shadow-slate-200/50 dark:shadow-none">
-               <Text className="font-outfit-sb text-slate-900 dark:text-white mb-4">Write a review</Text>
+               <Text className="font-outfit-sb text-slate-900 dark:text-white mb-4">Review this seller</Text>
                <TextInput
                  value={reviewRating}
                  onChangeText={setReviewRating}
@@ -231,25 +256,28 @@ export default function ProductDetailScreen() {
                <TextInput
                  value={reviewComment}
                  onChangeText={setReviewComment}
-                 placeholder="Share your experience..."
+                 placeholder="Share your experience with the seller..."
                  multiline
                  className="min-h-[100px] rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-3 font-outfit text-slate-900 dark:text-white mb-4"
                  placeholderTextColor="#94a3b8"
                  textAlignVertical="top"
                />
-               <Button title="Submit Review" onPress={() => reviewM.mutate()} loading={reviewM.isPending} />
+               <Button title="Submit Seller Review" onPress={() => reviewM.mutate()} loading={reviewM.isPending} />
              </View>
           )}
 
-          {product.reviews?.length > 0 && (
+          {sellerReviews.length > 0 && (
             <View className="mt-8">
-              <Text className="text-[18px] font-outfit-b text-slate-900 dark:text-white mb-4">Reviews</Text>
-              {product.reviews.map((r: { _id: string; rating?: number; comment?: string }) => (
+              <Text className="text-[18px] font-outfit-b text-slate-900 dark:text-white mb-4">Seller Reviews</Text>
+              {sellerReviews.map((r) => (
                 <View key={r._id} className="mb-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
                   <View className="flex-row items-center mb-1">
                      <Ionicons name="star" size={16} color="#fbbf24" />
                      <Text className="ml-1 font-outfit-sb text-slate-700 dark:text-slate-300">{r.rating}</Text>
                   </View>
+                  {r.user?.name ? (
+                    <Text className="text-[12px] font-outfit-m text-slate-500 dark:text-slate-400">{r.user.name}</Text>
+                  ) : null}
                   <Text className="mt-1 text-[14px] font-outfit text-slate-600 dark:text-slate-400 leading-snug">{r.comment}</Text>
                 </View>
               ))}

@@ -125,7 +125,7 @@ const ProductListPage = () => {
         
         {/* ── LEFT SIDEBAR (FILTERS) ── */}
         <aside className={`w-full lg:w-64 shrink-0 lg:block ${showFilterPanel ? 'block' : 'hidden'}`}>
-          <div className="sticky top-24 space-y-8 bg-white/50 backdrop-blur-md p-6 rounded-3xl border border-gray-100">
+          <div className="sticky top-24 space-y-8 bg-white backdrop-blur-md p-6 rounded-3xl border border-gray-300">
             <div>
               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Category</h3>
               <Select value={filters.category || 'all'} onValueChange={(v) => handleFilterChange('category', v === 'all' ? '' : v)}>
@@ -153,7 +153,7 @@ const ProductListPage = () => {
             <div>
               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Location</h3>
               <div className="relative">
-                <Input type="text" value={filters.location} onChange={(e) => handleFilterChange('location', e.target.value)} placeholder="Enter city..." className="pl-10 h-10 text-sm" />
+                <Input type="text" value={filters.location} onChange={(e) => handleFilterChange('location', e.target.value)} placeholder="Enter location" className="pl-10 h-10 text-sm" />
                 <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
               </div>
             </div>

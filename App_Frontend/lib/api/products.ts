@@ -26,8 +26,5 @@ export const deleteProduct = (productId: string) =>
 
 export const getProductCategories = () => api.get(`/api/categories`).then((r) => r.data);
 
-export const submitProductReview = (productId: string, payload: { rating: number; comment: string }) =>
-  api.post(`/api/products/${productId}/reviews`, payload).then((r) => r.data);
-
 export const reportProduct = (productId: string, payload: Record<string, unknown>) =>
   api.post(`/api/products/${productId}/report`, payload).then((r) => r.data);

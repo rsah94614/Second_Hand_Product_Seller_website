@@ -35,6 +35,3 @@ export const deleteProduct = (productId) =>
 
 export const getProductCategories = () =>
   axios.get(`${API_BASE_URL}/api/categories`).then((res) => res.data);
-
-export const submitProductReview = (productId, payload) =>
-  axios.post(`${API_BASE_URL}/api/products/${productId}/reviews`, payload).then((res) => res.data);

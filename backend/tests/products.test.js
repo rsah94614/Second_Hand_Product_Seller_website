@@ -29,11 +29,12 @@ const runProductFeatureTests = async (app) => {
   });
 
   const firstReviewResponse = await request(app)
-    .post(`/api/products/${product._id}/reviews`)
+    .post(`/api/users/${seller.user.id}/reviews`)
     .set('Authorization', `Bearer ${reviewer.token}`)
     .send({
       rating: 4,
       comment: 'Looks good and matched the description.',
+      productId: product._id.toString(),
     });
 
   assert.equal(firstReviewResponse.statusCode, 200);
@@ -48,11 +49,12 @@ const runProductFeatureTests = async (app) => {
   assert.ok(sellerReviewNotification);
 
   const updateReviewResponse = await request(app)
-    .post(`/api/products/${product._id}/reviews`)
+    .post(`/api/users/${seller.user.id}/reviews`)
     .set('Authorization', `Bearer ${reviewer.token}`)
     .send({
       rating: 5,
       comment: 'Updating this after using it longer.',
+      productId: product._id.toString(),
     });
 
   assert.equal(updateReviewResponse.statusCode, 200);
@@ -60,7 +62,7 @@ const runProductFeatureTests = async (app) => {
   assert.equal(updateReviewResponse.body.averageRating, 5);
 
   const ownerReviewResponse = await request(app)
-    .post(`/api/products/${product._id}/reviews`)
+    .post(`/api/users/${seller.user.id}/reviews`)
     .set('Authorization', `Bearer ${seller.token}`)
     .send({
       rating: 5,
@@ -68,7 +70,7 @@ const runProductFeatureTests = async (app) => {
     });
 
   assert.equal(ownerReviewResponse.statusCode, 400);
-  assert.match(ownerReviewResponse.body.message, /cannot review your own product/i);
+  assert.match(ownerReviewResponse.body.message, /cannot review your own seller profile/i);
 
   const reportResponse = await request(app)
     .post(`/api/products/${product._id}/report`)

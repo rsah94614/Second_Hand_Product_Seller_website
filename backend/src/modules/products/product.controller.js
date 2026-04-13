@@ -3,10 +3,6 @@ const User = require('../../../models/User');
 const Notification = require('../../../models/Notification');
 const jwt = require('jsonwebtoken');
 const {
-  createNotification,
-} = require('../../shared/utils/notification.utils');
-const {
-  recalculateReviewStats,
   parseContactInfo,
   ensureValidCategory,
   uploadImages,
@@ -53,8 +49,14 @@ const getRelatedProducts = async (req, res) => {
 const getProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
-      .populate('seller', 'name phone location email')
-      .populate('reviews.user', 'name');
+      .populate({
+        path: 'seller',
+        select: 'name phone location email reviews averageRating reviewCount',
+        populate: {
+          path: 'reviews.user',
+          select: 'name',
+        },
+      });
 
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
@@ -94,69 +96,6 @@ const getProduct = async (req, res) => {
     }
 
     return res.json(product);
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
-
-const addReview = async (req, res) => {
-  try {
-    const { rating, comment = '' } = req.body;
-    const numericRating = Number(rating);
-
-    if (!numericRating || numericRating < 1 || numericRating > 5) {
-      return res.status(400).json({ message: 'Rating must be between 1 and 5' });
-    }
-
-    const product = await Product.findById(req.params.id);
-
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
-
-    if (product.seller.toString() === req.user._id.toString()) {
-      return res.status(400).json({ message: 'You cannot review your own product' });
-    }
-
-    const existingReview = product.reviews.find(
-      (review) => review.user.toString() === req.user._id.toString()
-    );
-
-    if (existingReview) {
-      existingReview.rating = numericRating;
-      existingReview.comment = comment.trim();
-    } else {
-      product.reviews.push({
-        user: req.user._id,
-        rating: numericRating,
-        comment: comment.trim(),
-      });
-    }
-
-    recalculateReviewStats(product);
-    await product.save();
-    await product.populate('reviews.user', 'name');
-
-    await createNotification({
-      userId: product.seller,
-      actorId: req.user._id,
-      productId: product._id,
-      type: existingReview ? 'review_updated' : 'new_review',
-      title: existingReview ? 'A review was updated' : 'New review received',
-      message: `${req.user.name} rated "${product.title}" ${numericRating}/5${comment.trim() ? ' and left feedback.' : '.'}`,
-      link: `/products/${product._id}`,
-      metadata: {
-        rating: numericRating,
-        reviewCount: product.reviewCount,
-      },
-    });
-
-    return res.json({
-      message: existingReview ? 'Review updated successfully' : 'Review added successfully',
-      reviews: product.reviews,
-      averageRating: product.averageRating,
-      reviewCount: product.reviewCount,
-    });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -483,7 +422,6 @@ module.exports = {
   getProductsByUser,
   getRelatedProducts,
   getProduct,
-  addReview,
   reportProduct,
   createProduct,
   updateProduct,

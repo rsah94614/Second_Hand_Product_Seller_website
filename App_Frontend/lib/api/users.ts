@@ -10,3 +10,6 @@ export const toggleWishlist = (productId: string) =>
 
 export const getRecentlyViewed = () =>
   api.get(`/api/users/me/recently-viewed`).then((r) => r.data);
+
+export const submitSellerReview = (userId: string, payload: { rating: number; comment: string; productId?: string }) =>
+  api.post(`/api/users/${userId}/reviews`, payload).then((r) => r.data);

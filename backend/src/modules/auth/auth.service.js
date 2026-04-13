@@ -35,6 +35,8 @@ const buildAuthUser = (user) => ({
   role: user.role,
   isVerified: user.isVerified || false,
   campus: user.campus || {},
+  averageRating: user.averageRating || 0,
+  reviewCount: user.reviewCount || 0,
   wishlist: (user.wishlist || []).map((item) => item.toString()),
   wishlistCount: user.wishlist?.length || 0,
 });

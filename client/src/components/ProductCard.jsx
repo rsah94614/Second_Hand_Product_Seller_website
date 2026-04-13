@@ -2,7 +2,9 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { MapPin, Heart } from 'lucide-react';
+import { MapPin, Heart, ShoppingCart, Calendar } from 'lucide-react';
+import axios from 'axios';
+import { API_BASE_URL } from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { toggleWishlist } from '../features/users/api/userApi';
 import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../lib/fallbackImages';
@@ -36,6 +38,17 @@ const ProductCard = ({ product, highlightLabel = '', highlightTone = 'bg-primary
     },
   });
 
+  const addToCartMutation = useMutation({
+    mutationFn: () => axios.post(`${API_BASE_URL}/api/cart`, { productId: product._id, quantity: 1 }),
+    onSuccess: () => {
+      toast.success('Added to cart');
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to add to cart');
+    },
+  });
+
   const handleWishlistClick = (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -49,9 +62,26 @@ const ProductCard = ({ product, highlightLabel = '', highlightTone = 'bg-primary
     wishlistMutation.mutate();
   };
 
+  const handleAddToCartClick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    if (!user) {
+      toast.error('Please login to add to cart');
+      navigate('/login');
+      return;
+    }
+    
+    if (product.isSold) {
+      return;
+    }
+    
+    addToCartMutation.mutate();
+  };
+
   return (
     <Link to={`/products/${product._id}`} className="block h-full group">
-      <article className="flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-gray-100 bg-white shadow-[0_10px_40px_-10px_rgba(0,0,0,0.06)] transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_60px_-10px_rgba(0,0,0,0.12)]">
+      <article className="flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-gray-300 bg-white shadow-[0_10px_40px_-10px_rgba(0,0,0,0.06)] transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_60px_-10px_rgba(0,0,0,0.12)]">
         <div className="relative overflow-hidden bg-gray-50 aspect-4/3">
           <div className="absolute inset-x-0 top-0 h-32 bg-linear-to-b from-black/40 to-transparent z-10" />
           <div className="absolute inset-x-0 bottom-0 h-32 bg-linear-to-t from-black/50 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -103,13 +133,36 @@ const ProductCard = ({ product, highlightLabel = '', highlightTone = 'bg-primary
             </div>
           </div>
 
-          <p className="mb-3 sm:mb-4 text-[1.4rem] sm:text-[1.9rem] font-black leading-none tracking-[-0.04em] text-stone-950">
+          <p className="mb-2 sm:mb-3 text-[1.4rem] sm:text-[1.9rem] font-black leading-none tracking-[-0.04em] text-stone-950">
             {formatPrice(product.price)}
           </p>
 
-          <div className="mb-2 sm:mb-4 flex items-center text-xs sm:text-sm font-medium text-stone-600">
-            <MapPin className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 text-stone-400" />
-            <span className="truncate">{product.location}</span>
+          <div className="mt-auto flex items-end justify-between border-t border-gray-50 pt-3">
+            <div className="flex flex-col gap-1.5 min-w-0 pr-2">
+              <div className="flex items-center text-[10px] sm:text-xs font-medium text-stone-500">
+                <MapPin className="mr-1.5 h-3.5 w-3.5 shrink-0 text-stone-400" />
+                <span className="truncate">{product.location}</span>
+              </div>
+              <div className="flex items-center text-[10px] sm:text-xs font-medium text-stone-500">
+                <Calendar className="mr-1.5 h-3.5 w-3.5 shrink-0 text-stone-400" />
+                <span className="truncate">
+                  {new Date(product.createdAt || Date.now()).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              size="sm"
+              variant={product.isSold ? "secondary" : "primary"}
+              onClick={handleAddToCartClick}
+              disabled={product.isSold || addToCartMutation.isPending}
+              className="h-8 sm:h-9 px-3 rounded-full shadow-sm shrink-0"
+              title={product.isSold ? 'Sold Out' : 'Add to Cart'}
+            >
+              <ShoppingCart className="h-3.5 w-3.5 sm:mr-1.5 shrink-0" />
+              <span className="hidden sm:inline text-xs font-bold">{addToCartMutation.isPending ? '...' : 'Add to Cart'}</span>
+            </Button>
           </div>
         </div>
       </article>

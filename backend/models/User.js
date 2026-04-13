@@ -1,6 +1,29 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+const sellerReviewSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  rating: {
+    type: Number,
+    required: true,
+    min: 1,
+    max: 5
+  },
+  comment: {
+    type: String,
+    trim: true,
+    maxlength: 600,
+    default: ''
+  }
+}, {
+  timestamps: true,
+  _id: true
+});
+
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -77,6 +100,15 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product'
   }],
+  reviews: [sellerReviewSchema],
+  averageRating: {
+    type: Number,
+    default: 0
+  },
+  reviewCount: {
+    type: Number,
+    default: 0
+  },
   recentlyViewed: [{
     product: {
       type: mongoose.Schema.Types.ObjectId,

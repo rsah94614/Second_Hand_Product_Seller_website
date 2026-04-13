@@ -30,8 +30,8 @@ import { Card, CardContent } from '../../../components/ui/Card';
 import { Textarea } from '../../../components/ui/Textarea';
 import ProductCard from '../../../components/ProductCard';
 import { API_BASE_URL } from '../../../config/api';
-import { deleteProduct, getProduct, getRelatedProducts, submitProductReview } from '../api/productApi';
-import { toggleWishlist } from '../../users/api/userApi';
+import { deleteProduct, getProduct, getRelatedProducts } from '../api/productApi';
+import { submitSellerReview, toggleWishlist } from '../../users/api/userApi';
 
 const ProductDetailPage = () => {
   const { id } = useParams();
@@ -92,7 +92,7 @@ const ProductDetailPage = () => {
   });
 
   const reviewMutation = useMutation({
-    mutationFn: (payload) => submitProductReview(id, payload),
+    mutationFn: (payload) => submitSellerReview(product?.seller?._id, payload),
     onSuccess: async (response) => {
       queryClient.invalidateQueries({ queryKey: ['product', id] });
       toast.success(response.message);
@@ -197,6 +197,7 @@ const ProductDetailPage = () => {
     reviewMutation.mutate({
       rating: reviewForm.rating,
       comment: reviewForm.comment,
+      productId: id,
     });
   };
 
@@ -219,7 +220,8 @@ const ProductDetailPage = () => {
       maximumFractionDigits: 0,
     }).format(price);
 
-  const existingReview = product?.reviews?.find((review) => review.user?._id === user?.id);
+  const sellerReviews = product?.seller?.reviews || [];
+  const existingReview = sellerReviews.find((review) => review.user?._id === user?.id);
 
   useEffect(() => {
     if (existingReview) {
@@ -385,6 +387,14 @@ const ProductDetailPage = () => {
                       <MapPin className="w-3 h-3 mr-1" />
                       {product.seller.location || 'Location not available'}
                     </p>
+                    <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
+                      <Star className="h-4 w-4 fill-current text-amber-500" />
+                      <span>
+                        {product.seller.reviewCount
+                          ? `${Number(product.seller.averageRating || 0).toFixed(1)} (${product.seller.reviewCount} review${product.seller.reviewCount === 1 ? '' : 's'})`
+                          : 'No seller reviews yet'}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -499,14 +509,14 @@ const ProductDetailPage = () => {
                 <CardContent className="p-6">
                   <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h3 className="text-lg font-bold text-gray-900">Ratings & Reviews</h3>
+                      <h3 className="text-lg font-bold text-gray-900">Seller Ratings & Reviews</h3>
                       <p className="mt-1 text-sm text-gray-600">
-                        {product.reviewCount || 0} review{product.reviewCount === 1 ? '' : 's'} from marketplace users
+                        {product.seller.reviewCount || 0} review{product.seller.reviewCount === 1 ? '' : 's'} about this seller
                       </p>
                     </div>
                     <div className="flex items-center gap-2 rounded-full bg-amber-50 px-4 py-2 text-amber-700">
                       <Star className="h-4 w-4 fill-current" />
-                      <span className="font-semibold">{product.averageRating || 0}/5</span>
+                      <span className="font-semibold">{product.seller.averageRating || 0}/5</span>
                     </div>
                   </div>
 
@@ -514,7 +524,7 @@ const ProductDetailPage = () => {
                     <form onSubmit={handleReviewSubmit} className="mb-6 rounded-2xl border border-gray-100 bg-gray-50 p-4">
                       <div className="mb-4">
                         <p className="mb-2 text-sm font-semibold text-gray-800">
-                          {existingReview ? 'Update your review' : 'Leave a review'}
+                          {existingReview ? 'Update your seller review' : 'Review this seller'}
                         </p>
                         <div className="flex items-center gap-2">
                           {[1, 2, 3, 4, 5].map((rating) => (
@@ -532,18 +542,18 @@ const ProductDetailPage = () => {
                       <Textarea
                         value={reviewForm.comment}
                         onChange={(event) => setReviewForm((prev) => ({ ...prev, comment: event.target.value }))}
-                        placeholder="Share what you liked, condition details, or anything other buyers should know."
+                        placeholder="Share how the seller communicated, accuracy of the listing, and overall experience."
                         className="mb-4 bg-white"
                       />
                       <Button type="submit" disabled={reviewMutation.isPending}>
-                        {reviewMutation.isPending ? 'Saving...' : existingReview ? 'Update Review' : 'Submit Review'}
+                        {reviewMutation.isPending ? 'Saving...' : existingReview ? 'Update Seller Review' : 'Submit Seller Review'}
                       </Button>
                     </form>
                   )}
 
-                  {product.reviews?.length ? (
+                  {sellerReviews.length ? (
                     <div className="space-y-4">
-                      {product.reviews.map((review) => (
+                      {sellerReviews.map((review) => (
                         <div key={review._id} className="rounded-2xl border border-gray-100 p-4">
                           <div className="mb-2 flex items-center justify-between gap-4">
                             <div>
@@ -570,7 +580,7 @@ const ProductDetailPage = () => {
                     </div>
                   ) : (
                     <div className="rounded-2xl border border-dashed border-gray-200 p-6 text-center text-gray-500">
-                      No reviews yet. Be the first to share feedback on this listing.
+                      No seller reviews yet. Be the first to share feedback about this seller.
                     </div>
                   )}
                 </CardContent>

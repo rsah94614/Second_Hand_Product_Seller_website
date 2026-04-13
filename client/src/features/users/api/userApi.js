@@ -12,3 +12,6 @@ export const toggleWishlist = (productId) =>
 
 export const getRecentlyViewed = () =>
   axios.get(`${API_BASE_URL}/api/users/me/recently-viewed`).then((res) => res.data);
+
+export const submitSellerReview = (userId, payload) =>
+  axios.post(`${API_BASE_URL}/api/users/${userId}/reviews`, payload).then((res) => res.data);

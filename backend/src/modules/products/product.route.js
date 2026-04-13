@@ -10,7 +10,6 @@ router.get('/user/:userId', productController.getProductsByUser);
 router.get('/:id/related', productController.getRelatedProducts);
 router.get('/:id', productController.getProduct);
 
-router.post('/:id/reviews', userAuth, productController.addReview);
 router.post('/:id/report', userAuth, productController.reportProduct);
 router.post('/', userAuth, upload.array('images', 5), productController.createProduct);
 
