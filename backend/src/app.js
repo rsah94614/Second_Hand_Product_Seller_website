@@ -39,12 +39,12 @@ const createApp = () => {
   const getSocketToken = (socket) => {
     const authToken = socket.handshake.auth?.token;
     if (authToken) {
-      return authToken.replace('Bearer ', '');
+      return authToken.replace(/Bearer\s+/i, '').trim();
     }
 
     const headerToken = socket.handshake.headers?.authorization;
     if (headerToken) {
-      return headerToken.replace('Bearer ', '');
+      return headerToken.replace(/Bearer\s+/i, '').trim();
     }
 
     return null;
@@ -67,15 +67,16 @@ const createApp = () => {
       }
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await User.findById(decoded.userId).select('_id name email');
+      const user = await User.findById(decoded.userId).select('_id name email isActive');
 
-      if (!user) {
+      if (!user || user.isActive === false) {
         return next(new Error('Authentication failed'));
       }
 
       socket.user = user;
       return next();
     } catch (error) {
+      console.error('Socket auth failed:', error.message);
       return next(new Error('Authentication failed'));
     }
   });
@@ -158,23 +159,23 @@ const createApp = () => {
       socket.emit('presence_batch', presence);
     });
 
-    socket.on('typing_start', ({ receiverId }) => {
+    socket.on('typing_start', ({ receiverId } = {}) => {
       if (receiverId && typeof receiverId === 'string') {
         io.to(receiverId).emit('user_typing', { userId });
       }
     });
 
-    socket.on('typing_stop', ({ receiverId }) => {
+    socket.on('typing_stop', ({ receiverId } = {}) => {
       if (receiverId && typeof receiverId === 'string') {
         io.to(receiverId).emit('user_stop_typing', { userId });
       }
     });
 
     socket.on('send_message', async (data) => {
-      const { receiver, content } = data;
+      const { receiver, content } = data || {};
       const sender = userId;
 
-      if (!receiver || !content?.trim()) {
+      if (!receiver || typeof receiver !== 'string' || !content?.trim()) {
         socket.emit('error', { message: 'Missing required fields' });
         return;
       }
@@ -254,8 +255,12 @@ const createApp = () => {
       }
     });
 
-    socket.on('mark_seen', async ({ receiverId }) => {
+    socket.on('mark_seen', async ({ receiverId } = {}) => {
       try {
+        if (!receiverId || typeof receiverId !== 'string') {
+          return;
+        }
+
         await Message.updateMany(
           { sender: receiverId, receiver: userId, read: false },
           { $set: { read: true } }

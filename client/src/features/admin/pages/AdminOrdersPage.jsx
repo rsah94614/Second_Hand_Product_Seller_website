@@ -15,6 +15,7 @@ import { Badge } from '../../../components/ui/Badge';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
 import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
+import { formatCampusAddress } from '../../../lib/campus';
 import {
   Select,
   SelectContent,
@@ -153,6 +154,10 @@ const AdminOrdersPage = () => {
           ) : orders.length ? (
             <>
               {orders.map((order) => (
+                (() => {
+                  const shippingAddress = formatCampusAddress(order.shippingDetails);
+
+                  return (
                 <article
                   key={order._id}
                   className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 animate-fade-in"
@@ -208,7 +213,7 @@ const AdminOrdersPage = () => {
                                 <div className="flex-1">
                                   <p className="font-medium text-gray-900">{item.title}</p>
                                   <p className="text-sm text-gray-500">
-                                    Qty {item.quantity} | {formatPrice(item.price)}
+                                    {formatPrice(item.price)}
                                   </p>
                                 </div>
                               </div>
@@ -228,21 +233,9 @@ const AdminOrdersPage = () => {
                               <p className="font-semibold text-gray-900">{order.shippingDetails.fullName}</p>
                               {order.shippingDetails.phone && <p>{order.shippingDetails.phone}</p>}
                               {order.shippingDetails.email && <p>{order.shippingDetails.email}</p>}
-                              <p>
-                                {[
-                                  order.shippingDetails.addressLine1,
-                                  order.shippingDetails.addressLine2,
-                                  order.shippingDetails.landmark,
-                                ].filter(Boolean).join(', ')}
-                              </p>
-                              <p>
-                                {[
-                                  order.shippingDetails.city,
-                                  order.shippingDetails.state,
-                                  order.shippingDetails.postalCode,
-                                  order.shippingDetails.country,
-                                ].filter(Boolean).join(', ')}
-                              </p>
+                              <p>{shippingAddress.primaryLine}</p>
+                              <p>{shippingAddress.secondaryLine}</p>
+                              <p>{shippingAddress.country}</p>
                             </div>
                           </div>
                         </div>
@@ -279,6 +272,8 @@ const AdminOrdersPage = () => {
                     </div>
                   </div>
                 </article>
+                  );
+                })()
               ))}
               
               {hasNextPage && (

@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Product = require('../../../models/Product');
 const Category = require('../../../models/Category');
 const User = require('../../../models/User');
@@ -7,6 +8,9 @@ const { ensureDefaultCategories } = require('../../../utils/categoryDefaults');
 const {
   createNotifications,
 } = require('../../shared/utils/notification.utils');
+
+const escapeRegex = (text = '') => String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value));
 
 const allowedSortFields = new Set(['createdAt', 'price', 'title', 'views', 'averageRating', 'reviewCount']);
 
@@ -116,20 +120,26 @@ const findProducts = async ({ cursor, limit = 12, category, minPrice, maxPrice, 
   const query = { isActive: true, isSold: false };
 
   if (cursor) {
+    if (!isValidObjectId(cursor)) {
+      throw new Error('Invalid cursor');
+    }
     query._id = { $lt: cursor };
   }
 
   if (category) query.category = category;
-  if (minPrice || maxPrice) {
+  const hasMinPrice = minPrice !== undefined && minPrice !== null && minPrice !== '';
+  const hasMaxPrice = maxPrice !== undefined && maxPrice !== null && maxPrice !== '';
+  if (hasMinPrice || hasMaxPrice) {
     query.price = {};
-    if (minPrice) query.price.$gte = Number(minPrice);
-    if (maxPrice) query.price.$lte = Number(maxPrice);
+    if (hasMinPrice) query.price.$gte = Number(minPrice);
+    if (hasMaxPrice) query.price.$lte = Number(maxPrice);
   }
-  if (location) query.location = new RegExp(location, 'i');
+  if (location) query.location = new RegExp(escapeRegex(location), 'i');
   if (search) {
+    const escapedSearch = escapeRegex(search);
     query.$or = [
-      { title: new RegExp(search, 'i') },
-      { description: new RegExp(search, 'i') },
+      { title: new RegExp(escapedSearch, 'i') },
+      { description: new RegExp(escapedSearch, 'i') },
     ];
   }
 

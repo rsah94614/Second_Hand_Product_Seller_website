@@ -12,6 +12,11 @@ const {
   findRelatedProducts,
 } = require('./product.service');
 
+const getBearerToken = (headerValue) => {
+  if (!headerValue || typeof headerValue !== 'string') return null;
+  return headerValue.replace(/Bearer\s+/i, '').trim() || null;
+};
+
 const listProducts = async (req, res) => {
   try {
     const result = await findProducts(req.query);
@@ -62,36 +67,36 @@ const getProduct = async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    const token = getBearerToken(req.header('Authorization'));
 
     if (token) {
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const userId = decoded.userId;
+        const userId = decoded?.userId;
 
-        const hasViewed = product.viewedBy.some((viewerId) => viewerId.toString() === userId);
-
-        if (!hasViewed) {
+        if (userId && product.viewedBy && !product.viewedBy.some((viewerId) => viewerId.toString() === userId)) {
           product.views += 1;
           product.viewedBy.push(userId);
           await product.save();
         }
 
-        await User.findByIdAndUpdate(userId, {
-          $pull: { recentlyViewed: { product: product._id } },
-        });
+        if (userId) {
+          await User.findByIdAndUpdate(userId, {
+            $pull: { recentlyViewed: { product: product._id } },
+          });
 
-        await User.findByIdAndUpdate(userId, {
-          $push: {
-            recentlyViewed: {
-              $each: [{ product: product._id, viewedAt: new Date() }],
-              $position: 0,
-              $slice: 12,
+          await User.findByIdAndUpdate(userId, {
+            $push: {
+              recentlyViewed: {
+                $each: [{ product: product._id, viewedAt: new Date() }],
+                $position: 0,
+                $slice: 12,
+              },
             },
-          },
-        });
+          });
+        }
       } catch (err) {
-        console.log('Invalid token for view tracking', err.message);
+        console.debug('Invalid token for view tracking:', err.message);
       }
     }
 
@@ -407,6 +412,16 @@ const deleteProduct = async (req, res) => {
       metadata: { removed: true },
       excludeUserIds: [req.user._id],
     });
+
+    await User.updateMany(
+      { wishlist: product._id },
+      {
+        $pull: {
+          wishlist: product._id,
+          recentlyViewed: { product: product._id },
+        },
+      }
+    );
 
     await Notification.deleteMany({ product: product._id });
     await Product.findByIdAndDelete(req.params.id);

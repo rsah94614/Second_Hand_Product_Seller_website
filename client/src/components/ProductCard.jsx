@@ -8,6 +8,7 @@ import { API_BASE_URL } from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { toggleWishlist } from '../features/users/api/userApi';
 import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../lib/fallbackImages';
+import { getCampusPickupLabel } from '../lib/campus';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
 
@@ -141,7 +142,7 @@ const ProductCard = ({ product, highlightLabel = '', highlightTone = 'bg-primary
             <div className="flex flex-col gap-1.5 min-w-0 pr-2">
               <div className="flex items-center text-[10px] sm:text-xs font-medium text-stone-500">
                 <MapPin className="mr-1.5 h-3.5 w-3.5 shrink-0 text-stone-400" />
-                <span className="truncate">{product.location}</span>
+                <span className="truncate">{getCampusPickupLabel(product.location)}</span>
               </div>
               <div className="flex items-center text-[10px] sm:text-xs font-medium text-stone-500">
                 <Calendar className="mr-1.5 h-3.5 w-3.5 shrink-0 text-stone-400" />

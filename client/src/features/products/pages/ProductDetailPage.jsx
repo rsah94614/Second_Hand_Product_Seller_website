@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
+import { getCampusPickupLabel } from '../../../lib/campus';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import { Badge } from '../../../components/ui/Badge';
@@ -368,7 +369,7 @@ const ProductDetailPage = () => {
                   </Badge>
                   <div className="flex items-center text-sm font-medium text-gray-600 ml-2">
                     <MapPin className="w-4 h-4 mr-1 text-gray-400" />
-                    <span>{product.location}</span>
+                    <span>{getCampusPickupLabel(product.location)}</span>
                   </div>
                 </div>
               </div>
@@ -385,7 +386,7 @@ const ProductDetailPage = () => {
                     <p className="font-bold text-gray-900 text-lg">{product.seller.name}</p>
                     <p className="text-gray-500 text-sm flex items-center mt-1">
                       <MapPin className="w-3 h-3 mr-1" />
-                      {product.seller.location || 'Location not available'}
+                      {getCampusPickupLabel(product.seller.location)}
                     </p>
                     <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
                       <Star className="h-4 w-4 fill-current text-amber-500" />

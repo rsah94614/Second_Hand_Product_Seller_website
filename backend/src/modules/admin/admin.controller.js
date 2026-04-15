@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const User = require('../../../models/User');
 const Product = require('../../../models/Product');
 const Order = require('../../../models/Order');
@@ -10,55 +11,94 @@ const {
 } = require('../../shared/utils/notification.utils');
 const { logAuditAction } = require('../../shared/utils/audit.utils');
 
+const escapeRegex = (text) => String(text || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value));
+
 const getOverview = async (req, res) => {
   try {
     await ensureDefaultCategories();
-    const [users, products, orders, reports] = await Promise.all([
-      User.find().select('_id name email role isActive createdAt'),
-      Product.find().select('_id title category isActive isSold views createdAt price images location'),
-      Order.find().select('_id total status createdAt'),
-      Report.find().select('_id status'),
+
+    const [
+      totalUsers,
+      totalMembers,
+      totalAdmins,
+      totalProducts,
+      activeProducts,
+      soldProducts,
+      inactiveProducts,
+      totalOrders,
+      processingOrders,
+      deliveredOrders,
+      totalRevenueResult,
+      topProducts,
+      recentUsers,
+      recentOrders,
+      categoryBreakdown,
+      openReports,
+    ] = await Promise.all([
+      User.countDocuments(),
+      User.countDocuments({ role: 'user' }),
+      User.countDocuments({ role: 'admin' }),
+      Product.countDocuments(),
+      Product.countDocuments({ isActive: true, isSold: false }),
+      Product.countDocuments({ isSold: true }),
+      Product.countDocuments({ isActive: false, isSold: false }),
+      Order.countDocuments(),
+      Order.countDocuments({ status: 'processing' }),
+      Order.countDocuments({ status: 'delivered' }),
+      Order.aggregate([
+        { $match: { status: { $ne: 'cancelled' } } },
+        { $group: { _id: null, total: { $sum: '$total' } } },
+      ]),
+      Product.find({ isActive: true, isSold: false })
+        .select('_id title category isSold isActive views price images location createdAt')
+        .sort({ views: -1 })
+        .limit(5)
+        .lean(),
+      User.find()
+        .select('_id name email role isActive createdAt')
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .lean(),
+      Order.find()
+        .select('_id total status createdAt')
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .lean(),
+      Report.countDocuments({ status: { $in: ['open', 'reviewed'] } }),
+      Product.aggregate([
+        {
+          $group: {
+            _id: { $ifNull: ['$category', 'Other'] },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { count: -1 } },
+        { $limit: 6 },
+        {
+          $project: {
+            _id: 0,
+            category: '$_id',
+            count: 1,
+          },
+        },
+      ]),
     ]);
 
     const metrics = {
-      totalUsers: users.length,
-      totalMembers: users.filter((user) => user.role === 'user').length,
-      totalAdmins: users.filter((user) => user.role === 'admin').length,
-      totalProducts: products.length,
-      activeProducts: products.filter((product) => product.isActive && !product.isSold).length,
-      soldProducts: products.filter((product) => product.isSold).length,
-      inactiveProducts: products.filter((product) => !product.isActive && !product.isSold).length,
-      totalOrders: orders.length,
-      processingOrders: orders.filter((order) => order.status === 'processing').length,
-      deliveredOrders: orders.filter((order) => order.status === 'delivered').length,
-      openReports: reports.filter((report) => ['open', 'reviewed'].includes(report.status)).length,
-      totalRevenue: orders
-        .filter((order) => order.status !== 'cancelled')
-        .reduce((sum, order) => sum + (order.total || 0), 0),
+      totalUsers,
+      totalMembers,
+      totalAdmins,
+      totalProducts,
+      activeProducts,
+      soldProducts,
+      inactiveProducts,
+      totalOrders,
+      processingOrders,
+      deliveredOrders,
+      openReports,
+      totalRevenue: (totalRevenueResult[0] && totalRevenueResult[0].total) || 0,
     };
-
-    const topProducts = [...products]
-      .sort((a, b) => (b.views || 0) - (a.views || 0))
-      .slice(0, 5);
-
-    const recentUsers = [...users]
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 5);
-
-    const recentOrders = [...orders]
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 5);
-
-    const categoryBreakdown = Object.entries(
-      products.reduce((acc, product) => {
-        const key = product.category || 'Other';
-        acc[key] = (acc[key] || 0) + 1;
-        return acc;
-      }, {})
-    )
-      .map(([category, count]) => ({ category, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 6);
 
     return res.json({
       metrics,
@@ -78,6 +118,9 @@ const getUsers = async (req, res) => {
     const query = {};
 
     if (cursor) {
+      if (!isValidObjectId(cursor)) {
+        return res.status(400).json({ message: 'Invalid cursor' });
+      }
       query._id = { $lt: cursor };
     }
 
@@ -92,10 +135,11 @@ const getUsers = async (req, res) => {
     }
 
     if (search) {
+      const searchRegex = new RegExp(escapeRegex(search), 'i');
       query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { location: { $regex: search, $options: 'i' } },
+        { name: { $regex: searchRegex } },
+        { email: { $regex: searchRegex } },
+        { location: { $regex: searchRegex } },
       ];
     }
 
@@ -178,6 +222,9 @@ const getProducts = async (req, res) => {
     const query = {};
 
     if (cursor) {
+      if (!isValidObjectId(cursor)) {
+        return res.status(400).json({ message: 'Invalid cursor' });
+      }
       query._id = { $lt: cursor };
     }
 
@@ -195,9 +242,10 @@ const getProducts = async (req, res) => {
     }
 
     if (search) {
+      const searchRegex = new RegExp(escapeRegex(search), 'i');
       query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
+        { title: { $regex: searchRegex } },
+        { description: { $regex: searchRegex } },
       ];
     }
 
@@ -363,6 +411,16 @@ const deleteProduct = async (req, res) => {
       }),
     ]);
 
+    await User.updateMany(
+      { wishlist: product._id },
+      {
+        $pull: {
+          wishlist: product._id,
+          recentlyViewed: { product: product._id },
+        },
+      }
+    );
+
     await Product.findByIdAndDelete(req.params.id);
 
     await logAuditAction({
@@ -386,6 +444,9 @@ const getOrders = async (req, res) => {
     const query = {};
 
     if (cursor) {
+      if (!isValidObjectId(cursor)) {
+        return res.status(400).json({ message: 'Invalid cursor' });
+      }
       query._id = { $lt: cursor };
     }
 
@@ -393,30 +454,28 @@ const getOrders = async (req, res) => {
       query.status = status;
     }
 
-    const Order = require('../../../models/Order');
     const numericLimit = Number(limit);
 
-    let orders = await Order.find(query)
+    if (search) {
+      const searchRegex = new RegExp(escapeRegex(search), 'i');
+      const userMatchIds = await User.find({
+        $or: [
+          { name: { $regex: searchRegex } },
+          { email: { $regex: searchRegex } },
+        ],
+      }).select('_id');
+
+      const userIds = userMatchIds.map((user) => user._id);
+      query.$or = [
+        { 'items.title': { $regex: searchRegex } },
+        ...(userIds.length ? [{ user: { $in: userIds } }] : []),
+      ];
+    }
+
+    const orders = await Order.find(query)
       .populate('user', 'name email phone location')
       .sort({ _id: -1 })
       .limit(numericLimit);
-
-    if (search) {
-      const queryText = search.toLowerCase();
-      orders = orders.filter((order) => {
-        const orderCode = order._id.toString().slice(-6).toLowerCase();
-        const buyerName = order.user?.name?.toLowerCase() || '';
-        const buyerEmail = order.user?.email?.toLowerCase() || '';
-        const itemTitles = (order.items || []).map((item) => item.title?.toLowerCase() || '').join(' ');
-
-        return (
-          orderCode.includes(queryText) ||
-          buyerName.includes(queryText) ||
-          buyerEmail.includes(queryText) ||
-          itemTitles.includes(queryText)
-        );
-      });
-    }
 
     const total = await Order.countDocuments(query);
     const nextCursor = orders.length === numericLimit ? orders[orders.length - 1]._id.toString() : null;
@@ -486,6 +545,9 @@ const getReports = async (req, res) => {
     const query = {};
 
     if (cursor) {
+      if (!isValidObjectId(cursor)) {
+        return res.status(400).json({ message: 'Invalid cursor' });
+      }
       query._id = { $lt: cursor };
     }
 
@@ -578,14 +640,22 @@ const getCategories = async (req, res) => {
     await ensureDefaultCategories();
     const categories = await Category.find()
       .sort({ sortOrder: 1, name: 1 })
-      .select('-__v');
+      .select('-__v')
+      .lean();
 
-    const rows = await Promise.all(
-      categories.map(async (category) => ({
-         ...category.toObject(),
-         productCount: await Product.countDocuments({ category: category.name }),
-      }))
-    );
+    const countMap = await Product.aggregate([
+      { $group: { _id: '$category', count: { $sum: 1 } } },
+    ]);
+
+    const countsByCategory = countMap.reduce((acc, entry) => {
+      acc[entry._id] = entry.count;
+      return acc;
+    }, {});
+
+    const rows = categories.map((category) => ({
+      ...category,
+      productCount: countsByCategory[category.name] || 0,
+    }));
 
     return res.json({ categories: rows });
   } catch (error) {
@@ -600,6 +670,9 @@ const getAuditLogs = async (req, res) => {
     const query = {};
 
     if (cursor) {
+      if (!isValidObjectId(cursor)) {
+        return res.status(400).json({ message: 'Invalid cursor' });
+      }
       query._id = { $lt: cursor };
     }
 

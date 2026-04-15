@@ -178,6 +178,7 @@ const resetPassword = async (req, res) => {
     user.password = newPassword;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
+    user.refreshTokens = [];
     await user.save();
 
     return res.json({ message: 'Password has been successfully reset' });
@@ -212,18 +213,18 @@ const refreshToken = async (req, res) => {
 
 const logout = async (req, res) => {
   try {
-    const token = req.cookies.refreshToken || req.body?.refreshToken;
+    const token = getRefreshFromRequest(req);
     if (token) {
       const decoded = jwt.decode(token);
       if (decoded && decoded.userId) {
         await User.findByIdAndUpdate(decoded.userId, {
-          $pull: { refreshTokens: token }
+          $pull: { refreshTokens: token },
         });
       }
     }
-    
+
     res.clearCookie('refreshToken', getRefreshCookieClearOptions());
-    
+
     return res.json({ message: 'Logged out successfully' });
   } catch (error) {
     return res.status(500).json({ message: 'Could not log out' });

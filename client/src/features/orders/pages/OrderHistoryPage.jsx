@@ -5,7 +5,6 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext';
 import {
   History,
-  Package,
   Clock,
   IndianRupee,
   ShoppingBag,
@@ -17,6 +16,7 @@ import { Card, CardContent } from '../../../components/ui/Card';
 import Footer from '../../../components/Footer';
 import Header from '../../../components/Header';
 import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
+import { formatCampusAddress } from '../../../lib/campus';
 import { cancelOrder, getOrders } from '../api/orderApi';
 import { ErrorState } from '../../../components/ui/ErrorState';
 
@@ -166,6 +166,10 @@ const OrderHistoryPage = () => {
           ) : (
             <div className="space-y-6">
               {orders.map((order) => (
+                (() => {
+                  const shippingAddress = formatCampusAddress(order.shippingDetails);
+
+                  return (
                 <Card
                   key={order._id}
                   className="space-y-4 rounded-2xl border-gray-100 shadow-sm animate-fade-in"
@@ -219,10 +223,6 @@ const OrderHistoryPage = () => {
                           </h3>
                           <div className="flex flex-wrap items-center text-sm text-gray-600 gap-x-4 gap-y-1 mt-1">
                             <span className="flex items-center">
-                              <Package className="w-4 h-4 mr-1" />
-                              Qty {item.quantity}
-                            </span>
-                            <span className="flex items-center">
                               <Clock className="w-4 h-4 mr-1" />
                               {formatDate(order.updatedAt || order.createdAt)}
                             </span>
@@ -243,34 +243,16 @@ const OrderHistoryPage = () => {
                         </p>
                         <p>{order.shippingDetails.fullName}</p>
                         {order.shippingDetails.phone && <p>{order.shippingDetails.phone}</p>}
-                        <p className="text-gray-600">
-                          {[
-                            order.shippingDetails.addressLine1,
-                            order.shippingDetails.addressLine2,
-                            order.shippingDetails.landmark,
-                          ]
-                            .filter(Boolean)
-                            .join(', ')}
-                        </p>
-                        <p className="text-gray-600">
-                          {[
-                            order.shippingDetails.city,
-                            order.shippingDetails.state,
-                            order.shippingDetails.postalCode,
-                          ]
-                            .filter(Boolean)
-                            .join(', ')}
-                        </p>
-                        {order.shippingDetails.country && (
-                          <p className="text-gray-600">
-                            {order.shippingDetails.country}
-                          </p>
-                        )}
+                        <p className="text-gray-600">{shippingAddress.primaryLine}</p>
+                        <p className="text-gray-600">{shippingAddress.secondaryLine}</p>
+                        <p className="text-gray-600">{shippingAddress.country}</p>
                       </div>
                     )}
                   </div>
                   </CardContent>
                 </Card>
+                  );
+                })()
               ))}
             </div>
           )}

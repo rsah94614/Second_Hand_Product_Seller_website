@@ -186,7 +186,7 @@ const SignUpPage = () => {
                     value={formData.location}
                     onChange={handleChange}
                     className="pl-10 pr-10 bg-white border-gray-800 placeholder:text-gray-600"
-                    placeholder="Enter your city/location"
+                    placeholder="Enter your address (If Day Scholar)"
                   />
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 w-5 h-5" />
                 </div>

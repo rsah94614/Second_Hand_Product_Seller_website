@@ -29,6 +29,8 @@ const setupTestApp = async () => {
   await ensureDefaultCategories();
 
   appInstance = createApp();
+  appInstance.app.server = appInstance.server;
+  appInstance.app.io = appInstance.io;
   return appInstance;
 };
 
