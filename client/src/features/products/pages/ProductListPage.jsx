@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
-import { Search, Filter, MapPin, X, Package, ChevronDown, Loader2 } from 'lucide-react';
+import { Filter, X, Package, Loader2 } from 'lucide-react';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import ProductCard from '../../../components/ProductCard';
@@ -21,6 +21,24 @@ import axios from 'axios';
 
 const PAGE_SIZE = 8;
 
+const getFiltersFromSearchParams = (searchParams) => ({
+  search: searchParams.get('search') || '',
+  category: searchParams.get('category') || '',
+  minPrice: searchParams.get('minPrice') || '',
+  maxPrice: searchParams.get('maxPrice') || '',
+  sortBy: searchParams.get('sortBy') || 'createdAt',
+  sortOrder: searchParams.get('sortOrder') || 'desc',
+});
+
+const hasExpandedFilters = (filters) =>
+  Boolean(
+    filters.category ||
+      filters.minPrice ||
+      filters.maxPrice ||
+      filters.sortBy !== 'createdAt' ||
+      filters.sortOrder !== 'desc'
+  );
+
 const fetchProducts = async ({ pageParam = null, filters }) => {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => {
@@ -35,17 +53,15 @@ const fetchProducts = async ({ pageParam = null, filters }) => {
 const ProductListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showFilterPanel, setShowFilterPanel] = useState(false);
-  const [filters, setFilters] = useState({
-    search: searchParams.get('search') || '',
-    category: searchParams.get('category') || '',
-    minPrice: searchParams.get('minPrice') || '',
-    maxPrice: searchParams.get('maxPrice') || '',
-    location: searchParams.get('location') || '',
-    sortBy: searchParams.get('sortBy') || 'createdAt',
-    sortOrder: searchParams.get('sortOrder') || 'desc',
-  });
+  const [filters, setFilters] = useState(() => getFiltersFromSearchParams(searchParams));
 
   const loaderRef = useRef(null);
+
+  useEffect(() => {
+    const nextFilters = getFiltersFromSearchParams(searchParams);
+    setFilters(nextFilters);
+    setShowFilterPanel(hasExpandedFilters(nextFilters));
+  }, [searchParams]);
 
   const { data: categoryResponse } = useQuery({
     queryKey: ['product-categories'],
@@ -105,15 +121,14 @@ const ProductListPage = () => {
 
   const clearFilters = () => {
     const cleared = {
-      search: '', category: '', minPrice: '', maxPrice: '',
-      location: '', sortBy: 'createdAt', sortOrder: 'desc',
+      search: '', category: '', minPrice: '', maxPrice: '', sortBy: 'createdAt', sortOrder: 'desc',
     };
     setFilters(cleared);
     setSearchParams({});
     setShowFilterPanel(false);
   };
 
-  const hasActiveFilters = filters.search || filters.category || filters.minPrice || filters.maxPrice || filters.location;
+  const hasActiveFilters = filters.search || filters.category || filters.minPrice || filters.maxPrice;
   const allProducts = data?.pages?.flatMap((p) => p.products) ?? [];
   const totalCount = data?.pages?.[0]?.total ?? 0;
 
@@ -147,14 +162,6 @@ const ProductListPage = () => {
                 <Input type="number" value={filters.minPrice} onChange={(e) => handleFilterChange('minPrice', e.target.value)} placeholder="Min" className="h-10 text-sm" />
                 <span className="text-gray-400 font-bold">-</span>
                 <Input type="number" value={filters.maxPrice} onChange={(e) => handleFilterChange('maxPrice', e.target.value)} placeholder="Max" className="h-10 text-sm" />
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Location</h3>
-              <div className="relative">
-                <Input type="text" value={filters.location} onChange={(e) => handleFilterChange('location', e.target.value)} placeholder="Enter location" className="pl-10 h-10 text-sm" />
-                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
               </div>
             </div>
 
@@ -200,12 +207,6 @@ const ProductListPage = () => {
                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-xs font-bold text-amber-700">
                       ₹{filters.minPrice || 0}–{filters.maxPrice || '∞'}
                       <button onClick={() => { handleFilterChange('minPrice', ''); handleFilterChange('maxPrice', ''); }}><X className="h-3 w-3" /></button>
-                    </span>
-                  )}
-                  {filters.location && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-bold text-emerald-700">
-                      📍 {filters.location}
-                      <button onClick={() => handleFilterChange('location', '')}><X className="h-3 w-3" /></button>
                     </span>
                   )}
                 </div>

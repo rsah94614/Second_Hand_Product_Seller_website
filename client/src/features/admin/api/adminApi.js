@@ -16,6 +16,16 @@ export const updateAdminUser = async (userId, payload) => {
   return response.data;
 };
 
+export const getAdminSuspiciousUsers = async (queryString = '') => {
+  const response = await axios.get(`${API_BASE_URL}/api/admin/users/suspicious?${queryString}`);
+  return response.data;
+};
+
+export const suspendUser = async (userId, payload) => {
+  const response = await axios.patch(`${API_BASE_URL}/api/admin/users/${userId}/suspend`, payload);
+  return response.data;
+};
+
 export const getAdminProducts = async (queryString = '') => {
   const response = await axios.get(`${API_BASE_URL}/api/admin/products?${queryString}`);
   return response.data;
@@ -23,6 +33,11 @@ export const getAdminProducts = async (queryString = '') => {
 
 export const updateAdminProduct = async (productId, payload) => {
   const response = await axios.patch(`${API_BASE_URL}/api/admin/products/${productId}`, payload);
+  return response.data;
+};
+
+export const getAdminSuspiciousProducts = async (queryString = '') => {
+  const response = await axios.get(`${API_BASE_URL}/api/admin/products/suspicious?${queryString}`);
   return response.data;
 };
 

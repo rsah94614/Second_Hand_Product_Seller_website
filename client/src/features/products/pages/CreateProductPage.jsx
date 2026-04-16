@@ -18,6 +18,7 @@ import {
 } from '../../../components/ui/Select';
 import { Textarea } from '../../../components/ui/Textarea';
 import { DEFAULT_PRODUCT_CATEGORIES, PRODUCT_CONDITIONS } from '../../../config/productOptions';
+import { CAMPUS_LOCATIONS } from '../../../lib/campus';
 import { createProduct, getProductCategories } from '../api/productApi';
 
 const CreateProductPage = () => {
@@ -27,7 +28,6 @@ const CreateProductPage = () => {
     category: '',
     condition: '',
     price: '',
-    location: '',
     contactInfo: {
       phone: '',
       email: '',
@@ -56,7 +56,6 @@ const CreateProductPage = () => {
 
     setFormData((prev) => ({
       ...prev,
-      location: prev.location || user.location || '',
       contactInfo: {
         phone: prev.contactInfo.phone || user.phone || '',
         email: prev.contactInfo.email || user.email || '',
@@ -133,6 +132,12 @@ const CreateProductPage = () => {
       return;
     }
 
+    const HIGH_RISK_CATEGORIES = ['Electronics', 'Mobile Phones', 'Laptops', 'Gadgets'];
+    if (HIGH_RISK_CATEGORIES.includes(formData.category) && images.length < 2) {
+      toast.error('High-risk categories require at least 2 images for safety.');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -184,206 +189,195 @@ const CreateProductPage = () => {
             </CardHeader>
             <CardContent className="p-8 pt-4">
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="flex flex-col">
-                <label htmlFor="title" className="form-label">
-                  Product Title *
-                </label>
-                <Input
-                  type="text"
-                  id="title"
-                  name="title"
-                  required
-                  value={formData.title}
-                  onChange={handleChange}
-                  placeholder="What are you selling?"
-                />
-              </div>
-
-              <div className="flex flex-col">
-                <label htmlFor="description" className="form-label">
-                  Description *
-                </label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  required
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="Describe your product in detail..."
-                  rows="4"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="category" className="form-label">
-                    Category *
-                  </label>
-                  <Select
-                    value={formData.category || undefined}
-                    onValueChange={(value) => setFormData((prev) => ({ ...prev, category: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category} value={category}>{category}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label htmlFor="condition" className="form-label">
-                    Condition *
-                  </label>
-                  <Select
-                    value={formData.condition || undefined}
-                    onValueChange={(value) => setFormData((prev) => ({ ...prev, condition: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Condition" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PRODUCT_CONDITIONS.map((condition) => (
-                        <SelectItem key={condition} value={condition}>{condition}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="price" className="form-label">
-                    Price (₹) *
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="flex flex-col">
+                  <label htmlFor="title" className="form-label">
+                    Product Title *
                   </label>
                   <Input
-                    type="number"
-                    id="price"
-                    name="price"
+                    type="text"
+                    id="title"
+                    name="title"
                     required
-                    min="0"
-                    value={formData.price}
+                    value={formData.title}
                     onChange={handleChange}
-                    placeholder="0"
+                    placeholder="What are you selling?"
                   />
                 </div>
 
                 <div className="flex flex-col">
-                  <label htmlFor="location" className="form-label">
-                    Location *
+                  <label htmlFor="description" className="form-label">
+                    Description *
                   </label>
-                  <Input
-                    type="text"
-                    id="location"
-                    name="location"
+                  <Textarea
+                    id="description"
+                    name="description"
                     required
-                    value={formData.location}
+                    value={formData.description}
                     onChange={handleChange}
-                    placeholder="City, State"
+                    placeholder="Describe your product in detail..."
+                    rows="4"
                   />
                 </div>
-              </div>
 
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Contact Information</h3>
-                <p className="mb-4 text-sm text-gray-500">
-                  We&apos;ve pre-filled your profile contact details. You can keep them or override them just for this listing.
-                </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="flex flex-col">
-                    <label htmlFor="contactInfo.phone" className="form-label pr-2">
-                      Phone Number :
+                  <div>
+                    <label htmlFor="category" className="form-label">
+                      Category *
                     </label>
-                    <Input
-                      type="tel"
-                      id="contactInfo.phone"
-                      name="contactInfo.phone"
-                      value={formData.contactInfo.phone}
-                      onChange={handleChange}
-                      placeholder="Your phone number"
-                    />
+                    <Select
+                      value={formData.category || undefined}
+                      onValueChange={(value) => setFormData((prev) => ({ ...prev, category: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category} value={category}>{category}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
-                  <div className="flex flex-col">
-                    <label htmlFor="contactInfo.email" className="form-label pr-2">
-                      Email :
+                  <div>
+                    <label htmlFor="condition" className="form-label">
+                      Condition *
                     </label>
-                    <Input
-                      type="email"
-                      id="contactInfo.email"
-                      name="contactInfo.email"
-                      value={formData.contactInfo.email}
-                      onChange={handleChange}
-                      placeholder="Your email"
-                    />
+                    <Select
+                      value={formData.condition || undefined}
+                      onValueChange={(value) => setFormData((prev) => ({ ...prev, condition: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Condition" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PRODUCT_CONDITIONS.map((condition) => (
+                          <SelectItem key={condition} value={condition}>{condition}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="form-label">
-                  Product Images * (Max 5)
-                </label>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {images.map((image) => (
-                      <div key={image.id} className="relative group rounded-xl overflow-hidden border border-gray-200 aspect-square md:aspect-video w-full h-32">
-                        <img
-                          src={image.preview}
-                          alt="Preview"
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <button
-                            type="button"
-                            onClick={() => removeImage(image.id)}
-                            className="bg-red-500 hover:bg-red-600 text-white rounded-full p-2.5 shadow-lg transform scale-90 group-hover:scale-100 transition-all flex items-center gap-2 font-medium text-sm"
-                          >
-                            <X className="w-4 h-4" /> Remove
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="price" className="form-label">
+                      Price (₹) *
+                    </label>
+                    <Input
+                      type="number"
+                      id="price"
+                      name="price"
+                      required
+                      min="0"
+                      value={formData.price}
+                      onChange={handleChange}
+                      placeholder="0"
+                    />
+                  </div>
 
-                    {images.length < 5 && (
-                      <label className="flex flex-col items-center justify-center w-full h-32 rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 cursor-pointer hover:border-blue-500 transition-colors">
-                        <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                        <span className="text-sm text-gray-500">Add Image</span>
-                        <input
-                          type="file"
-                          multiple
-                          accept="image/*"
-                          onChange={handleImageChange}
-                          className="hidden"
-                        />
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Contact Information</h3>
+                  <p className="mb-4 text-sm text-gray-500">
+                    We&apos;ve pre-filled your profile contact details. You can keep them or override them just for this listing.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex flex-col">
+                      <label htmlFor="contactInfo.phone" className="form-label pr-2">
+                        Phone Number :
                       </label>
-                    )}
+                      <Input
+                        type="tel"
+                        id="contactInfo.phone"
+                        name="contactInfo.phone"
+                        value={formData.contactInfo.phone}
+                        onChange={handleChange}
+                        placeholder="Your phone number"
+                      />
+                    </div>
+
+                    <div className="flex flex-col">
+                      <label htmlFor="contactInfo.email" className="form-label pr-2">
+                        Email :
+                      </label>
+                      <Input
+                        type="email"
+                        id="contactInfo.email"
+                        name="contactInfo.email"
+                        value={formData.contactInfo.email}
+                        onChange={handleChange}
+                        placeholder="Your email"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex flex-col items-center">
-                <Button
-                  type="submit"
-                  disabled={isLoading}
-                  className="mb-4 w-2/4"
-                >
-                  {isLoading ? 'Creating...' : 'Create Listing'}
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => navigate('/')}
-                  variant="outline"
-                  className="w-2/4"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
+                <div>
+                  <label className="form-label">
+                    Product Images * (Max 5)
+                  </label>
+                  <p className="text-xs text-amber-600 font-medium mb-3">
+                    Note: High-risk categories like Electronics, Laptops, Mobile Phones, and Gadgets require at least 2 clear images for safety verification.
+                  </p>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {images.map((image) => (
+                        <div key={image.id} className="relative group rounded-xl overflow-hidden border border-gray-200 aspect-square md:aspect-video w-full h-32">
+                          <img
+                            src={image.preview}
+                            alt="Preview"
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <button
+                              type="button"
+                              onClick={() => removeImage(image.id)}
+                              className="bg-red-500 hover:bg-red-600 text-white rounded-full p-2.5 shadow-lg transform scale-90 group-hover:scale-100 transition-all flex items-center gap-2 font-medium text-sm"
+                            >
+                              <X className="w-4 h-4" /> Remove
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+
+                      {images.length < 5 && (
+                        <label className="flex flex-col items-center justify-center w-full h-32 rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 cursor-pointer hover:border-blue-500 transition-colors">
+                          <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                          <span className="text-sm text-gray-500">Add Image</span>
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            className="hidden"
+                          />
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center">
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="mb-4 w-2/4"
+                  >
+                    {isLoading ? 'Creating...' : 'Create Listing'}
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => navigate('/')}
+                    variant="outline"
+                    className="w-2/4"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
             </CardContent>
           </Card>
         </div>

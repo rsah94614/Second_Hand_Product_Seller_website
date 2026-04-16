@@ -24,6 +24,7 @@ import {
   deleteAdminProduct,
   getAdminProducts,
   updateAdminProduct,
+  getAdminSuspiciousProducts,
 } from '../api/adminApi';
 
 const AdminProductsPage = () => {
@@ -32,15 +33,20 @@ const AdminProductsPage = () => {
     search: '',
     category: '',
     status: '',
+    viewMode: 'all',
   });
 
   const fetchProducts = async ({ pageParam = null }) => {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
-      if (value) params.set(key, value);
+      if (value && key !== 'viewMode') params.set(key, value);
     });
     if (pageParam) params.set('cursor', pageParam);
     params.set('limit', '50');
+
+    if (filters.viewMode === 'suspicious') {
+      return getAdminSuspiciousProducts(params.toString());
+    }
     return getAdminProducts(params.toString());
   };
 
@@ -134,16 +140,25 @@ const AdminProductsPage = () => {
 
         <Card className="rounded-2xl border-gray-100 shadow-sm mb-8 animate-fade-up-delayed">
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
               <Input
                 value={filters.search}
                 onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-                placeholder="Search title, location, or description"
+                placeholder="Search products..."
                 className="pl-10"
               />
               <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
             </div>
+            <Select value={filters.viewMode} onValueChange={(value) => setFilters((prev) => ({ ...prev, viewMode: value }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Products" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Products</SelectItem>
+                <SelectItem value="suspicious">Suspicious Queue</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={filters.category} onValueChange={(value) => setFilters((prev) => ({ ...prev, category: value === 'all' ? '' : value }))}>
               <SelectTrigger>
                 <SelectValue placeholder="All Categories" />
@@ -200,6 +215,16 @@ const AdminProductsPage = () => {
                               <Badge className={status.tone}>
                                 {status.label}
                               </Badge>
+                              {product.flagged && (
+                                <Badge variant="destructive" className="bg-red-600">
+                                  Flagged
+                                </Badge>
+                              )}
+                              {product.riskScore > 0 && (
+                                <Badge variant="outline" className="text-red-700 border-red-200 bg-red-50">
+                                  Risk Score: {product.riskScore}
+                                </Badge>
+                              )}
                             </div>
                             <p className="text-gray-600 mt-2">
                               {product.category} | {product.location}

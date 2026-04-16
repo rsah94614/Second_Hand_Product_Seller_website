@@ -7,9 +7,12 @@ const router = express.Router();
 router.get('/overview', adminAuth, adminController.getOverview);
 
 router.get('/users', adminAuth, adminController.getUsers);
+router.get('/users/suspicious', adminAuth, adminController.getSuspiciousUsers);
+router.patch('/users/:id/suspend', adminAuth, adminController.suspendUser);
 router.patch('/users/:id', adminAuth, adminController.updateUser);
 
 router.get('/products', adminAuth, adminController.getProducts);
+router.get('/products/suspicious', adminAuth, adminController.getSuspiciousProducts);
 router.patch('/products/:id', adminAuth, adminController.updateProduct);
 router.delete('/products/:id', adminAuth, adminController.deleteProduct);
 

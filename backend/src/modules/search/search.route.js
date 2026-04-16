@@ -16,7 +16,7 @@ router.get('/', async (req, res) => {
       return res.json({ products: [], users: [] });
     }
 
-    const searchRegex = new RegExp(q.trim(), 'i');
+    const searchRegex = new RegExp(q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
     const cap = Math.min(parseInt(limit, 10) || 5, 10);
 
     const [products, users] = await Promise.all([
@@ -26,7 +26,8 @@ router.get('/', async (req, res) => {
           { description: searchRegex },
           { category: searchRegex },
         ],
-        status: 'available',
+        isActive: true,
+        isSold: false,
       })
         .select('title images category location price')
         .limit(cap)

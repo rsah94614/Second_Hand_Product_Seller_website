@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
+import { getCampusPickupLabel } from '../../../lib/campus';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import { Badge } from '../../../components/ui/Badge';
@@ -31,7 +32,19 @@ import { Textarea } from '../../../components/ui/Textarea';
 import ProductCard from '../../../components/ProductCard';
 import { API_BASE_URL } from '../../../config/api';
 import { deleteProduct, getProduct, getRelatedProducts } from '../api/productApi';
-import { submitSellerReview, toggleWishlist } from '../../users/api/userApi';
+import { submitSellerReview, toggleWishlist, getUserProfile } from '../../users/api/userApi';
+
+const getTrustLabelColor = (colorStr) => {
+  const map = {
+    green: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+    blue: 'bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+    gray: 'bg-gray-500/20 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800',
+    emerald: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+    amber: 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+    purple: 'bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800',
+  };
+  return map[colorStr] || map.gray;
+};
 
 const ProductDetailPage = () => {
   const { id } = useParams();
@@ -59,6 +72,12 @@ const ProductDetailPage = () => {
     queryKey: ['related-products', id],
     queryFn: () => getRelatedProducts(id),
     enabled: !!id,
+  });
+
+  const { data: sellerProfile } = useQuery({
+    queryKey: ['user-profile', product?.seller?._id],
+    queryFn: () => getUserProfile(product.seller._id),
+    enabled: !!product?.seller?._id,
   });
 
   const isAvailable = product && !product.isSold && product.isActive !== false;
@@ -368,9 +387,27 @@ const ProductDetailPage = () => {
                   </Badge>
                   <div className="flex items-center text-sm font-medium text-gray-600 ml-2">
                     <MapPin className="w-4 h-4 mr-1 text-gray-400" />
-                    <span>{product.location}</span>
+                    <span>{getCampusPickupLabel(product.seller?.location)}</span>
                   </div>
                 </div>
+
+                {product.expiresAt && (Math.ceil((new Date(product.expiresAt) - new Date()) / (1000 * 60 * 60 * 24)) <= 10) && (
+                  <p className="text-sm font-bold text-orange-600 mb-6 flex items-center bg-orange-50 p-2 rounded-xl border border-orange-100 animate-pulse">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Urgent: This listing expires in {Math.ceil((new Date(product.expiresAt) - new Date()) / (1000 * 60 * 60 * 24))} days!
+                  </p>
+                )}
+
+                {product.flagged && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex gap-3 text-red-800 text-sm animate-fade-in">
+                    <Flag className="w-5 h-5 shrink-0 mt-0.5 text-red-600" />
+                    <div>
+                      <p className="font-bold mb-1">Safety Alert</p>
+                      <p>This listing has been flagged by our automated safety systems. Proceed with caution and only meet in public campus locations.</p>
+                      {user?.role === 'admin' && <p className="mt-2 text-xs opacity-75">Admin insight: Score {product.riskScore} - {product.flaggedReason}</p>}
+                    </div>
+                  </div>
+                )}
               </div>
 
 <Card className="mb-8 rounded-4xl border-0 shadow-[0_20px_80px_-20px_rgba(0,0,0,0.08)] bg-[linear-gradient(135deg,#ffffff_0%,#f8fafc_100%)] relative overflow-hidden">
@@ -385,7 +422,7 @@ const ProductDetailPage = () => {
                     <p className="font-bold text-gray-900 text-lg">{product.seller.name}</p>
                     <p className="text-gray-500 text-sm flex items-center mt-1">
                       <MapPin className="w-3 h-3 mr-1" />
-                      {product.seller.location || 'Location not available'}
+                      {getCampusPickupLabel(product.seller.location)}
                     </p>
                     <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
                       <Star className="h-4 w-4 fill-current text-amber-500" />
@@ -394,6 +431,14 @@ const ProductDetailPage = () => {
                           ? `${Number(product.seller.averageRating || 0).toFixed(1)} (${product.seller.reviewCount} review${product.seller.reviewCount === 1 ? '' : 's'})`
                           : 'No seller reviews yet'}
                       </span>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {sellerProfile?.trustSignals?.trustLabels?.map(label => (
+                        <Badge key={label.key} className={`border outline-hidden whitespace-nowrap px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase backdrop-blur-md bg-white/10 ${getTrustLabelColor(label.color)}`}>
+                          {label.label}
+                        </Badge>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -438,6 +483,12 @@ const ProductDetailPage = () => {
                   <Card className="rounded-t-3xl md:rounded-4xl rounded-b-none md:rounded-b-4xl border-0 shadow-[0_-20px_80px_-20px_rgba(0,0,0,0.12)] sticky bottom-0 md:bottom-6 bg-white/90 backdrop-blur-xl animate-fade-up-delayed p-1 z-40">
                     <CardContent className="p-5">
                     <div className="space-y-4">
+                      
+                      <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3 flex gap-2 items-start text-xs text-indigo-800">
+                        <MapPin className="w-4 h-4 shrink-0 text-indigo-600 mt-0.5" />
+                        <p><strong>Meetup Tip:</strong> Meet the seller safely on campus. Check the product thoroughly before completing the deal.</p>
+                      </div>
+
                       <div className="flex flex-col sm:flex-row gap-3">
                         <Button
                           onClick={handleAddToCart}

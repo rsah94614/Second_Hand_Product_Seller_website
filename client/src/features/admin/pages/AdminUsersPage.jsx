@@ -23,7 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from '../../../components/ui/Table';
-import { getAdminUsers, updateAdminUser } from '../api/adminApi';
+import { getAdminUsers, updateAdminUser, getAdminSuspiciousUsers, suspendUser } from '../api/adminApi';
 
 const AdminUsersPage = () => {
   const queryClient = useQueryClient();
@@ -31,15 +31,20 @@ const AdminUsersPage = () => {
     search: '',
     role: '',
     status: '',
+    viewMode: 'all',
   });
 
   const fetchUsers = async ({ pageParam = null }) => {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
-      if (value) params.set(key, value);
+      if (value && key !== 'viewMode') params.set(key, value);
     });
     if (pageParam) params.set('cursor', pageParam);
     params.set('limit', '50');
+
+    if (filters.viewMode === 'suspicious') {
+      return getAdminSuspiciousUsers(params.toString());
+    }
     return getAdminUsers(params.toString());
   };
 
@@ -67,6 +72,18 @@ const AdminUsersPage = () => {
     },
   });
 
+  const suspendUserMutation = useMutation({
+    mutationFn: ({ userId, reason }) => suspendUser(userId, { suspensionReason: reason }),
+    onSuccess: (response) => {
+      toast.success(response.message || 'User suspended');
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-overview'] });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || error.message || 'Failed to suspend user');
+    },
+  });
+
   const users = useMemo(() => {
     return data?.pages.flatMap((page) => page.users) || [];
   }, [data]);
@@ -87,6 +104,13 @@ const AdminUsersPage = () => {
       userId: user._id,
       payload: { isVerified: !user.isVerified },
     });
+  };
+
+  const handleSuspend = (user) => {
+    const reason = window.prompt(`Enter suspension reason for ${user.name}:`);
+    if (reason) {
+      suspendUserMutation.mutate({ userId: user._id, reason });
+    }
   };
 
   const formatDate = (value) =>
@@ -120,16 +144,25 @@ const AdminUsersPage = () => {
 
         <Card className="rounded-2xl border-gray-100 shadow-sm mb-8 animate-fade-up-delayed">
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
               <Input
                 value={filters.search}
                 onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-                placeholder="Search by name, email, or location"
+                placeholder="Search..."
                 className="pl-10"
               />
               <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
             </div>
+            <Select value={filters.viewMode} onValueChange={(value) => setFilters((prev) => ({ ...prev, viewMode: value }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Users" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Users</SelectItem>
+                <SelectItem value="suspicious">Suspicious Queue</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={filters.role} onValueChange={(value) => setFilters((prev) => ({ ...prev, role: value === 'all' ? '' : value }))}>
               <SelectTrigger>
                 <SelectValue placeholder="All Roles" />
@@ -191,6 +224,9 @@ const AdminUsersPage = () => {
                             <p className="font-semibold text-gray-900">{user.name}</p>
                             <p className="text-sm text-gray-500">{user.email}</p>
                             <p className="text-sm text-gray-500">{user.location || 'No location set'}</p>
+                            {user.riskScore > 0 && (
+                              <p className="text-xs font-bold text-red-600 mt-1">Risk Score: {user.riskScore}</p>
+                            )}
                           </TableCell>
                           <TableCell className="px-6 py-4">
                             <Select value={user.role} onValueChange={(value) => handleRoleChange(user._id, value)}>
@@ -231,6 +267,15 @@ const AdminUsersPage = () => {
                                 disabled={updateUserMutation.isPending}
                               >
                                 {isActive ? 'Deactivate' : 'Activate'}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleSuspend(user)}
+                                disabled={suspendUserMutation.isPending || user.isSuspended}
+                                className="text-red-600 hover:bg-red-50 hover:border-red-200"
+                              >
+                                {user.isSuspended ? 'Suspended' : 'Suspend'}
                               </Button>
                             </div>
                           </TableCell>

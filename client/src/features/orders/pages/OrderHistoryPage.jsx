@@ -5,11 +5,12 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext';
 import {
   History,
-  Package,
   Clock,
   IndianRupee,
   ShoppingBag,
   X,
+  CheckCircle,
+  AlertTriangle,
 } from 'lucide-react';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
@@ -17,14 +18,17 @@ import { Card, CardContent } from '../../../components/ui/Card';
 import Footer from '../../../components/Footer';
 import Header from '../../../components/Header';
 import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
-import { cancelOrder, getOrders } from '../api/orderApi';
+import { formatCampusAddress } from '../../../lib/campus';
+import { cancelOrder, completeOrder, reportNoShow, getOrders } from '../api/orderApi';
 import { ErrorState } from '../../../components/ui/ErrorState';
 
 const statusStyles = {
-  processing: 'bg-yellow-100 text-yellow-700',
-  shipped: 'bg-blue-100 text-blue-700',
-  delivered: 'bg-green-100 text-green-700',
+  requested: 'bg-yellow-100 text-yellow-700',
+  accepted: 'bg-blue-100 text-blue-700',
+  meetup_scheduled: 'bg-indigo-100 text-indigo-700',
+  completed: 'bg-green-100 text-green-700',
   cancelled: 'bg-red-100 text-red-700',
+  no_show: 'bg-orange-100 text-orange-700',
 };
 
 const OrderHistoryPage = () => {
@@ -40,17 +44,51 @@ const OrderHistoryPage = () => {
   const cancelOrderMutation = useMutation({
     mutationFn: (orderId) => cancelOrder(orderId),
     onSuccess: () => {
-      toast.success('Order cancelled successfully');
+      toast.success('Order cancelled');
       queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || error.message || 'Failed to cancel order');
+      toast.error(error.response?.data?.message || 'Failed to cancel order');
+    },
+  });
+
+  const completeOrderMutation = useMutation({
+    mutationFn: (orderId) => completeOrder(orderId),
+    onSuccess: () => {
+      toast.success('Order marked as complete!');
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to complete order');
+    },
+  });
+
+  const noShowMutation = useMutation({
+    mutationFn: (orderId) => reportNoShow(orderId),
+    onSuccess: () => {
+      toast.success('Reported as No-Show');
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to report no-show');
     },
   });
 
   const handleCancelOrder = (orderId) => {
     if (window.confirm('Are you sure you want to cancel this order?')) {
       cancelOrderMutation.mutate(orderId);
+    }
+  };
+
+  const handleCompleteOrder = (orderId) => {
+    if (window.confirm('Are you sure you want to mark this order as completed? Did you receive the item?')) {
+      completeOrderMutation.mutate(orderId);
+    }
+  };
+
+  const handleNoShow = (orderId) => {
+    if (window.confirm('Are you sure you want to report a No-Show? This affects the seller\'s trust score.')) {
+      noShowMutation.mutate(orderId);
     }
   };
 
@@ -166,6 +204,10 @@ const OrderHistoryPage = () => {
           ) : (
             <div className="space-y-6">
               {orders.map((order) => (
+                (() => {
+                  const shippingAddress = formatCampusAddress(order.shippingDetails);
+
+                  return (
                 <Card
                   key={order._id}
                   className="space-y-4 rounded-2xl border-gray-100 shadow-sm animate-fade-in"
@@ -182,14 +224,14 @@ const OrderHistoryPage = () => {
                       </p>
                     </div>
                     <div className="mt-3 md:mt-0 flex items-center gap-3">
-                      <Badge className={`px-3 py-1 text-sm ${statusStyles[order.status] || statusStyles.processing}`}>
+                      <Badge className={`px-3 py-1 text-sm ${statusStyles[order.status] || statusStyles.requested}`}>
                         {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
                       </Badge>
                       <div className="flex items-center text-gray-700 font-semibold">
                         <IndianRupee className="w-4 h-4" />
                         {formatPrice(order.total)}
                       </div>
-                      {order.status === 'processing' && (
+                      {order.status === 'requested' || order.status === 'accepted' ? (
                         <Button
                           variant="outline"
                           size="sm"
@@ -200,6 +242,31 @@ const OrderHistoryPage = () => {
                           <X className="w-4 h-4 mr-1" />
                           Cancel
                         </Button>
+                      ) : null}
+                      
+                      {order.status === 'meetup_scheduled' && (
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCompleteOrder(order._id)}
+                            disabled={completeOrderMutation.isPending}
+                            className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                          >
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            Complete
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleNoShow(order._id)}
+                            disabled={noShowMutation.isPending}
+                            className="text-orange-600 hover:bg-orange-50 hover:border-orange-200"
+                          >
+                            <AlertTriangle className="w-4 h-4 mr-1" />
+                            No-Show
+                          </Button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -219,10 +286,6 @@ const OrderHistoryPage = () => {
                           </h3>
                           <div className="flex flex-wrap items-center text-sm text-gray-600 gap-x-4 gap-y-1 mt-1">
                             <span className="flex items-center">
-                              <Package className="w-4 h-4 mr-1" />
-                              Qty {item.quantity}
-                            </span>
-                            <span className="flex items-center">
                               <Clock className="w-4 h-4 mr-1" />
                               {formatDate(order.updatedAt || order.createdAt)}
                             </span>
@@ -239,38 +302,20 @@ const OrderHistoryPage = () => {
                     {order.shippingDetails?.fullName && (
                       <div className="bg-gray-50 border border-gray-100 p-4 rounded-xl text-sm text-gray-700">
                         <p className="font-semibold text-gray-800 mb-1">
-                          Shipping to
+                          Delivery / Meetup Details
                         </p>
                         <p>{order.shippingDetails.fullName}</p>
                         {order.shippingDetails.phone && <p>{order.shippingDetails.phone}</p>}
-                        <p className="text-gray-600">
-                          {[
-                            order.shippingDetails.addressLine1,
-                            order.shippingDetails.addressLine2,
-                            order.shippingDetails.landmark,
-                          ]
-                            .filter(Boolean)
-                            .join(', ')}
-                        </p>
-                        <p className="text-gray-600">
-                          {[
-                            order.shippingDetails.city,
-                            order.shippingDetails.state,
-                            order.shippingDetails.postalCode,
-                          ]
-                            .filter(Boolean)
-                            .join(', ')}
-                        </p>
-                        {order.shippingDetails.country && (
-                          <p className="text-gray-600">
-                            {order.shippingDetails.country}
-                          </p>
-                        )}
+                        <p className="text-gray-600">{shippingAddress.primaryLine}</p>
+                        <p className="text-gray-600">{shippingAddress.secondaryLine}</p>
+                        <p className="text-gray-600">{shippingAddress.country}</p>
                       </div>
                     )}
                   </div>
                   </CardContent>
                 </Card>
+                  );
+                })()
               ))}
             </div>
           )}

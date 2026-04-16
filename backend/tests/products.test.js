@@ -28,13 +28,44 @@ const runProductFeatureTests = async (app) => {
     title: 'Review Target Product',
   });
 
+  const orderResponse = await request(app)
+    .post('/api/orders')
+    .set('Authorization', `Bearer ${reviewer.token}`)
+    .send({
+      productId: product._id.toString(),
+      shippingDetails: {
+        fullName: 'Review Buyer',
+        phone: '9876500000',
+        addressLine1: 'Library Gate',
+        city: 'Guwahati',
+        state: 'Assam',
+        postalCode: '781014',
+      },
+    });
+
+  assert.equal(orderResponse.statusCode, 201);
+
+  const acceptResponse = await request(app)
+    .patch(`/api/orders/${orderResponse.body._id}/accept`)
+    .set('Authorization', `Bearer ${seller.token}`)
+    .send();
+
+  assert.equal(acceptResponse.statusCode, 200);
+
+  const completeResponse = await request(app)
+    .patch(`/api/orders/${orderResponse.body._id}/complete`)
+    .set('Authorization', `Bearer ${reviewer.token}`)
+    .send();
+
+  assert.equal(completeResponse.statusCode, 200);
+
   const firstReviewResponse = await request(app)
     .post(`/api/users/${seller.user.id}/reviews`)
     .set('Authorization', `Bearer ${reviewer.token}`)
     .send({
       rating: 4,
       comment: 'Looks good and matched the description.',
-      productId: product._id.toString(),
+      orderId: orderResponse.body._id,
     });
 
   assert.equal(firstReviewResponse.statusCode, 200);
@@ -54,7 +85,7 @@ const runProductFeatureTests = async (app) => {
     .send({
       rating: 5,
       comment: 'Updating this after using it longer.',
-      productId: product._id.toString(),
+      orderId: orderResponse.body._id,
     });
 
   assert.equal(updateReviewResponse.statusCode, 200);

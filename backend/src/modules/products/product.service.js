@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Product = require('../../../models/Product');
 const Category = require('../../../models/Category');
 const User = require('../../../models/User');
@@ -7,6 +8,9 @@ const { ensureDefaultCategories } = require('../../../utils/categoryDefaults');
 const {
   createNotifications,
 } = require('../../shared/utils/notification.utils');
+
+const escapeRegex = (text = '') => String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value));
 
 const allowedSortFields = new Set(['createdAt', 'price', 'title', 'views', 'averageRating', 'reviewCount']);
 
@@ -19,7 +23,6 @@ const scoreSearchMatch = (product, search) => {
   const title = normalizeText(product.title);
   const description = normalizeText(product.description);
   const category = normalizeText(product.category);
-  const location = normalizeText(product.location);
   const terms = query.split(/\s+/).filter(Boolean);
 
   let score = 0;
@@ -28,13 +31,11 @@ const scoreSearchMatch = (product, search) => {
   if (title.startsWith(query)) score += 70;
   if (title.includes(query)) score += 45;
   if (category.includes(query)) score += 32;
-  if (location.includes(query)) score += 18;
   if (description.includes(query)) score += 12;
 
   terms.forEach((term) => {
     if (title.includes(term)) score += 16;
     if (category.includes(term)) score += 10;
-    if (location.includes(term)) score += 8;
     if (description.includes(term)) score += 4;
   });
 
@@ -112,24 +113,29 @@ const notifyWishlistUsers = async ({
   });
 };
 
-const findProducts = async ({ cursor, limit = 12, category, minPrice, maxPrice, location, search, sortBy = 'createdAt', sortOrder = 'desc' }) => {
+const findProducts = async ({ cursor, limit = 12, category, minPrice, maxPrice, search, sortBy = 'createdAt', sortOrder = 'desc' }) => {
   const query = { isActive: true, isSold: false };
 
   if (cursor) {
+    if (!isValidObjectId(cursor)) {
+      throw new Error('Invalid cursor');
+    }
     query._id = { $lt: cursor };
   }
 
   if (category) query.category = category;
-  if (minPrice || maxPrice) {
+  const hasMinPrice = minPrice !== undefined && minPrice !== null && minPrice !== '';
+  const hasMaxPrice = maxPrice !== undefined && maxPrice !== null && maxPrice !== '';
+  if (hasMinPrice || hasMaxPrice) {
     query.price = {};
-    if (minPrice) query.price.$gte = Number(minPrice);
-    if (maxPrice) query.price.$lte = Number(maxPrice);
+    if (hasMinPrice) query.price.$gte = Number(minPrice);
+    if (hasMaxPrice) query.price.$lte = Number(maxPrice);
   }
-  if (location) query.location = new RegExp(location, 'i');
   if (search) {
+    const escapedSearch = escapeRegex(search);
     query.$or = [
-      { title: new RegExp(search, 'i') },
-      { description: new RegExp(search, 'i') },
+      { title: new RegExp(escapedSearch, 'i') },
+      { description: new RegExp(escapedSearch, 'i') },
     ];
   }
 
@@ -138,7 +144,7 @@ const findProducts = async ({ cursor, limit = 12, category, minPrice, maxPrice, 
   const sortOptions = {};
   sortOptions[safeSortBy] = sortOrder === 'desc' ? -1 : 1;
   if (safeSortBy !== '_id') {
-    sortOptions['_id'] = sortOrder === 'desc' ? -1 : 1; 
+    sortOptions['_id'] = sortOrder === 'desc' ? -1 : 1;
   }
 
   let products = [];
@@ -159,7 +165,7 @@ const findProducts = async ({ cursor, limit = 12, category, minPrice, maxPrice, 
 
     total = rankedProducts.length;
     products = rankedProducts
-      .slice(0, numericLimit) 
+      .slice(0, numericLimit)
       .map((entry) => entry.product);
   } else {
     products = await Product.find(query)

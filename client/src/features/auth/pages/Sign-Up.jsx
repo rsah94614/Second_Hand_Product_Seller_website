@@ -24,46 +24,68 @@ const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: value,
     }));
+    // Clear error for this field when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
   };
 
   const handleCampusChange = (e) => {
+    const { name, value } = e.target;
     setCampusData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: value,
     }));
+    // Clear error for campus fields if needed (though we mostly validate core fields)
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrors({});
+    const newErrors = {};
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!formData.name.trim()) {
-      toast.error('Full name is required');
-      return;
+      newErrors.name = 'Full name is required';
     }
 
-    if (!emailRegex.test(formData.email)) {
-      toast.error('Please enter a valid email address');
-      return;
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!emailRegex.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
     }
 
-    if (formData.password.length < 8) {
-      toast.error('Password must be at least 8 characters long');
-      return;
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Phone number is required';
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters long';
     }
 
     if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
@@ -82,7 +104,7 @@ const SignUpPage = () => {
       toast.success('Registration successful!');
       navigate('/');
     } else {
-      toast.error(result.message);
+      setErrors({ server: result.message });
     }
 
     setIsLoading(false);
@@ -90,7 +112,7 @@ const SignUpPage = () => {
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ec_0%,#f8fafc_24%,#f8fafc_100%)] flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-[1100px] min-h-[700px] overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] bg-white shadow-[0_20px_80px_-20px_rgba(15,23,42,0.15)] flex flex-col lg:flex-row-reverse animate-fade-in border border-stone-100/50">
+      <div className="w-full max-w-[1100px] min-h-[700px] overflow-hidden rounded-4xl sm:rounded-[2.5rem] bg-white shadow-[0_20px_80px_-20px_rgba(15,23,42,0.15)] flex flex-col lg:flex-row-reverse animate-fade-in border border-stone-100/50">
 
         {/* Right Form Section */}
         <div className="w-full lg:w-1/2 p-6 sm:p-14 lg:px-16 lg:py-12 flex flex-col justify-center bg-white relative z-10">
@@ -114,6 +136,11 @@ const SignUpPage = () => {
           </div>
 
           <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+            {errors.server && (
+              <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm font-medium animate-shake">
+                {errors.server}
+              </div>
+            )}
             <div className="space-y-4">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
@@ -125,14 +152,16 @@ const SignUpPage = () => {
                     name="name"
                     type="text"
                     autoComplete="name"
-                    required
                     value={formData.name}
                     onChange={handleChange}
-                    className="pl-10 pr-10 bg-white border-gray-800 placeholder:text-gray-600"
+                    className={`pl-10 pr-10 bg-white placeholder:text-gray-600 ${
+                      errors.name ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800'
+                    }`}
                     placeholder="Enter your full name"
                   />
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 w-5 h-5" />
+                  <User className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${errors.name ? 'text-red-500' : 'text-gray-600'}`} />
                 </div>
+                {errors.name && <p className="mt-1 text-[11px] font-bold text-red-600 animate-fade-in">{errors.name}</p>}
               </div>
 
               <div>
@@ -145,19 +174,21 @@ const SignUpPage = () => {
                     name="email"
                     type="email"
                     autoComplete="email"
-                    required
                     value={formData.email}
                     onChange={handleChange}
-                    className="pl-10 pr-10 bg-white border-gray-800 placeholder:text-gray-600"
+                    className={`pl-10 pr-10 bg-white placeholder:text-gray-600 ${
+                      errors.email ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800'
+                    }`}
                     placeholder="Enter your email"
                   />
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 w-5 h-5" />
+                  <Mail className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${errors.email ? 'text-red-500' : 'text-gray-600'}`} />
                 </div>
+                {errors.email && <p className="mt-1 text-[11px] font-bold text-red-600 animate-fade-in">{errors.email}</p>}
               </div>
 
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone Number (Optional)
+                  Phone Number
                 </label>
                 <div className="relative">
                   <Input
@@ -167,11 +198,14 @@ const SignUpPage = () => {
                     autoComplete="tel"
                     value={formData.phone}
                     onChange={handleChange}
-                    className="pl-10 pr-10 bg-white border-gray-800 placeholder:text-gray-600"
+                    className={`pl-10 pr-10 bg-white placeholder:text-gray-600 ${
+                      errors.phone ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800'
+                    }`}
                     placeholder="Enter your phone number"
                   />
-                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 w-5 h-5" />
+                  <Phone className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${errors.phone ? 'text-red-500' : 'text-gray-600'}`} />
                 </div>
+                {errors.phone && <p className="mt-1 text-[11px] font-bold text-red-600 animate-fade-in">{errors.phone}</p>}
               </div>
 
               <div>
@@ -186,7 +220,7 @@ const SignUpPage = () => {
                     value={formData.location}
                     onChange={handleChange}
                     className="pl-10 pr-10 bg-white border-gray-800 placeholder:text-gray-600"
-                    placeholder="Enter your city/location"
+                    placeholder="Enter your address (If Day Scholar)"
                   />
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 w-5 h-5" />
                 </div>
@@ -196,10 +230,13 @@ const SignUpPage = () => {
               <div className="pt-3 border-t border-gray-100">
                 <div className="flex items-center gap-2 mb-3">
                   <GraduationCap className="w-4 h-4 text-primary-600" />
-                  <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Campus Details (Optional)</span>
+                  <span className="text-xs font-bold uppercase tracking-widest text-gray-700">Campus Details (Optional)</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
+                    <label htmlFor="collegeName" className="block text-sm font-medium text-gray-700 mb-1">
+                  College / University name
+                </label>
                     <div className="relative">
                       <Input
                         id="collegeName"
@@ -214,6 +251,9 @@ const SignUpPage = () => {
                     </div>
                   </div>
                   <div>
+                    <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-1">
+                  Department
+                </label>
                     <Input
                       id="department"
                       name="department"
@@ -225,12 +265,15 @@ const SignUpPage = () => {
                     />
                   </div>
                   <div>
+                    <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-1">
+                  Year
+                </label>
                     <select
                       id="year"
                       name="year"
                       value={campusData.year}
                       onChange={handleCampusChange}
-                      className="w-full h-10 rounded-lg border border-gray-800 bg-white px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="w-full h-11 rounded-lg border border-gray-800 bg-white px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
                     >
                       <option value="">Select Year</option>
                       <option value="1st">1st Year</option>
@@ -243,6 +286,9 @@ const SignUpPage = () => {
                     </select>
                   </div>
                   <div className="col-span-2">
+                    <label htmlFor="hostel" className="block text-sm font-medium text-gray-700 mb-1">
+                  Hostel Name
+                </label>
                     <Input
                       id="hostel"
                       name="hostel"
@@ -266,21 +312,23 @@ const SignUpPage = () => {
                     name="password"
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="new-password"
-                    required
                     value={formData.password}
                     onChange={handleChange}
-                    className="pl-10 pr-10 bg-white border-gray-800 placeholder:text-gray-600"
+                    className={`pl-10 pr-10 bg-white placeholder:text-gray-600 ${
+                      errors.password ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800'
+                    }`}
                     placeholder="Create a password"
                   />
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 w-5 h-5" />
+                  <Lock className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${errors.password ? 'text-red-500' : 'text-gray-600'}`} />
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5 text-gray-600" /> : <Eye className="w-5 h-5 text-gray-600" />}
+                    {showPassword ? <EyeOff className={`w-5 h-5 ${errors.password ? 'text-red-500' : 'text-gray-600'}`} /> : <Eye className={`w-5 h-5 ${errors.password ? 'text-red-500' : 'text-gray-600'}`} />}
                   </button>
                 </div>
+                {errors.password && <p className="mt-1 text-[11px] font-bold text-red-600 animate-fade-in">{errors.password}</p>}
               </div>
 
               <div>
@@ -293,21 +341,23 @@ const SignUpPage = () => {
                     name="confirmPassword"
                     type={showConfirmPassword ? 'text' : 'password'}
                     autoComplete="new-password"
-                    required
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className="pl-10 pr-10 bg-white border-gray-800 placeholder:text-gray-600"
+                    className={`pl-10 pr-10 bg-white placeholder:text-gray-600 ${
+                      errors.confirmPassword ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800'
+                    }`}
                     placeholder="Confirm your password"
                   />
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 w-5 h-5" />
+                  <Lock className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${errors.confirmPassword ? 'text-red-500' : 'text-gray-600'}`} />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword((prev) => !prev)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-600 transition-colors"
                   >
-                    {showConfirmPassword ? <EyeOff className="w-5 h-5 text-gray-600" /> : <Eye className="w-5 h-5 text-gray-600" />}
+                    {showConfirmPassword ? <EyeOff className={`w-5 h-5 ${errors.confirmPassword ? 'text-red-500' : 'text-gray-600'}`} /> : <Eye className={`w-5 h-5 ${errors.confirmPassword ? 'text-red-500' : 'text-gray-600'}`} />}
                   </button>
                 </div>
+                {errors.confirmPassword && <p className="mt-1 text-[11px] font-bold text-red-600 animate-fade-in">{errors.confirmPassword}</p>}
               </div>
             </div>
 
@@ -346,7 +396,7 @@ const SignUpPage = () => {
                 { icon: '🌱', title: 'Eco Friendly', desc: 'Recycle & reuse items' },
                 { icon: '📚', title: 'Study Better', desc: 'Get books from seniors' },
                 { icon: '📦', title: 'Easy Listing', desc: 'Sell in under 60 sec' },
-                { icon: '🛡️', title: 'Secure', desc: 'Verified students only' },
+                { icon: '🛡️', title: 'Secure', desc: 'Phone-verified campus trading' },
                 { icon: '💬', title: 'Connect', desc: 'In-app chat system' },
                 { icon: '⚡', title: 'Instant', desc: 'Right here on campus' },
               ].map((item, i) => (

@@ -2,6 +2,10 @@ import axios from 'axios';
 import { API_BASE_URL } from './api';
 
 axios.defaults.withCredentials = true;
+const token = localStorage.getItem('token');
+if (token) {
+  axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+}
 
 axios.interceptors.response.use(
   (response) => {

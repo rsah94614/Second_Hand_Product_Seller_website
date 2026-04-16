@@ -22,14 +22,22 @@ const getAdminCategories = async (req, res) => {
     await ensureDefaultCategories();
     const categories = await Category.find()
       .sort({ sortOrder: 1, name: 1 })
-      .select('-__v');
+      .select('-__v')
+      .lean();
 
-    const categoriesWithCounts = await Promise.all(
-      categories.map(async (category) => ({
-        ...category.toObject(),
-        productCount: await Product.countDocuments({ category: category.name }),
-      }))
-    );
+    const categoryCounts = await Product.aggregate([
+      { $group: { _id: '$category', count: { $sum: 1 } } },
+    ]);
+
+    const countMap = categoryCounts.reduce((acc, entry) => {
+      acc[entry._id] = entry.count;
+      return acc;
+    }, {});
+
+    const categoriesWithCounts = categories.map((category) => ({
+      ...category,
+      productCount: countMap[category.name] || 0,
+    }));
 
     return res.json({ categories: categoriesWithCounts });
   } catch (error) {

@@ -17,6 +17,7 @@ import {
 } from '../../../components/ui/Select';
 import { Textarea } from '../../../components/ui/Textarea';
 import { DEFAULT_PRODUCT_CATEGORIES, PRODUCT_CONDITIONS } from '../../../config/productOptions';
+import { CAMPUS_LOCATIONS } from '../../../lib/campus';
 import { getProduct, getProductCategories, updateProduct } from '../api/productApi';
 import { useAuth } from '../../../context/AuthContext';
 
@@ -30,7 +31,7 @@ const EditProductPage = () => {
     price: '',
     category: '',
     condition: '',
-    location: '',
+    condition: '',
     contactInfo: {
       phone: '',
       email: '',
@@ -57,7 +58,6 @@ const EditProductPage = () => {
       price: product.price || '',
       category: product.category || '',
       condition: product.condition || '',
-      location: product.location || user?.location || '',
       contactInfo: {
         phone: product.contactInfo?.phone || user?.phone || '',
         email: product.contactInfo?.email || user?.email || '',
@@ -136,6 +136,12 @@ const EditProductPage = () => {
     const allImages = [...images, ...newImages];
     if (allImages.length === 0) {
       toast.error('Please add at least one image');
+      return;
+    }
+
+    const HIGH_RISK_CATEGORIES = ['Electronics', 'Mobile Phones', 'Laptops', 'Gadgets'];
+    if (HIGH_RISK_CATEGORIES.includes(formData.category) && allImages.length < 2) {
+      toast.error('High-risk categories require at least 2 images for safety.');
       return;
     }
 
@@ -252,10 +258,6 @@ const EditProductPage = () => {
                   <Input type="number" id="price" name="price" required min="0" value={formData.price} onChange={handleChange} placeholder="0" />
                 </div>
 
-                <div className="flex flex-col">
-                  <label htmlFor="location" className="form-label">Location *</label>
-                  <Input type="text" id="location" name="location" required value={formData.location} onChange={handleChange} placeholder="City, State" />
-                </div>
               </div>
 
               <div>
@@ -278,6 +280,9 @@ const EditProductPage = () => {
 
               <div>
                 <label className="form-label">Product Images * (Max 5)</label>
+                <p className="text-xs text-amber-600 font-medium mb-3">
+                  Note: High-risk categories like Electronics, Laptops, Mobile Phones, and Gadgets require at least 2 clear images for safety verification.
+                </p>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {allImages.map((image) => (

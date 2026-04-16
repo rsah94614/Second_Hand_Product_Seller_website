@@ -1,0 +1,53 @@
+const MIN_PROFILE_SCORE_FOR_TRADING = 60;
+
+const computeProfileScore = (user) => {
+  let score = 0;
+
+  if (user.name?.trim()) score += 15;
+  if (user.phone?.trim()) score += 10;
+  if (user.phoneVerified) score += 15;
+  if (user.avatar?.trim()) score += 5;
+  if (user.campus?.collegeName?.trim()) score += 5;
+  if (user.campus?.department?.trim()) score += 10;
+  if (user.campus?.course?.trim()) score += 5;
+  if (user.profileRole) score += 10;
+  if (user.campus?.year && user.campus.year !== '') score += 10;
+  if (user.campus?.residentType && user.campus.residentType !== '') score += 5;
+  if (user.location?.trim()) score += 10;
+
+  return Math.min(score, 100);
+};
+
+const getProfileMissingFields = (user) => {
+  const missing = [];
+
+  if (!user.name?.trim()) missing.push('Full name');
+  if (!user.phone?.trim()) missing.push('Phone number');
+  if (!user.phoneVerified) missing.push('Phone verification');
+  if (!user.campus?.department?.trim()) missing.push('Department');
+  if (!user.profileRole) missing.push('Campus role');
+  if (!user.campus?.year || user.campus.year === '') missing.push('Year / study level');
+  if (!user.campus?.residentType || user.campus.residentType === '') missing.push('Resident type');
+  if (!user.location?.trim()) missing.push('Preferred campus meetup area');
+
+  return missing;
+};
+
+const canTradeOnCampus = (user) => {
+  const score = computeProfileScore(user);
+  const missing = getProfileMissingFields(user);
+
+  return {
+    score,
+    missing,
+    isComplete: missing.length === 0,
+    canTrade: score >= MIN_PROFILE_SCORE_FOR_TRADING && missing.length === 0,
+  };
+};
+
+module.exports = {
+  MIN_PROFILE_SCORE_FOR_TRADING,
+  computeProfileScore,
+  getProfileMissingFields,
+  canTradeOnCampus,
+};

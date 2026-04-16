@@ -18,7 +18,7 @@ import { API_BASE_URL } from '../../../config/api';
 import { ErrorState } from '../../../components/ui/ErrorState';
 import { Input } from '../../../components/ui/Input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/Dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../../../components/ui/AlertDialog';
+import { getCampusPickupLabel, getCampusShippingDefaults } from '../../../lib/campus';
 
 const CartPage = () => {
   const { user } = useAuth();
@@ -26,15 +26,13 @@ const CartPage = () => {
   const queryClient = useQueryClient();
 
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
-  const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [shippingDetails, setShippingDetails] = useState({
     fullName: user?.name || '',
     phone: user?.phone || '',
     addressLine1: '',
+    addressLine2: '',
     landmark: '',
-    city: '',
-    state: '',
-    postalCode: '',
+    ...getCampusShippingDefaults(),
   });
 
   useEffect(() => {
@@ -77,6 +75,7 @@ const CartPage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+      setIsAddressModalOpen(false);
 
       toast.success('Order placed successfully');
       navigate('/orders');
@@ -93,6 +92,25 @@ const CartPage = () => {
       currency: 'INR',
       maximumFractionDigits: 0,
     }).format(price);
+
+  const validateShippingDetails = () => {
+    const requiredFields = [
+      ['fullName', 'full name'],
+      ['phone', 'phone number'],
+      ['addressLine1', 'hostel / department / meetup spot'],
+    ];
+
+    const missingFields = requiredFields
+      .filter(([key]) => !shippingDetails[key]?.trim())
+      .map(([, label]) => label);
+
+    if (missingFields.length > 0) {
+      toast.error(`Please add ${missingFields.join(', ')}`);
+      return false;
+    }
+
+    return true;
+  };
 
   if (!user) {
     return (
@@ -254,7 +272,7 @@ const CartPage = () => {
                           </button>
                         </div>
                         <p className="text-sm text-gray-500 mb-4 flex items-center">
-                          {item.product?.location || 'Location unavailable'}
+                          {getCampusPickupLabel(item.product?.location)}
                         </p>
                       </div>
 
@@ -292,9 +310,9 @@ const CartPage = () => {
                   <Button
                     className="w-full py-4 shadow-lg shadow-primary-600/20"
                     onClick={() => setIsAddressModalOpen(true)}
-                    disabled={checkout.isLoading || checkout.isPending || hasUnavailableItems}
+                    disabled={checkout.isPending || hasUnavailableItems}
                   >
-                    {checkout.isLoading ? (
+                    {checkout.isPending ? (
                       'Processing...'
                     ) : (
                       <>
@@ -323,9 +341,9 @@ const CartPage = () => {
       <Footer />
 
       <Dialog open={isAddressModalOpen} onOpenChange={setIsAddressModalOpen}>
-        <DialogContent className="sm:max-w-[500px] p-6 rounded-3xl z-50">
+          <DialogContent className="sm:max-w-[500px] p-6 rounded-3xl z-50">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Shipping Address</DialogTitle>
+            <DialogTitle className="text-xl font-bold">Campus Checkout</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
@@ -339,55 +357,41 @@ const CartPage = () => {
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-semibold">Address Line 1</label>
-              <Input value={shippingDetails.addressLine1} onChange={e => setShippingDetails(prev => ({...prev, addressLine1: e.target.value}))} placeholder="Street address, P.O. box, etc." />
+              <label className="text-sm font-semibold">Hostel / Department / Meetup Spot</label>
+              <Input value={shippingDetails.addressLine1} onChange={e => setShippingDetails(prev => ({...prev, addressLine1: e.target.value}))} placeholder="Girls Hostel, Admin Block, Library gate..." />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-semibold">Locality / Landmark</label>
-              <Input value={shippingDetails.landmark} onChange={e => setShippingDetails(prev => ({...prev, landmark: e.target.value}))} placeholder="Apartment, suite, unit, building, floor, etc." />
+              <label className="text-sm font-semibold">Additional Note</label>
+              <Input value={shippingDetails.addressLine2} onChange={e => setShippingDetails(prev => ({...prev, addressLine2: e.target.value}))} placeholder="Preferred time, block, floor, or extra directions" />
             </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-semibold">City</label>
-                <Input value={shippingDetails.city} onChange={e => setShippingDetails(prev => ({...prev, city: e.target.value}))} placeholder="Delhi" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-semibold">State</label>
-                <Input value={shippingDetails.state} onChange={e => setShippingDetails(prev => ({...prev, state: e.target.value}))} placeholder="Delhi" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-semibold">Pincode</label>
-                <Input value={shippingDetails.postalCode} onChange={e => setShippingDetails(prev => ({...prev, postalCode: e.target.value}))} placeholder="110001" />
-              </div>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Nearby Landmark</label>
+              <Input value={shippingDetails.landmark} onChange={e => setShippingDetails(prev => ({...prev, landmark: e.target.value}))} placeholder="Near canteen, hostel gate, admin block" />
+            </div>
+            <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+              Checkout is campus-specific, so location will be recorded under Gauhati University, Guwahati, Assam.
             </div>
           </div>
           <div className="flex justify-end gap-3 mt-4">
             <Button variant="ghost" onClick={() => setIsAddressModalOpen(false)}>Cancel</Button>
-            <Button onClick={() => {
-              setIsAddressModalOpen(false);
-              setTimeout(() => setIsAlertOpen(true), 350);
-            }}>Confirm Address</Button>
+            <Button
+              onClick={() => {
+                if (!validateShippingDetails()) {
+                  return;
+                }
+
+                checkout.mutate({
+                  ...shippingDetails,
+                  ...getCampusShippingDefaults(),
+                });
+              }}
+              disabled={checkout.isPending}
+            >
+              {checkout.isPending ? 'Placing Order...' : 'Place Campus Order'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
-
-      <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-        <AlertDialogContent className="z-50 rounded-2xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm your order</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to place the order with this address? Your cart will be checked out immediately.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-              setIsAlertOpen(false);
-              checkout.mutate(shippingDetails);
-            }} className="bg-primary-600 hover:bg-primary-700">Place Order</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

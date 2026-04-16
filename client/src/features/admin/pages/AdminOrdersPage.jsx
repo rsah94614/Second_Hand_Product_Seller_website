@@ -15,6 +15,7 @@ import { Badge } from '../../../components/ui/Badge';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
 import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
+import { formatCampusAddress } from '../../../lib/campus';
 import {
   Select,
   SelectContent,
@@ -25,10 +26,12 @@ import {
 import { getAdminOrders, updateAdminOrder } from '../api/adminApi';
 
 const statusStyles = {
-  processing: 'bg-yellow-100 text-yellow-700',
-  shipped: 'bg-blue-100 text-blue-700',
-  delivered: 'bg-green-100 text-green-700',
+  requested: 'bg-yellow-100 text-yellow-700',
+  accepted: 'bg-blue-100 text-blue-700',
+  meetup_scheduled: 'bg-indigo-100 text-indigo-700',
+  completed: 'bg-green-100 text-green-700',
   cancelled: 'bg-red-100 text-red-700',
+  no_show: 'bg-orange-100 text-orange-700',
 };
 
 const AdminOrdersPage = () => {
@@ -131,10 +134,12 @@ const AdminOrdersPage = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="processing">Processing</SelectItem>
-                <SelectItem value="shipped">Shipped</SelectItem>
-                <SelectItem value="delivered">Delivered</SelectItem>
+                <SelectItem value="requested">Requested</SelectItem>
+                <SelectItem value="accepted">Accepted</SelectItem>
+                <SelectItem value="meetup_scheduled">Meetup Scheduled</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="no_show">No-Show</SelectItem>
               </SelectContent>
             </Select>
             </div>
@@ -153,6 +158,10 @@ const AdminOrdersPage = () => {
           ) : orders.length ? (
             <>
               {orders.map((order) => (
+                (() => {
+                  const shippingAddress = formatCampusAddress(order.shippingDetails);
+
+                  return (
                 <article
                   key={order._id}
                   className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 animate-fade-in"
@@ -165,7 +174,7 @@ const AdminOrdersPage = () => {
                             <h2 className="text-2xl font-bold text-gray-900">
                               #{order._id.slice(-6).toUpperCase()}
                             </h2>
-                            <Badge className={statusStyles[order.status] || statusStyles.processing}>
+                            <Badge className={statusStyles[order.status] || statusStyles.requested}>
                               {order.status}
                             </Badge>
                           </div>
@@ -208,7 +217,7 @@ const AdminOrdersPage = () => {
                                 <div className="flex-1">
                                   <p className="font-medium text-gray-900">{item.title}</p>
                                   <p className="text-sm text-gray-500">
-                                    Qty {item.quantity} | {formatPrice(item.price)}
+                                    {formatPrice(item.price)}
                                   </p>
                                 </div>
                               </div>
@@ -228,21 +237,9 @@ const AdminOrdersPage = () => {
                               <p className="font-semibold text-gray-900">{order.shippingDetails.fullName}</p>
                               {order.shippingDetails.phone && <p>{order.shippingDetails.phone}</p>}
                               {order.shippingDetails.email && <p>{order.shippingDetails.email}</p>}
-                              <p>
-                                {[
-                                  order.shippingDetails.addressLine1,
-                                  order.shippingDetails.addressLine2,
-                                  order.shippingDetails.landmark,
-                                ].filter(Boolean).join(', ')}
-                              </p>
-                              <p>
-                                {[
-                                  order.shippingDetails.city,
-                                  order.shippingDetails.state,
-                                  order.shippingDetails.postalCode,
-                                  order.shippingDetails.country,
-                                ].filter(Boolean).join(', ')}
-                              </p>
+                              <p>{shippingAddress.primaryLine}</p>
+                              <p>{shippingAddress.secondaryLine}</p>
+                              <p>{shippingAddress.country}</p>
                             </div>
                           </div>
                         </div>
@@ -266,10 +263,12 @@ const AdminOrdersPage = () => {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="processing">Processing</SelectItem>
-                            <SelectItem value="shipped">Shipped</SelectItem>
-                            <SelectItem value="delivered">Delivered</SelectItem>
+                            <SelectItem value="requested">Requested</SelectItem>
+                            <SelectItem value="accepted">Accepted</SelectItem>
+                            <SelectItem value="meetup_scheduled">Meetup Scheduled</SelectItem>
+                            <SelectItem value="completed">Completed</SelectItem>
                             <SelectItem value="cancelled">Cancelled</SelectItem>
+                            <SelectItem value="no_show">No-Show</SelectItem>
                           </SelectContent>
                         </Select>
                         <div className="rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-600">
@@ -279,6 +278,8 @@ const AdminOrdersPage = () => {
                     </div>
                   </div>
                 </article>
+                  );
+                })()
               ))}
               
               {hasNextPage && (

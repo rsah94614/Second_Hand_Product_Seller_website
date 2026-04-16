@@ -6,6 +6,8 @@ const { runCategoryTests } = require('./categories.test');
 const { runNotificationTests } = require('./notifications.test');
 const { runOrderTests } = require('./orders.test');
 const { runProductFeatureTests } = require('./products.test');
+const { runSearchTests } = require('./search.test');
+const { runChatTests } = require('./chat.test');
 const { runUserFeatureTests } = require('./users.test');
 
 const tests = [
@@ -13,6 +15,8 @@ const tests = [
   ['User Features API', runUserFeatureTests],
   ['Product Features API', runProductFeatureTests],
   ['Orders API', runOrderTests],
+  ['Search API', runSearchTests],
+  ['Chat API', runChatTests],
   ['Cart API', runCartTests],
   ['Admin API', runAdminTests],
   ['Categories API', runCategoryTests],

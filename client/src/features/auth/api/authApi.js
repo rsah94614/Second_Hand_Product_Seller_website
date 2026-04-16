@@ -7,6 +7,18 @@ export const getCurrentUser = () =>
 export const loginUser = (email, password) =>
   axios.post(`${API_BASE_URL}/api/auth/login`, { email, password }).then((res) => res.data);
 
+export const requestLoginOtp = (phone) =>
+  axios.post(`${API_BASE_URL}/api/auth/otp/request-login`, { phone }).then((res) => res.data);
+
+export const verifyLoginOtp = (phone, otp) =>
+  axios.post(`${API_BASE_URL}/api/auth/otp/verify-login`, { phone, otp }).then((res) => res.data);
+
+export const requestPhoneVerificationOtp = () =>
+  axios.post(`${API_BASE_URL}/api/auth/otp/request-verification`).then((res) => res.data);
+
+export const verifyPhoneOtp = (otp) =>
+  axios.post(`${API_BASE_URL}/api/auth/otp/verify-phone`, { otp }).then((res) => res.data);
+
 export const registerUser = (userData) =>
   axios.post(`${API_BASE_URL}/api/auth/register`, userData).then((res) => res.data);
 

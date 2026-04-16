@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const { computeProfileScore } = require('../src/shared/utils/profileCompletion.utils');
 
 const sellerReviewSchema = new mongoose.Schema({
   user: {
@@ -18,11 +19,31 @@ const sellerReviewSchema = new mongoose.Schema({
     trim: true,
     maxlength: 600,
     default: ''
+  },
+  orderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Order',
+    default: null,
+  },
+  isVerifiedPurchase: {
+    type: Boolean,
+    default: false,
   }
 }, {
   timestamps: true,
   _id: true
 });
+
+const riskFlagSchema = new mongoose.Schema({
+  type: {
+    type: String,
+    enum: ['spam_listing', 'fake_price', 'repeated_reports', 'scam_attempt', 'new_account_risk', 'admin_flag'],
+    required: true,
+  },
+  reason: { type: String, trim: true, maxlength: 300, default: '' },
+  severity: { type: String, enum: ['low', 'medium', 'high'], default: 'low' },
+  addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // null = system
+}, { timestamps: true, _id: true });
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -44,38 +65,41 @@ const userSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    trim: true
+    trim: true,
+    unique: true,
+    sparse: true, // allows null without breaking unique index on multiple null values
+  },
+  phoneVerified: {
+    type: Boolean,
+    default: false
   },
   location: {
     type: String,
     trim: true
   },
+  // Campus identity
   campus: {
-    collegeName: {
-      type: String,
-      trim: true,
-      default: ''
-    },
-    department: {
-      type: String,
-      trim: true,
-      default: ''
-    },
+    collegeName: { type: String, trim: true, default: '' },
+    department: { type: String, trim: true, default: '' },
+    course: { type: String, trim: true, default: '' },       // NEW: program/course
     year: {
       type: String,
       enum: ['', '1st', '2nd', '3rd', '4th', '5th', 'Alumni', 'Faculty'],
       default: ''
     },
-    enrollmentId: {
+    semester: { type: String, trim: true, default: '' },     // NEW: e.g. "3rd Sem"
+    enrollmentId: { type: String, trim: true, default: '' },
+    hostel: { type: String, trim: true, default: '' },
+    residentType: {                                           // NEW
       type: String,
-      trim: true,
+      enum: ['', 'hosteler', 'day_scholar', 'faculty'],
       default: ''
     },
-    hostel: {
-      type: String,
-      trim: true,
-      default: ''
-    }
+  },
+  profileRole: {                                              // NEW: campus role
+    type: String,
+    enum: ['', 'student', 'staff', 'alumni'],
+    default: ''
   },
   avatar: {
     type: String,
@@ -96,46 +120,86 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  wishlist: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Product'
+
+  // --- Moderation / Safety ---
+  isSuspended: { type: Boolean, default: false },             // NEW: admin suspension
+  suspendedReason: { type: String, trim: true, default: '' }, // NEW
+  suspendedAt: { type: Date },                                // NEW
+  moderatorNotes: { type: String, trim: true, default: '' },  // NEW: admin notes
+
+  // Risk tracking
+  riskFlags: [riskFlagSchema],                                // NEW
+  riskScore: { type: Number, default: 0, min: 0, max: 100 }, // NEW: 0-100
+
+  // Blocked users
+  blocked: [{                                                 // NEW
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    createdAt: { type: Date, default: Date.now }
   }],
+
+  // New-user listing cap enforcement
+  listingsCreatedToday: { type: Number, default: 0 },         // NEW
+  lastListingDate: { type: Date },                            // NEW
+
+  // ---
+  wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
   reviews: [sellerReviewSchema],
-  averageRating: {
-    type: Number,
-    default: 0
-  },
-  reviewCount: {
-    type: Number,
-    default: 0
-  },
+  averageRating: { type: Number, default: 0 },
+  reviewCount: { type: Number, default: 0 },
   recentlyViewed: [{
-    product: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Product'
-    },
-    viewedAt: {
-      type: Date,
-      default: Date.now
-    }
+    product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+    viewedAt: { type: Date, default: Date.now }
   }],
-  resetPasswordToken: {
-    type: String
-  },
-  resetPasswordExpires: {
-    type: Date
-  },
-  refreshTokens: [{
-    type: String
-  }]
+  resetPasswordToken: { type: String },
+  resetPasswordExpires: { type: Date },
+  refreshTokens: [{ type: String }],
+  otpAuth: {
+    codeHash: { type: String, default: '' },
+    purpose: { type: String, enum: ['', 'login', 'verify_phone'], default: '' },
+    expiresAt: { type: Date, default: null },
+    requestedAt: { type: Date, default: null },
+    attemptsLeft: { type: Number, default: 0 },
+    lastVerifiedAt: { type: Date, default: null },
+  }
 }, {
   timestamps: true
 });
 
-// Hash password before saving
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
+// ---------- Virtuals ----------
 
+/**
+ * Compute profile completion score (0-100).
+ * Used to gate listing creation and chat initiation.
+ */
+userSchema.virtual('profileCompletionScore').get(function () {
+  return computeProfileScore(this);
+});
+
+/**
+ * Compute trust labels for display in UI.
+ * Labels are honest — no fake "Verified Student" claims.
+ */
+userSchema.virtual('trustLabels').get(function () {
+  const labels = [];
+  const ageMs = Date.now() - new Date(this.createdAt).getTime();
+  const ageDays = ageMs / (1000 * 60 * 60 * 24);
+
+  if (this.phoneVerified) labels.push('Phone Verified');
+  if (this.profileCompletionScore >= 80) labels.push('Profile Complete');
+  if (ageDays < 7) labels.push('New Member');
+  if (this.reviewCount >= 5 && this.averageRating >= 4.0) labels.push('Trusted Seller');
+  if (this.reviewCount >= 10 && this.averageRating >= 4.5) labels.push('Top Rated');
+  if (this.role === 'admin') labels.push('Staff Verified');
+
+  return labels;
+});
+
+userSchema.set('toObject', { virtuals: true });
+userSchema.set('toJSON', { virtuals: true });
+
+// ---------- Middleware ----------
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
@@ -145,8 +209,7 @@ userSchema.pre('save', async function(next) {
   }
 });
 
-// Compare password method
-userSchema.methods.comparePassword = async function(candidatePassword) {
+userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 

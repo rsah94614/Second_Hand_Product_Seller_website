@@ -19,6 +19,7 @@ import { Input } from '../../../components/ui/Input';
 import Footer from '../../../components/Footer';
 import Header from '../../../components/Header';
 import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
+import { getCampusPickupLabel, getCampusShippingDefaults } from '../../../lib/campus';
 import { getProduct } from '../../products/api/productApi';
 import { placeOrder } from '../api/orderApi';
 
@@ -32,7 +33,6 @@ const PlaceOrderPage = () => {
     register,
     handleSubmit,
     formState: { errors },
-    watch,
   } = useForm({
     defaultValues: {
       fullName: user?.name || '',
@@ -41,15 +41,9 @@ const PlaceOrderPage = () => {
       addressLine1: '',
       addressLine2: '',
       landmark: '',
-      city: '',
-      state: '',
-      postalCode: '',
-      country: 'India',
-      quantity: 1,
+      ...getCampusShippingDefaults(),
     },
   });
-
-  const quantity = watch('quantity', 1);
 
   const { data: product, isLoading, error } = useQuery({
     queryKey: ['product', id],
@@ -90,7 +84,7 @@ const PlaceOrderPage = () => {
 
     placeOrderMutation.mutate({
       productId: product._id,
-      quantity: Math.max(1, Number(values.quantity) || 1),
+      quantity: 1,
       shippingDetails: {
         fullName: values.fullName,
         email: values.email,
@@ -98,10 +92,7 @@ const PlaceOrderPage = () => {
         addressLine1: values.addressLine1,
         addressLine2: values.addressLine2,
         landmark: values.landmark,
-        city: values.city,
-        state: values.state,
-        postalCode: values.postalCode,
-        country: values.country || 'India',
+        ...getCampusShippingDefaults(),
       },
     });
   };
@@ -185,7 +176,7 @@ const PlaceOrderPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
             <Card className="rounded-2xl border-gray-100 shadow-sm animate-fade-in">
               <CardHeader className="pb-2">
-                <CardTitle className="text-xl md:text-2xl text-gray-900">Shipping Details</CardTitle>
+                <CardTitle className="text-xl md:text-2xl text-gray-900">Campus Meetup Details</CardTitle>
               </CardHeader>
               <CardContent className="p-4 md:p-8 pt-2">
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -210,50 +201,24 @@ const PlaceOrderPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Address Line 1*</label>
-                  <Input type="text" {...register('addressLine1', { required: 'Address is required' })} placeholder="House / Flat / Street" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Hostel / Department / Meetup Spot*</label>
+                  <Input type="text" {...register('addressLine1', { required: 'Pickup point is required' })} placeholder="Girls Hostel, Economics Dept., Library gate..." />
                   {errors.addressLine1 && <p className="text-red-500 text-sm mt-1">{errors.addressLine1.message}</p>}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Address Line 2</label>
-                    <Input type="text" {...register('addressLine2')} placeholder="Apartment, suite, etc." />
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Additional Note</label>
+                    <Input type="text" {...register('addressLine2')} placeholder="Preferred time, block, floor, or extra directions" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Landmark</label>
-                    <Input type="text" {...register('landmark')} placeholder="Near Central Park" />
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Nearby Landmark</label>
+                    <Input type="text" {...register('landmark')} placeholder="Near canteen, admin block, hostel gate" />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">City*</label>
-                    <Input type="text" {...register('city', { required: 'City is required' })} placeholder="Mumbai" />
-                    {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city.message}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">State*</label>
-                    <Input type="text" {...register('state', { required: 'State is required' })} placeholder="Maharashtra" />
-                    {errors.state && <p className="text-red-500 text-sm mt-1">{errors.state.message}</p>}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Postal Code*</label>
-                    <Input type="text" {...register('postalCode', { required: 'Postal code is required' })} placeholder="400001" />
-                    {errors.postalCode && <p className="text-red-500 text-sm mt-1">{errors.postalCode.message}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Country</label>
-                    <Input type="text" {...register('country')} placeholder="India" />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Quantity</label>
-                  <Input type="number" min="1" {...register('quantity', { valueAsNumber: true, min: 1 })} />
+                <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                  Orders on CampusMitra are handled as on-campus meetups. Location will be saved under Gauhati University, Guwahati, Assam.
                 </div>
 
                 <Button
@@ -292,22 +257,18 @@ const PlaceOrderPage = () => {
                   <h3 className="text-xl font-bold text-gray-900 mb-2">{product.title}</h3>
                   <p className="text-gray-600 flex items-center">
                     <MapPin className="w-4 h-4 mr-1.5 text-gray-400" />
-                    {product.location}
+                    {getCampusPickupLabel(product.location)}
                   </p>
                 </div>
                 <div className="bg-gray-50 p-6 rounded-xl space-y-3 border border-gray-100">
                   <div className="flex justify-between text-gray-600">
-                    <span>Price per item</span>
+                    <span>Listing Price</span>
                     <span className="font-medium">{formatPrice(product.price)}</span>
-                  </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>Quantity</span>
-                    <span className="font-medium">{quantity}</span>
                   </div>
                   <div className="h-px bg-gray-200 my-2" />
                   <div className="flex justify-between text-lg font-bold text-gray-900">
                     <span>Total Amount</span>
-                    <span className="text-primary-600">{formatPrice((product.price || 0) * quantity)}</span>
+                    <span className="text-primary-600">{formatPrice(product.price || 0)}</span>
                   </div>
                 </div>
                 <div className="space-y-3 text-sm text-gray-600 bg-blue-50 p-4 rounded-xl border border-blue-100">

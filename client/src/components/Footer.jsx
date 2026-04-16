@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, MapPin, Sparkles } from 'lucide-react';
+import { DEFAULT_PRODUCT_CATEGORIES } from '../config/productOptions';
 
 const Footer = () => {
   return (
@@ -53,22 +54,13 @@ const Footer = () => {
           <div>
             <h4 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-5">Categories</h4>
             <ul className="grid grid-cols-2 gap-x-4 gap-y-3">
-              {[
-                ['Electronics', 'Electronics'],
-                ['Books & Study Materials', 'Books'],
-                ['Fashion & Clothing', 'Fashion'],
-                ['Furniture & Decor', 'Furniture'],
-                ['Cycles', 'Cycles'],
-                ['Academic Tools', 'Academic Tools'],
-                ['Hostel Essentials', 'Hostel'],
-                ['Other', 'Other'],
-              ].map(([cat, label]) => (
-                <li key={cat}>
+              {DEFAULT_PRODUCT_CATEGORIES.map((category) => (
+                <li key={category}>
                   <Link
-                    to={`/products?category=${encodeURIComponent(cat)}`}
+                    to={`/products?category=${encodeURIComponent(category)}`}
                     className="text-sm text-white/55 hover:text-white transition-colors"
                   >
-                    {label}
+                    {category}
                   </Link>
                 </li>
               ))}
