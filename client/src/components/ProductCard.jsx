@@ -11,6 +11,7 @@ import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../lib/fallbackImages'
 import { getCampusPickupLabel } from '../lib/campus';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
+import { Flag, Clock } from 'lucide-react';
 
 const ProductCard = ({ product, highlightLabel = '', highlightTone = 'bg-primary-600 text-white' }) => {
   const { user, refreshUser } = useAuth();
@@ -102,6 +103,18 @@ const ProductCard = ({ product, highlightLabel = '', highlightTone = 'bg-primary
               {highlightLabel}
             </Badge>
           )}
+          {product.expiresAt && !product.isSold && (Math.ceil((new Date(product.expiresAt) - new Date()) / (1000 * 60 * 60 * 24)) <= 10) && (
+            <Badge className="absolute top-3 left-3 z-20 border-transparent px-2 py-1 text-[9px] font-bold uppercase tracking-wider shadow-lg bg-orange-600 shadow-orange-600/20 text-white hover:bg-orange-700 flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              Expiring in {Math.ceil((new Date(product.expiresAt) - new Date()) / (1000 * 60 * 60 * 24))} days
+            </Badge>
+          )}
+          {product.flagged && !product.isSold && (
+            <Badge className="absolute top-12 left-3 z-20 border-transparent px-2 py-1 text-[9px] font-bold uppercase tracking-wider shadow-lg bg-red-600/90 text-white hover:bg-red-700 flex items-center gap-1">
+              <Flag className="w-3 h-3" />
+              Flagged
+            </Badge>
+          )}
           <Button
             type="button"
             size="icon"
@@ -142,7 +155,7 @@ const ProductCard = ({ product, highlightLabel = '', highlightTone = 'bg-primary
             <div className="flex flex-col gap-1.5 min-w-0 pr-2">
               <div className="flex items-center text-[10px] sm:text-xs font-medium text-stone-500">
                 <MapPin className="mr-1.5 h-3.5 w-3.5 shrink-0 text-stone-400" />
-                <span className="truncate">{getCampusPickupLabel(product.location)}</span>
+                <span className="truncate">{getCampusPickupLabel(product.seller?.location)}</span>
               </div>
               <div className="flex items-center text-[10px] sm:text-xs font-medium text-stone-500">
                 <Calendar className="mr-1.5 h-3.5 w-3.5 shrink-0 text-stone-400" />

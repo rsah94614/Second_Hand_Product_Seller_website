@@ -8,6 +8,8 @@ const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const Message = require('../models/Message');
 const User = require('../models/User');
+const BlockedUser = require('../models/BlockedUser');
+const { canTradeOnCampus } = require('./shared/utils/profileCompletion.utils');
 const {
   setNotificationIO,
 } = require('./shared/utils/notification.utils');
@@ -105,8 +107,10 @@ const createApp = () => {
     });
   });
   // Rate Limiting
-  const { apiLimiter } = require('./shared/middleware/rateLimiter.middleware');
+  const { apiLimiter, authLimiter, registerLimiter } = require('./shared/middleware/rateLimiter.middleware');
   app.use('/api', apiLimiter);
+  app.use('/api/auth/login', authLimiter);
+  app.use('/api/auth/register', registerLimiter);
 
   app.use('/api/auth', require('./modules/auth/auth.route'));
   app.use('/api/products', require('./modules/products/product.route'));
@@ -125,6 +129,41 @@ const createApp = () => {
 
   // Presence Tracking
   const onlineUsers = new Map();
+
+  // In-memory anti-spam tracker: { userId → { msgs: timestamp[], lastContent: string, repeatCount: int } }
+  const chatSpamTracker = new Map();
+
+  const checkMessageSpam = (senderId, content) => {
+    const now = Date.now();
+    const BURST_WINDOW_MS = 10_000;  // 10 seconds
+    const BURST_MAX = 10;            // max messages in window
+    const REPEAT_MAX = 3;            // max identical messages in a row
+
+    if (!chatSpamTracker.has(senderId)) {
+      chatSpamTracker.set(senderId, { msgs: [], lastContent: '', repeatCount: 0 });
+    }
+    const tracker = chatSpamTracker.get(senderId);
+
+    // Burst check
+    tracker.msgs = tracker.msgs.filter((t) => now - t < BURST_WINDOW_MS);
+    tracker.msgs.push(now);
+    if (tracker.msgs.length > BURST_MAX) {
+      return { blocked: true, reason: 'You are sending messages too fast. Please slow down.' };
+    }
+
+    // Repeat content check
+    if (content === tracker.lastContent) {
+      tracker.repeatCount += 1;
+      if (tracker.repeatCount >= REPEAT_MAX) {
+        return { blocked: true, reason: 'Please avoid sending the same message repeatedly.' };
+      }
+    } else {
+      tracker.lastContent = content;
+      tracker.repeatCount = 1;
+    }
+
+    return { blocked: false };
+  };
 
   io.on('connection', (socket) => {
     const userId = socket.user._id.toString();
@@ -172,14 +211,13 @@ const createApp = () => {
     });
 
     socket.on('send_message', async (data) => {
-      const { receiver, content } = data || {};
+      const { receiver, content, productRef } = data || {};
       const sender = userId;
 
       if (!receiver || typeof receiver !== 'string' || !content?.trim()) {
         socket.emit('error', { message: 'Missing required fields' });
         return;
       }
-
       if (sender === receiver) {
         socket.emit('error', { message: 'You cannot message yourself' });
         return;
@@ -191,11 +229,73 @@ const createApp = () => {
         return;
       }
 
+      // Anti-spam: burst + repeat check
+      const spamCheck = checkMessageSpam(sender, trimmed);
+      if (spamCheck.blocked) {
+        socket.emit('error', { message: spamCheck.reason });
+        return;
+      }
+
       try {
+        // Block check: has receiver blocked sender?
+        const isBlocked = await BlockedUser.findOne({ blocker: receiver, blocked: sender });
+        if (isBlocked) {
+          socket.emit('error', { message: 'Unable to send message.' });
+          return;
+        }
+
+        // New account restriction: check if sender account < 24h old
+        const senderUser = await User.findById(sender).select('createdAt isSuspended suspendedReason name phone phoneVerified avatar campus profileRole location');
+        const senderAgeHours = senderUser
+          ? (Date.now() - new Date(senderUser.createdAt).getTime()) / (1000 * 60 * 60)
+          : 999;
+
+        if (senderUser?.isSuspended) {
+          socket.emit('error', {
+            message: `Your account has been suspended. Reason: ${senderUser.suspendedReason || 'Violation of campus marketplace rules.'}`,
+          });
+          return;
+        }
+
+        const hasExistingConversation = await Message.exists({
+          $or: [
+            { sender, receiver },
+            { sender: receiver, receiver: sender },
+          ],
+        });
+
+        if (!hasExistingConversation) {
+          const gating = canTradeOnCampus(senderUser || {});
+          if (!gating.canTrade) {
+            socket.emit('error', {
+              message: 'Please complete and verify your campus profile before starting a new conversation.',
+              code: 'PROFILE_INCOMPLETE',
+              missing: gating.missing,
+            });
+            return;
+          }
+        }
+
+        if (senderAgeHours < 24) {
+          // Count distinct conversations started today
+          const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
+          const distinctReceivers = await Message.distinct('receiver', {
+            sender,
+            timestamp: { $gte: startOfDay },
+          });
+          if (!distinctReceivers.includes(receiver) && distinctReceivers.length >= 5) {
+            socket.emit('error', {
+              message: 'New accounts can start up to 5 conversations per day. Try again tomorrow.',
+            });
+            return;
+          }
+        }
+
         const newMessage = new Message({
           sender,
           receiver,
           content: trimmed,
+          productRef: productRef || null,
         });
 
         await newMessage.save();

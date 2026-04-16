@@ -561,7 +561,7 @@ const Header = () => {
                   <Menu className="w-6 h-6" />
                 </button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[88vw] max-w-sm p-0">
+              <SheetContent side="right" className="w-[88vw] max-w-sm p-0" aria-describedby={undefined}>
                 <SheetHeader className="border-b border-gray-100 px-5 py-4">
                   <SheetTitle className="flex items-center gap-2 text-xl">
                     <Package className="w-5 h-5 text-primary-600" />

@@ -9,7 +9,14 @@ const reportSchema = new mongoose.Schema({
   product: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product',
-    required: true,
+    required: function reportNeedsProduct() {
+      return this.targetType === 'product';
+    },
+  },
+  message: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Message',
+    default: null,
   },
   reportedUser: {
     type: mongoose.Schema.Types.ObjectId,
@@ -18,7 +25,7 @@ const reportSchema = new mongoose.Schema({
   },
   targetType: {
     type: String,
-    enum: ['product', 'user'],
+    enum: ['product', 'user', 'chat'],
     required: true,
   },
   reason: {

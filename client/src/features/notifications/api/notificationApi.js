@@ -1,16 +1,15 @@
 import axios from 'axios';
 import { API_BASE_URL } from '../../../config/api';
 
-export const getNotifications = ({ page = 1, limit = 20, unread = false } = {}) =>
-  axios
-    .get(`${API_BASE_URL}/api/notifications`, {
-      params: {
-        page,
-        limit,
-        unread: unread ? 'true' : '',
-      },
-    })
+export const getNotifications = ({ page = 1, limit = 20, unread = null } = {}) => {
+  const params = { page, limit };
+  if (unread !== null) {
+    params.unread = unread;
+  }
+  return axios
+    .get(`${API_BASE_URL}/api/notifications`, { params })
     .then((res) => res.data);
+};
 
 export const getUnreadNotificationCount = () =>
   axios.get(`${API_BASE_URL}/api/notifications/unread-count`).then((res) => res.data);

@@ -23,7 +23,6 @@ const scoreSearchMatch = (product, search) => {
   const title = normalizeText(product.title);
   const description = normalizeText(product.description);
   const category = normalizeText(product.category);
-  const location = normalizeText(product.location);
   const terms = query.split(/\s+/).filter(Boolean);
 
   let score = 0;
@@ -32,13 +31,11 @@ const scoreSearchMatch = (product, search) => {
   if (title.startsWith(query)) score += 70;
   if (title.includes(query)) score += 45;
   if (category.includes(query)) score += 32;
-  if (location.includes(query)) score += 18;
   if (description.includes(query)) score += 12;
 
   terms.forEach((term) => {
     if (title.includes(term)) score += 16;
     if (category.includes(term)) score += 10;
-    if (location.includes(term)) score += 8;
     if (description.includes(term)) score += 4;
   });
 
@@ -116,7 +113,7 @@ const notifyWishlistUsers = async ({
   });
 };
 
-const findProducts = async ({ cursor, limit = 12, category, minPrice, maxPrice, location, search, sortBy = 'createdAt', sortOrder = 'desc' }) => {
+const findProducts = async ({ cursor, limit = 12, category, minPrice, maxPrice, search, sortBy = 'createdAt', sortOrder = 'desc' }) => {
   const query = { isActive: true, isSold: false };
 
   if (cursor) {
@@ -134,7 +131,6 @@ const findProducts = async ({ cursor, limit = 12, category, minPrice, maxPrice, 
     if (hasMinPrice) query.price.$gte = Number(minPrice);
     if (hasMaxPrice) query.price.$lte = Number(maxPrice);
   }
-  if (location) query.location = new RegExp(escapeRegex(location), 'i');
   if (search) {
     const escapedSearch = escapeRegex(search);
     query.$or = [
@@ -148,7 +144,7 @@ const findProducts = async ({ cursor, limit = 12, category, minPrice, maxPrice, 
   const sortOptions = {};
   sortOptions[safeSortBy] = sortOrder === 'desc' ? -1 : 1;
   if (safeSortBy !== '_id') {
-    sortOptions['_id'] = sortOrder === 'desc' ? -1 : 1; 
+    sortOptions['_id'] = sortOrder === 'desc' ? -1 : 1;
   }
 
   let products = [];
@@ -169,7 +165,7 @@ const findProducts = async ({ cursor, limit = 12, category, minPrice, maxPrice, 
 
     total = rankedProducts.length;
     products = rankedProducts
-      .slice(0, numericLimit) 
+      .slice(0, numericLimit)
       .map((entry) => entry.product);
   } else {
     products = await Product.find(query)

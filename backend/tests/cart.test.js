@@ -41,8 +41,8 @@ const runCartTests = async (app) => {
     });
 
   assert.equal(addToCartResponse.statusCode, 201);
-  assert.equal(addToCartResponse.body.summary.itemCount, 2);
-  assert.equal(addToCartResponse.body.summary.totalAmount, 18000);
+  assert.equal(addToCartResponse.body.summary.itemCount, 1);
+  assert.equal(addToCartResponse.body.summary.totalAmount, 9000);
 
   const checkoutResponse = await request(app)
     .post('/api/cart/checkout')
@@ -50,7 +50,7 @@ const runCartTests = async (app) => {
     .send({ shippingDetails });
 
   assert.equal(checkoutResponse.statusCode, 201);
-  assert.equal(checkoutResponse.body.total, 18000);
+  assert.equal(checkoutResponse.body.total, 9000);
   assert.equal(checkoutResponse.body.items.length, 1);
 
   const cart = await Cart.findOne({ user: buyer.user.id });

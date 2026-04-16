@@ -3,9 +3,13 @@ import axios from 'axios';
 import {
   getCurrentUser,
   loginUser,
+  requestLoginOtp,
   registerUser,
+  requestPhoneVerificationOtp,
   forgotPasswordApi,
   resetPasswordApi,
+  verifyLoginOtp,
+  verifyPhoneOtp,
 } from '../features/auth/api/authApi';
 
 const AuthContext = createContext();
@@ -62,6 +66,36 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginWithOtp = async (phone, otp) => {
+    try {
+      const response = await verifyLoginOtp(phone, otp);
+      const { token, user } = response;
+
+      localStorage.setItem('token', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      setUser(user);
+
+      return { success: true, message: response.message };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'OTP login failed',
+      };
+    }
+  };
+
+  const sendLoginOtp = async (phone) => {
+    try {
+      const response = await requestLoginOtp(phone);
+      return { success: true, ...response };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to send OTP',
+      };
+    }
+  };
+
   const register = async (userData) => {
     try {
       const response = await registerUser(userData);
@@ -104,13 +138,42 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const sendPhoneVerificationOtp = async () => {
+    try {
+      const response = await requestPhoneVerificationOtp();
+      return { success: true, ...response };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to send phone verification OTP.',
+      };
+    }
+  };
+
+  const confirmPhoneVerificationOtp = async (otp) => {
+    try {
+      const response = await verifyPhoneOtp(otp);
+      await fetchUser();
+      return { success: true, message: response.message };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to verify phone OTP.',
+      };
+    }
+  };
+
   const value = {
     user,
     login,
+    loginWithOtp,
+    sendLoginOtp,
     register,
     logout,
     forgotPassword,
     resetPassword,
+    sendPhoneVerificationOtp,
+    confirmPhoneVerificationOtp,
     loading,
     refreshUser: fetchUser,
     isUser: user?.role === 'user',

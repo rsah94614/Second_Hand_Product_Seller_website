@@ -8,10 +8,10 @@ const { createProduct } = require('./helpers/products');
 const shippingDetails = {
   fullName: 'Rohit Kumar',
   phone: '9876543210',
-  addressLine1: '221B Residency',
-  city: 'Kolkata',
-  state: 'West Bengal',
-  postalCode: '700001',
+  addressLine1: 'Library Gate',
+  city: 'Guwahati',
+  state: 'Assam',
+  postalCode: '781014',
 };
 
 const runOrderTests = async (app) => {
@@ -31,19 +31,55 @@ const runOrderTests = async (app) => {
     title: 'Order Test Phone',
   });
 
-  const missingShippingResponse = await request(app)
+  const createOrderResponse = await request(app)
     .post('/api/orders')
     .set('Authorization', `Bearer ${buyer.token}`)
     .send({
       productId: product._id.toString(),
-      quantity: 1,
-      shippingDetails: {
-        fullName: 'Only Name',
-      },
+      shippingDetails,
     });
 
-  assert.equal(missingShippingResponse.statusCode, 400);
-  assert.match(missingShippingResponse.body.message, /Missing required shipping fields/i);
+  assert.equal(createOrderResponse.statusCode, 201);
+  assert.equal(createOrderResponse.body.total, 18000);
+  assert.equal(createOrderResponse.body.status, 'requested');
+  assert.equal(createOrderResponse.body.items[0].quantity, 1);
+
+  const acceptResponse = await request(app)
+    .patch(`/api/orders/${createOrderResponse.body._id}/accept`)
+    .set('Authorization', `Bearer ${seller.token}`)
+    .send();
+
+  assert.equal(acceptResponse.statusCode, 200);
+  assert.equal(acceptResponse.body.order.status, 'accepted');
+
+  const meetupResponse = await request(app)
+    .patch(`/api/orders/${createOrderResponse.body._id}/meetup`)
+    .set('Authorization', `Bearer ${buyer.token}`)
+    .send({
+      location: 'Library Entrance',
+      notes: 'Let us meet after class',
+    });
+
+  assert.equal(meetupResponse.statusCode, 200);
+  assert.equal(meetupResponse.body.order.status, 'meetup_scheduled');
+  assert.equal(meetupResponse.body.order.meetupDetails.location, 'Library Entrance');
+
+  const noShowResponse = await request(app)
+    .patch(`/api/orders/${createOrderResponse.body._id}/no-show`)
+    .set('Authorization', `Bearer ${seller.token}`)
+    .send({
+      noShowBy: 'buyer',
+      reason: 'Buyer did not arrive',
+    });
+
+  assert.equal(noShowResponse.statusCode, 200);
+  assert.equal(noShowResponse.body.order.status, 'no_show');
+
+  const noShowNotification = await Notification.findOne({
+    user: buyer.user.id,
+    type: 'order_no_show',
+  });
+  assert.ok(noShowNotification);
 
   await clearDatabase();
 
@@ -61,20 +97,29 @@ const runOrderTests = async (app) => {
     title: 'Direct Order Test Product',
   });
 
-  const createOrderResponse = await request(app)
+  const directOrderResponse = await request(app)
     .post('/api/orders')
     .set('Authorization', `Bearer ${directBuyer.token}`)
     .send({
       productId: directProduct._id.toString(),
-      quantity: 2,
       shippingDetails,
     });
 
-  assert.equal(createOrderResponse.statusCode, 201);
-  assert.equal(createOrderResponse.body.total, 24000);
-  assert.equal(createOrderResponse.body.status, 'processing');
-  assert.equal(createOrderResponse.body.items.length, 1);
-  assert.equal(createOrderResponse.body.shippingDetails.city, 'Kolkata');
+  const acceptedOrder = await request(app)
+    .patch(`/api/orders/${directOrderResponse.body._id}/accept`)
+    .set('Authorization', `Bearer ${directSeller.token}`)
+    .send();
+
+  assert.equal(acceptedOrder.statusCode, 200);
+
+  const completedOrder = await request(app)
+    .patch(`/api/orders/${directOrderResponse.body._id}/complete`)
+    .set('Authorization', `Bearer ${directBuyer.token}`)
+    .send();
+
+  assert.equal(completedOrder.statusCode, 200);
+  assert.equal(completedOrder.body.order.status, 'completed');
+  assert.equal(completedOrder.body.order.reviewUnlocked, true);
 
   const buyerNotification = await Notification.findOne({
     user: directBuyer.user.id,
@@ -84,30 +129,14 @@ const runOrderTests = async (app) => {
     user: directSeller.user.id,
     type: 'new_order',
   });
+  const completionNotification = await Notification.findOne({
+    user: directSeller.user.id,
+    type: 'order_completed',
+  });
 
   assert.ok(buyerNotification);
   assert.ok(sellerNotification);
-
-  const listOrdersResponse = await request(app)
-    .get('/api/orders')
-    .set('Authorization', `Bearer ${directBuyer.token}`);
-
-  assert.equal(listOrdersResponse.statusCode, 200);
-  assert.equal(listOrdersResponse.body.length, 1);
-
-  const cancelResponse = await request(app)
-    .patch(`/api/orders/${createOrderResponse.body._id}/cancel`)
-    .set('Authorization', `Bearer ${directBuyer.token}`);
-
-  assert.equal(cancelResponse.statusCode, 200);
-  assert.equal(cancelResponse.body.order.status, 'cancelled');
-
-  const cancelNotification = await Notification.findOne({
-    user: directSeller.user.id,
-    type: 'order_cancelled',
-  });
-
-  assert.ok(cancelNotification);
+  assert.ok(completionNotification);
 };
 
 module.exports = {

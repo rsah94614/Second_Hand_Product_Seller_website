@@ -2,7 +2,7 @@
 const normalizeQuantity = (quantity = 1) => {
   const qty = Number(quantity);
   if (Number.isNaN(qty) || qty < 1) return 1;
-  return Math.floor(qty);
+  return 1;
 };
 
 const populateCart = async (cart) => {

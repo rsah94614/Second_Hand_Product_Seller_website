@@ -1,35 +1,53 @@
 const User = require('../../../models/User');
 const Product = require('../../../models/Product');
+const Order = require('../../../models/Order');
+const Report = require('../../../models/Report');
+const BlockedUser = require('../../../models/BlockedUser');
 const { buildWishlistPayload } = require('./user.service');
-const {
-  createNotification,
-} = require('../../shared/utils/notification.utils');
+const { createNotification } = require('../../shared/utils/notification.utils');
+const { computeProfileScore, canTradeOnCampus } = require('../../shared/utils/profileCompletion.utils');
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const recalculateSellerReviewStats = (user) => {
   const reviewCount = user.reviews?.length || 0;
   const averageRating = reviewCount
-    ? Number((user.reviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount).toFixed(1))
+    ? Number((user.reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount).toFixed(1))
     : 0;
-
   user.reviewCount = reviewCount;
   user.averageRating = averageRating;
 };
 
+/**
+ * Build honest trust labels for a user.
+ */
+const buildTrustLabels = (user, { completedOrders = 0, openReports = 0 } = {}) => {
+  const labels = [];
+  const ageDays = (Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+  const score = computeProfileScore(user);
+
+  if (user.phoneVerified) labels.push({ key: 'phone_verified', label: 'Phone Verified', color: 'green' });
+  if (score >= 80) labels.push({ key: 'profile_complete', label: 'Profile Complete', color: 'blue' });
+  if (ageDays < 7) labels.push({ key: 'new_member', label: 'New Member', color: 'gray' });
+  if (completedOrders >= 3 && user.averageRating >= 4.0 && openReports === 0) {
+    labels.push({ key: 'trusted_seller', label: 'Trusted Seller', color: 'emerald' });
+  }
+  if (completedOrders >= 10 && user.averageRating >= 4.5) {
+    labels.push({ key: 'top_rated', label: 'Top Rated', color: 'amber' });
+  }
+  if (user.role === 'admin') labels.push({ key: 'staff_verified', label: 'Staff Verified', color: 'purple' });
+
+  return labels;
+};
+
+// ─── Wishlist ─────────────────────────────────────────────────────────────────
+
 const getWishlist = async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
-      .populate({
-        path: 'wishlist',
-        populate: {
-          path: 'seller',
-          select: 'name location',
-        },
-      })
+      .populate({ path: 'wishlist', populate: { path: 'seller', select: 'name location' } })
       .select('wishlist');
-
-    return res.json({
-      products: user?.wishlist || [],
-    });
+    return res.json({ products: user?.wishlist || [] });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -41,19 +59,13 @@ const getRecentlyViewed = async (req, res) => {
       .populate({
         path: 'recentlyViewed.product',
         match: { isActive: true, isSold: false },
-        populate: {
-          path: 'seller',
-          select: 'name location',
-        },
+        populate: { path: 'seller', select: 'name location' },
       })
       .select('recentlyViewed');
 
     const products = (user?.recentlyViewed || [])
       .filter((entry) => entry.product)
-      .map((entry) => ({
-        ...entry.product.toObject(),
-        viewedAt: entry.viewedAt,
-      }));
+      .map((entry) => ({ ...entry.product.toObject(), viewedAt: entry.viewedAt }));
 
     return res.json({ products });
   } catch (error) {
@@ -64,10 +76,7 @@ const getRecentlyViewed = async (req, res) => {
 const toggleWishlist = async (req, res) => {
   try {
     const product = await Product.findById(req.params.productId).select('_id isActive isSold');
-
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
+    if (!product) return res.status(404).json({ message: 'Product not found' });
 
     const user = await User.findById(req.user._id).select('wishlist');
     const productId = product._id.toString();
@@ -79,7 +88,6 @@ const toggleWishlist = async (req, res) => {
       : [...user.wishlist, product._id];
 
     await user.save();
-
     return res.json({
       message: exists ? 'Removed from wishlist' : 'Added to wishlist',
       added: !exists,
@@ -90,86 +98,51 @@ const toggleWishlist = async (req, res) => {
   }
 };
 
+// ─── Profile ──────────────────────────────────────────────────────────────────
+
 const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
       .populate('reviews.user', 'name')
-      .select('-password');
+      .select('-password -refreshTokens -resetPasswordToken -resetPasswordExpires -blocked -riskFlags');
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const products = await Product.find({ seller: req.params.id, isActive: true })
-      .sort({ createdAt: -1 })
-      .limit(10);
+    // Parallel data fetches for trust signals
+    const [recentProducts, completedOrderCount, openReportCount, cancelledOrderCount] = await Promise.all([
+      Product.find({ seller: req.params.id, isActive: true }).sort({ createdAt: -1 }).limit(10),
+      Order.countDocuments({ seller: req.params.id, status: 'completed' }),
+      Report.countDocuments({ reportedUser: req.params.id, status: { $in: ['open', 'reviewed'] } }),
+      Order.countDocuments({ seller: req.params.id, status: 'cancelled' }),
+    ]);
+
+    const profileCompletionScore = computeProfileScore(user);
+    const trustLabels = buildTrustLabels(user, { completedOrders: completedOrderCount, openReports: openReportCount });
+
+    const ageDays = Math.floor(
+      (Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    const totalOrders = completedOrderCount + cancelledOrderCount;
+    const cancellationRate = totalOrders > 0
+      ? Math.round((cancelledOrderCount / totalOrders) * 100)
+      : 0;
 
     return res.json({
       user,
-      recentProducts: products,
-    });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
-
-const addSellerReview = async (req, res) => {
-  try {
-    const { rating, comment = '', productId } = req.body;
-    const numericRating = Number(rating);
-
-    if (!numericRating || numericRating < 1 || numericRating > 5) {
-      return res.status(400).json({ message: 'Rating must be between 1 and 5' });
-    }
-
-    const seller = await User.findById(req.params.id);
-
-    if (!seller) {
-      return res.status(404).json({ message: 'Seller not found' });
-    }
-
-    if (seller._id.toString() === req.user._id.toString()) {
-      return res.status(400).json({ message: 'You cannot review your own seller profile' });
-    }
-
-    const existingReview = seller.reviews.find(
-      (review) => review.user.toString() === req.user._id.toString()
-    );
-
-    if (existingReview) {
-      existingReview.rating = numericRating;
-      existingReview.comment = comment.trim();
-    } else {
-      seller.reviews.push({
-        user: req.user._id,
-        rating: numericRating,
-        comment: comment.trim(),
-      });
-    }
-
-    recalculateSellerReviewStats(seller);
-    await seller.save();
-    await seller.populate('reviews.user', 'name');
-
-    await createNotification({
-      userId: seller._id,
-      actorId: req.user._id,
-      productId: productId || undefined,
-      type: existingReview ? 'review_updated' : 'new_review',
-      title: existingReview ? 'A seller review was updated' : 'New seller review received',
-      message: `${req.user.name} rated you ${numericRating}/5${comment.trim() ? ' and left feedback.' : '.'}`,
-      link: productId ? `/products/${productId}` : '/profile',
-      metadata: {
-        rating: numericRating,
-        reviewCount: seller.reviewCount,
+      recentProducts,
+      trustSignals: {
+        profileCompletionScore,
+        trustLabels,
+        accountAgeDays: ageDays,
+        completedOrders: completedOrderCount,
+        cancellationRate,
+        reportCount: openReportCount,
+        reviewCount: user.reviewCount,
+        averageRating: user.averageRating,
+        phoneVerified: user.phoneVerified,
+        isNewSeller: ageDays < 7,
       },
-    });
-
-    return res.json({
-      message: existingReview ? 'Seller review updated successfully' : 'Seller review added successfully',
-      reviews: seller.reviews,
-      averageRating: seller.averageRating,
-      reviewCount: seller.reviewCount,
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -182,29 +155,201 @@ const updateUserProfile = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to update this profile' });
     }
 
-    const allowedUpdates = {
-      name: req.body.name,
-      email: req.body.email,
-      phone: req.body.phone,
-      location: req.body.location,
-      avatar: req.body.avatar,
-    };
+    const allowedUpdates = {};
+    const fields = ['name', 'email', 'phone', 'location', 'avatar', 'profileRole'];
+    fields.forEach((f) => { if (req.body[f] !== undefined) allowedUpdates[f] = req.body[f]; });
+
+    // Phone uniqueness check if phone is being changed
+    if (req.body.phone && req.body.phone.trim()) {
+      const newPhone = req.body.phone.trim();
+      const phoneOwner = await User.findOne({ phone: newPhone, _id: { $ne: req.params.id } });
+      if (phoneOwner) {
+        return res.status(400).json({ message: 'This phone number is already registered to another account.' });
+      }
+      allowedUpdates.phone = newPhone;
+    }
 
     if (req.body.campus) {
-      allowedUpdates['campus.collegeName'] = req.body.campus.collegeName || '';
-      allowedUpdates['campus.department'] = req.body.campus.department || '';
-      allowedUpdates['campus.year'] = req.body.campus.year || '';
-      allowedUpdates['campus.enrollmentId'] = req.body.campus.enrollmentId || '';
-      allowedUpdates['campus.hostel'] = req.body.campus.hostel || '';
+      const c = req.body.campus;
+      const campusFields = ['collegeName', 'department', 'course', 'year', 'semester', 'enrollmentId', 'hostel', 'residentType'];
+      campusFields.forEach((f) => {
+        if (c[f] !== undefined) allowedUpdates[`campus.${f}`] = c[f];
+      });
     }
 
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       allowedUpdates,
-      { new: true }
-    ).select('-password');
+      { new: true, runValidators: true }
+    ).select('-password -refreshTokens -resetPasswordToken -resetPasswordExpires');
 
     return res.json(updatedUser);
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(e => e.message);
+      return res.status(400).json({ message: 'Validation failed', errors: messages });
+    }
+    if (error.code === 11000 && error.keyPattern?.phone) {
+      return res.status(400).json({ message: 'This phone number is already registered to another account.' });
+    }
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// ─── Reviews ──────────────────────────────────────────────────────────────────
+
+const addSellerReview = async (req, res) => {
+  try {
+    const { rating, comment = '', orderId } = req.body;
+    const numericRating = Number(rating);
+    const seller = await User.findById(req.params.id);
+    if (!seller) return res.status(404).json({ message: 'Seller not found' });
+
+    if (seller._id.toString() === req.user._id.toString()) {
+      return res.status(400).json({ message: 'You cannot review your own seller profile' });
+    }
+
+    if (!numericRating || numericRating < 1 || numericRating > 5) {
+      return res.status(400).json({ message: 'Rating must be between 1 and 5' });
+    }
+
+    // ── Review gate: must have a completed order with this seller ──────────
+    if (!orderId) {
+      return res.status(400).json({
+        message: 'You can only review a seller after completing a deal with them.',
+        code: 'REVIEW_ORDER_REQUIRED',
+      });
+    }
+
+    const order = await Order.findById(orderId).populate('items.product', 'seller');
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    if (order.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'You can only review orders you placed' });
+    }
+
+    if (order.status !== 'completed') {
+      return res.status(400).json({
+        message: 'Reviews are only allowed after a deal is completed.',
+        code: 'ORDER_NOT_COMPLETED',
+      });
+    }
+
+    // Verify the order is actually for this seller
+    const orderSeller = order.seller?.toString();
+    if (orderSeller && orderSeller !== req.params.id) {
+      return res.status(400).json({ message: 'This order is not associated with this seller.' });
+    }
+
+    const existingReview = seller.reviews.find(
+      (r) => r.user.toString() === req.user._id.toString()
+    );
+
+    if (existingReview) {
+      existingReview.rating = numericRating;
+      existingReview.comment = comment.trim();
+      existingReview.orderId = orderId;
+      existingReview.isVerifiedPurchase = true;
+    } else {
+      seller.reviews.push({
+        user: req.user._id,
+        rating: numericRating,
+        comment: comment.trim(),
+        orderId,
+        isVerifiedPurchase: true,
+      });
+    }
+
+    recalculateSellerReviewStats(seller);
+    await seller.save();
+    await seller.populate('reviews.user', 'name');
+
+    await createNotification({
+      userId: seller._id,
+      actorId: req.user._id,
+      type: existingReview ? 'review_updated' : 'new_review',
+      title: existingReview ? 'A seller review was updated' : 'New seller review received',
+      message: `${req.user.name} rated you ${numericRating}/5${comment.trim() ? ' and left feedback.' : '.'}`,
+      link: '/profile',
+      metadata: { rating: numericRating, reviewCount: seller.reviewCount },
+    });
+
+    return res.json({
+      message: existingReview ? 'Review updated' : 'Review added',
+      reviews: seller.reviews,
+      averageRating: seller.averageRating,
+      reviewCount: seller.reviewCount,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// ─── Block / Unblock ──────────────────────────────────────────────────────────
+
+const blockUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (userId === req.user._id.toString()) {
+      return res.status(400).json({ message: 'You cannot block yourself' });
+    }
+
+    const target = await User.findById(userId).select('_id name');
+    if (!target) return res.status(404).json({ message: 'User not found' });
+
+    const existing = await BlockedUser.findOne({ blocker: req.user._id, blocked: userId });
+    if (existing) {
+      return res.status(400).json({ message: 'You have already blocked this user' });
+    }
+
+    await BlockedUser.create({ blocker: req.user._id, blocked: userId });
+
+    return res.json({ message: `${target.name} has been blocked. They can no longer send you messages.` });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'You have already blocked this user' });
+    }
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const unblockUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const deleted = await BlockedUser.findOneAndDelete({ blocker: req.user._id, blocked: userId });
+    if (!deleted) return res.status(404).json({ message: 'Block record not found' });
+    return res.json({ message: 'User unblocked successfully' });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const getBlockedUsers = async (req, res) => {
+  try {
+    const blocks = await BlockedUser.find({ blocker: req.user._id })
+      .populate('blocked', 'name avatar')
+      .sort({ createdAt: -1 });
+
+    return res.json({ blocked: blocks.map((b) => b.blocked) });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// ─── Profile Completion ───────────────────────────────────────────────────────
+
+const getProfileCompletion = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id)
+      .select('name phone phoneVerified avatar campus profileRole location');
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const { score, missing, isComplete, canTrade } = canTradeOnCampus(user);
+    return res.json({ score, missing, isComplete, canTrade });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -217,4 +362,8 @@ module.exports = {
   getUserProfile,
   addSellerReview,
   updateUserProfile,
+  blockUser,
+  unblockUser,
+  getBlockedUsers,
+  getProfileCompletion,
 };

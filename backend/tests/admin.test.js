@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const request = require('supertest');
 const Notification = require('../models/Notification');
 const Report = require('../models/Report');
+const Product = require('../models/Product');
 const { clearDatabase } = require('./helpers/testApp');
 const { registerAndLogin, promoteUserToAdmin } = require('./helpers/auth');
 const { createProduct } = require('./helpers/products');
@@ -140,10 +141,10 @@ const runAdminTests = async (app) => {
   const orderPatchResponse = await request(app)
     .patch(`/api/admin/orders/${orderResponse.body._id}`)
     .set('Authorization', `Bearer ${admin.token}`)
-    .send({ status: 'shipped' });
+    .send({ status: 'accepted' });
 
   assert.equal(orderPatchResponse.statusCode, 200);
-  assert.equal(orderPatchResponse.body.order.status, 'shipped');
+  assert.equal(orderPatchResponse.body.order.status, 'accepted');
 
   const buyerOrderNotification = await Notification.findOne({
     user: buyer.user.id,
@@ -160,6 +161,14 @@ const runAdminTests = async (app) => {
   assert.equal(reportsListResponse.body.reports.length, 1);
 
   const report = await Report.findOne({ reporter: reporter.user.id });
+  await request(app)
+    .post(`/api/products/${product._id}/report`)
+    .set('Authorization', `Bearer ${buyer.token}`)
+    .send({
+      targetType: 'user',
+      reason: 'Repeated problem',
+      details: 'Second report to push suspicious queue coverage.',
+    });
 
   const reportPatchResponse = await request(app)
     .patch(`/api/admin/reports/${report._id}`)
@@ -178,6 +187,38 @@ const runAdminTests = async (app) => {
   });
 
   assert.ok(reporterStatusNotification);
+
+  const suspiciousUsersResponse = await request(app)
+    .get('/api/admin/users/suspicious')
+    .set('Authorization', `Bearer ${admin.token}`);
+
+  assert.equal(suspiciousUsersResponse.statusCode, 200);
+
+  const suspendUserResponse = await request(app)
+    .patch(`/api/admin/users/${seller.user.id}/suspend`)
+    .set('Authorization', `Bearer ${admin.token}`)
+    .send({
+      suspensionReason: 'Repeated moderation issues',
+    });
+
+  assert.equal(suspendUserResponse.statusCode, 200);
+  assert.equal(suspendUserResponse.body.user.isSuspended, true);
+
+  const suspiciousUsersAfterSuspend = await request(app)
+    .get('/api/admin/users/suspicious')
+    .set('Authorization', `Bearer ${admin.token}`);
+
+  assert.equal(suspiciousUsersAfterSuspend.statusCode, 200);
+  assert.ok(suspiciousUsersAfterSuspend.body.users.some((user) => user._id === seller.user.id));
+
+  await Product.findByIdAndUpdate(product._id, { flagged: true, riskScore: 70 });
+
+  const suspiciousProductsResponse = await request(app)
+    .get('/api/admin/products/suspicious')
+    .set('Authorization', `Bearer ${admin.token}`);
+
+  assert.equal(suspiciousProductsResponse.statusCode, 200);
+  assert.ok(suspiciousProductsResponse.body.products.some((item) => item._id === product._id.toString()));
 };
 
 module.exports = {

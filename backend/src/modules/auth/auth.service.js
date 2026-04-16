@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 // Known college email domains → auto-verified with college name
 const COLLEGE_DOMAINS = {
@@ -31,9 +32,11 @@ const buildAuthUser = (user) => ({
   name: user.name,
   email: user.email,
   phone: user.phone,
+  phoneVerified: user.phoneVerified || false,
   location: user.location,
   role: user.role,
   isVerified: user.isVerified || false,
+  profileRole: user.profileRole || '',
   campus: user.campus || {},
   averageRating: user.averageRating || 0,
   reviewCount: user.reviewCount || 0,
@@ -43,6 +46,10 @@ const buildAuthUser = (user) => ({
 
 const signAccessToken = (userId) => jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '15m' });
 const signRefreshToken = (userId) => jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
+const hashOtpCode = (code) => crypto.createHash('sha256').update(String(code)).digest('hex');
+const generateOtpCode = () => String(Math.floor(100000 + Math.random() * 900000));
+const otpDebugPayload = (code) =>
+  process.env.NODE_ENV !== 'production' ? { otpDebugCode: code } : {};
 
 module.exports = {
   COLLEGE_DOMAINS,
@@ -50,4 +57,7 @@ module.exports = {
   buildAuthUser,
   signAccessToken,
   signRefreshToken,
+  hashOtpCode,
+  generateOtpCode,
+  otpDebugPayload,
 };

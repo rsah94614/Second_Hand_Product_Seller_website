@@ -182,8 +182,10 @@ const checkout = async (req, res) => {
 
     const order = await Order.create({
       user: req.user._id,
+      seller: cart.items[0]?.product?.seller || undefined,
       items: orderItems,
       total,
+      status: 'requested',
       shippingDetails: {
         fullName: shippingDetails.fullName || req.user.name || '',
         phone: shippingDetails.phone || req.user.phone || '',
@@ -211,8 +213,8 @@ const checkout = async (req, res) => {
         actorId: req.user._id,
         orderId: order._id,
         type: 'order_placed',
-        title: 'Order placed successfully',
-        message: `Your cart checkout order with ${orderItems.length} item${orderItems.length > 1 ? 's' : ''} is now processing.`,
+        title: 'Deal request sent!',
+        message: `Your cart request with ${orderItems.length} item${orderItems.length > 1 ? 's' : ''} has been sent to the seller.`,
         link: '/orders',
         metadata: {
           status: order.status,
@@ -223,8 +225,8 @@ const checkout = async (req, res) => {
         actorId: req.user._id,
         orderId: order._id,
         type: 'new_order',
-        title: 'New order received',
-        message: `${req.user.name} placed a checkout order containing your listing${uniqueSellerIds.length > 1 ? 's' : ''}.`,
+        title: 'New deal request!',
+        message: `${req.user.name} placed a cart checkout request containing your listing${uniqueSellerIds.length > 1 ? 's' : ''}.`,
         link: '/notifications',
         metadata: {
           buyerId: req.user._id.toString(),

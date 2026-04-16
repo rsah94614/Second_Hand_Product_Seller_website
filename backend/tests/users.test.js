@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict');
 const request = require('supertest');
+const User = require('../models/User');
 const { clearDatabase } = require('./helpers/testApp');
 const { registerAndLogin } = require('./helpers/auth');
 const { createProduct } = require('./helpers/products');
@@ -62,6 +63,31 @@ const runUserFeatureTests = async (app) => {
   assert.equal(recentlyViewedResponse.statusCode, 200);
   assert.equal(recentlyViewedResponse.body.products.length, 1);
   assert.equal(recentlyViewedResponse.body.products[0]._id, product._id.toString());
+
+  const profileCompletionResponse = await request(app)
+    .get('/api/users/me/profile-completion')
+    .set('Authorization', `Bearer ${buyer.token}`);
+
+  assert.equal(profileCompletionResponse.statusCode, 200);
+  assert.equal(profileCompletionResponse.body.canTrade, true);
+
+  await clearDatabase();
+
+  const incompleteUser = await registerAndLogin(app, {
+    email: 'incomplete-user@example.com',
+    campus: {},
+    profileRole: '',
+    location: '',
+  });
+  await User.findByIdAndUpdate(incompleteUser.user.id, { phoneVerified: false });
+
+  const incompleteProfileResponse = await request(app)
+    .get('/api/users/me/profile-completion')
+    .set('Authorization', `Bearer ${incompleteUser.token}`);
+
+  assert.equal(incompleteProfileResponse.statusCode, 200);
+  assert.equal(incompleteProfileResponse.body.canTrade, false);
+  assert.ok(incompleteProfileResponse.body.missing.length > 0);
 };
 
 module.exports = {

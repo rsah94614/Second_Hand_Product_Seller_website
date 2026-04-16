@@ -5,6 +5,23 @@ export const CAMPUS_POSTAL_CODE = '781014';
 export const CAMPUS_COUNTRY = 'India';
 export const CAMPUS_LOCATION_LABEL = `${CAMPUS_NAME} Campus`;
 
+export const CAMPUS_LOCATIONS = [
+  'Main Gate',
+  'Library',
+  'Boys Hostel',
+  'Girls Hostel',
+  'Canteen',
+  'Department Building',
+  'Sports Complex',
+  'Parking Area',
+  'Student Union',
+  'Admin Block',
+  'Academic Building',
+  'Lab Complex',
+  'Auditorium',
+  'Other',
+];
+
 export const getCampusPickupLabel = (location) => {
   const normalized = location?.trim();
   return normalized || CAMPUS_LOCATION_LABEL;

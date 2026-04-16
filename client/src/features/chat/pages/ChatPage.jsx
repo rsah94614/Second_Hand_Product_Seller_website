@@ -1,12 +1,22 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Send, MessageSquare, ArrowLeft, Edit2, Trash2, Check, CheckCheck, X } from 'lucide-react';
+import { useMutation } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { Send, MessageSquare, ArrowLeft, Edit2, Trash2, Check, CheckCheck, X, Ban, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { useSocket } from '../../../context/SocketContext';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import Header from '../../../components/Header';
-import { getConversationMessages, getConversations } from '../api/chatApi';
+import { getConversationMessages, getConversations, reportChatUser } from '../api/chatApi';
+import { blockUser } from '../../users/api/userApi';
+
+const QUICK_TEMPLATES = [
+  'Is this still available?',
+  'Where on campus can we meet?',
+  'I am interested!',
+  'Can we negotiate the price?'
+];
 
 // ────────── helpers ──────────
 const getSenderId = (msg) => (typeof msg.sender === 'object' ? msg.sender._id : msg.sender);
@@ -42,6 +52,53 @@ function ChatPage() {
   const scrollRef = useRef();
   const typingTimeoutRef = useRef(null);
   const inputRef = useRef();
+  const blockMutation = useMutation({
+    mutationFn: (userId) => blockUser(userId),
+    onSuccess: () => {
+      toast.success('User blocked successfully');
+      setCurrentChat(null);
+      fetchConversations();
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to block user');
+    }
+  });
+
+  const reportMutation = useMutation({
+    mutationFn: ({ userId, payload }) => reportChatUser(userId, payload),
+    onSuccess: () => {
+      toast.success('Chat reported to moderators');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to submit chat report');
+    }
+  });
+
+  const handleBlock = () => {
+    if (!currentChat) return;
+    if (window.confirm('Are you sure you want to block this user? You will no longer receive messages from them.')) {
+      blockMutation.mutate(currentChat._id);
+    }
+  };
+
+  const handleReport = () => {
+    if (!currentChat) return;
+
+    const reason = window.prompt('Short reason for reporting this chat (for example: spam, scam attempt, abusive language):', 'spam');
+    if (!reason || !reason.trim()) return;
+
+    const details = window.prompt('Optional extra details for moderators:', '') || '';
+    const latestMessage = [...messages].reverse().find((msg) => getSenderId(msg) === currentChat._id && !msg.isDeleted);
+
+    reportMutation.mutate({
+      userId: currentChat._id,
+      payload: {
+        reason: reason.trim(),
+        details: details.trim(),
+        messageId: latestMessage?._id?.startsWith?.('temp-') ? null : latestMessage?._id || null,
+      },
+    });
+  };
 
   // ───── fetch conversations (HTTP, called once + on demand) ─────
   const fetchConversations = useCallback(async () => {
@@ -339,7 +396,7 @@ function ChatPage() {
                   <div className="relative inline-flex items-center justify-center shrink-0 w-12 h-12">
                     <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.1)] transition-colors ${
                       currentChat?._id === conversation._id
-                        ? 'bg-gradient-to-br from-primary-500 to-indigo-600 text-white'
+                        ? 'bg-linear-to-br from-primary-500 to-indigo-600 text-white'
                         : 'bg-white text-primary-600 border border-primary-100 group-hover:border-primary-200'
                     }`}>
                       {conversation.name ? conversation.name[0].toUpperCase() : '?'}
@@ -398,7 +455,7 @@ function ChatPage() {
                       <ArrowLeft className="w-5 h-5 text-gray-700" />
                     </button>
                     <div className="relative">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white flex items-center justify-center font-bold shadow-md">
+                      <div className="w-10 h-10 rounded-full bg-linear-to-br from-primary-500 to-primary-600 text-white flex items-center justify-center font-bold shadow-md">
                         {currentChat.name ? currentChat.name[0].toUpperCase() : '?'}
                       </div>
                       {onlineUsers[currentChat._id] && (
@@ -428,6 +485,30 @@ function ChatPage() {
                       )}
                     </div>
                   </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleReport}
+                    disabled={reportMutation.isPending}
+                    className="text-amber-700 hover:bg-amber-50 hover:border-amber-200 ml-auto border-transparent"
+                    title="Report Chat"
+                  >
+                    <ShieldAlert className="w-4 h-4" />
+                    <span className="hidden sm:inline ml-2">Report</span>
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBlock}
+                    disabled={blockMutation.isPending}
+                    className="text-red-600 hover:bg-red-50 hover:border-red-200 border-transparent"
+                    title="Block User"
+                  >
+                    <Ban className="w-4 h-4" />
+                    <span className="hidden sm:inline ml-2">Block</span>
+                  </Button>
                 </div>
 
                 {/* Messages */}
@@ -470,14 +551,14 @@ function ChatPage() {
                               message.isDeleted
                                 ? 'bg-gray-100 text-gray-400 italic rounded-2xl shadow-sm border border-gray-200'
                                 : isMe
-                                  ? 'bg-gradient-to-br from-primary-500 to-indigo-600 text-white shadow-md shadow-primary-500/20 rounded-2xl rounded-tr-sm'
+                                  ? 'bg-linear-to-br from-primary-500 to-indigo-600 text-white shadow-md shadow-primary-500/20 rounded-2xl rounded-tr-sm'
                                   : 'bg-white text-gray-800 shadow-sm shadow-gray-200/50 rounded-2xl rounded-tl-sm border border-gray-100/50'
                             }`}>
                               {message.isDeleted ? (
                                 <span className="flex items-center gap-1">🚫 This message was deleted.</span>
                               ) : (
                                 <>
-                                  <div className="pb-3 break-words pr-4">{message.content}</div>
+                                  <div className="pb-3 wrap-break-words pr-4">{message.content}</div>
                                   <div className={`flex items-center gap-1 whitespace-nowrap text-[10px] absolute bottom-1 right-2 ${isMe ? 'text-white/70' : 'text-gray-400'}`}>
                                     {message.isEdited && <span>(edited)</span>}
                                     <span>{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -504,6 +585,20 @@ function ChatPage() {
                     <div className="flex items-center justify-between bg-primary-50 text-primary-700 text-xs px-4 py-2 mb-2 rounded-xl border border-primary-100">
                       <span className="flex items-center gap-2 font-medium"><Edit2 className="w-3.5 h-3.5" /> Editing message… <span className="text-primary-400">(Esc to cancel)</span></span>
                       <button onClick={cancelEdit} className="p-1 hover:bg-primary-100 rounded-full transition-colors"><X className="w-4 h-4" /></button>
+                    </div>
+                  )}
+                  {messages.length < 5 && (
+                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none mb-2">
+                      {QUICK_TEMPLATES.map((template, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setNewMessage(template)}
+                          className="shrink-0 bg-primary-50 text-primary-700 hover:bg-primary-100 text-xs px-3 py-1.5 rounded-full border border-primary-100 transition-colors whitespace-nowrap"
+                        >
+                          {template}
+                        </button>
+                      ))}
                     </div>
                   )}
                   <form onSubmit={sendMessage} className="flex gap-2 md:gap-3 items-end max-w-4xl mx-auto">

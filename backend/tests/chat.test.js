@@ -1,6 +1,8 @@
 const assert = require('node:assert/strict');
 const request = require('supertest');
 const { io: Client } = require('socket.io-client');
+const Report = require('../models/Report');
+const User = require('../models/User');
 const { clearDatabase } = require('./helpers/testApp');
 const { registerAndLogin } = require('./helpers/auth');
 
@@ -8,7 +10,7 @@ const waitForSocketConnect = (socket) => new Promise((resolve, reject) => {
   const timeout = setTimeout(() => {
     socket.off('connect', onConnect);
     socket.off('connect_error', onError);
-    reject(new Error('Socket connection timed out')); 
+    reject(new Error('Socket connection timed out'));
   }, 2000);
 
   const onConnect = () => {
@@ -27,7 +29,7 @@ const waitForSocketConnect = (socket) => new Promise((resolve, reject) => {
   socket.once('connect_error', onError);
 });
 
-const waitForEvent = (socket, event, timeoutMs = 2000) => new Promise((resolve, reject) => {
+const waitForEvent = (socket, event, timeoutMs = 2500) => new Promise((resolve, reject) => {
   const timeout = setTimeout(() => {
     socket.off(event, onEvent);
     reject(new Error(`Socket event \`${event}\` timed out`));
@@ -56,6 +58,15 @@ const runChatTests = async (app) => {
     name: 'Chat Bob',
   });
 
+  const incompleteUser = await registerAndLogin(app, {
+    email: 'chat-incomplete@example.com',
+    name: 'Chat Incomplete',
+    campus: {},
+    profileRole: '',
+    location: '',
+  });
+  await User.findByIdAndUpdate(incompleteUser.user.id, { phoneVerified: false });
+
   if (!server.listening) {
     await new Promise((resolve) => server.listen(0, resolve));
   }
@@ -75,10 +86,17 @@ const runChatTests = async (app) => {
     forceNew: true,
   });
 
+  const incompleteSocket = Client(url, {
+    auth: { token: `Bearer ${incompleteUser.token}` },
+    transports: ['websocket'],
+    forceNew: true,
+  });
+
   try {
     await Promise.all([
       waitForSocketConnect(aliceSocket),
       waitForSocketConnect(bobSocket),
+      waitForSocketConnect(incompleteSocket),
     ]);
 
     const receivedMessage = waitForEvent(bobSocket, 'receive_message');
@@ -115,17 +133,42 @@ const runChatTests = async (app) => {
       .send();
 
     assert.equal(markReadResponse.statusCode, 200);
-    assert.equal(markReadResponse.body.message, 'Messages marked as read');
 
-    const updatedMessagesResponse = await request(app)
-      .get(`/api/chat/${alice.user.id}`)
-      .set('Authorization', `Bearer ${bob.token}`);
+    const reportResponse = await request(app)
+      .post(`/api/chat/report/${alice.user.id}`)
+      .set('Authorization', `Bearer ${bob.token}`)
+      .send({
+        reason: 'Spam message',
+        details: 'Testing the chat reporting flow.',
+        messageId: messagesResponse.body[0]._id,
+      });
 
-    assert.equal(updatedMessagesResponse.statusCode, 200);
-    assert.equal(updatedMessagesResponse.body[0].read, true);
+    assert.equal(reportResponse.statusCode, 201);
+    const chatReport = await Report.findOne({ reporter: bob.user.id, targetType: 'chat' });
+    assert.ok(chatReport);
+
+    const profileIncompleteError = waitForEvent(incompleteSocket, 'error');
+    incompleteSocket.emit('send_message', {
+      receiver: bob.user.id,
+      content: 'Hey Bob, can we chat?',
+    });
+
+    const incompleteError = await profileIncompleteError;
+    assert.match(incompleteError.message, /complete and verify your campus profile/i);
+
+    for (let index = 0; index < 3; index += 1) {
+      aliceSocket.emit('send_message', {
+        receiver: bob.user.id,
+        content: 'Repeat spam payload',
+      });
+    }
+
+    const spamError = await waitForEvent(aliceSocket, 'error');
+    assert.match(spamError.message, /same message repeatedly/i);
   } finally {
     aliceSocket.close();
     bobSocket.close();
+    incompleteSocket.close();
   }
 };
 

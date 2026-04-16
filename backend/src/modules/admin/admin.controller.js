@@ -10,6 +10,7 @@ const {
   createNotifications,
 } = require('../../shared/utils/notification.utils');
 const { logAuditAction } = require('../../shared/utils/audit.utils');
+const { computeUserRiskScore } = require('../../shared/utils/riskDetection.utils');
 
 const escapeRegex = (text) => String(text || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value));
@@ -27,14 +28,16 @@ const getOverview = async (req, res) => {
       soldProducts,
       inactiveProducts,
       totalOrders,
-      processingOrders,
-      deliveredOrders,
+      requestedOrders,
+      completedOrders,
       totalRevenueResult,
       topProducts,
       recentUsers,
       recentOrders,
-      categoryBreakdown,
       openReports,
+      categoryBreakdown,
+      suspendedUsers,
+      flaggedListings,
     ] = await Promise.all([
       User.countDocuments(),
       User.countDocuments({ role: 'user' }),
@@ -44,8 +47,8 @@ const getOverview = async (req, res) => {
       Product.countDocuments({ isSold: true }),
       Product.countDocuments({ isActive: false, isSold: false }),
       Order.countDocuments(),
-      Order.countDocuments({ status: 'processing' }),
-      Order.countDocuments({ status: 'delivered' }),
+      Order.countDocuments({ status: 'requested' }),
+      Order.countDocuments({ status: 'completed' }),
       Order.aggregate([
         { $match: { status: { $ne: 'cancelled' } } },
         { $group: { _id: null, total: { $sum: '$total' } } },
@@ -83,6 +86,8 @@ const getOverview = async (req, res) => {
           },
         },
       ]),
+      User.countDocuments({ isSuspended: true }),
+      Product.countDocuments({ flagged: true })
     ]);
 
     const metrics = {
@@ -94,9 +99,11 @@ const getOverview = async (req, res) => {
       soldProducts,
       inactiveProducts,
       totalOrders,
-      processingOrders,
-      deliveredOrders,
+      requestedOrders,
+      completedOrders,
       openReports,
+      suspendedUsers,
+      flaggedListings,
       totalRevenue: (totalRevenueResult[0] && totalRevenueResult[0].total) || 0,
     };
 
@@ -216,6 +223,78 @@ const updateUser = async (req, res) => {
   }
 };
 
+const suspendUser = async (req, res) => {
+  try {
+    const suspended = req.body.suspended !== undefined ? Boolean(req.body.suspended) : true;
+    const reason = req.body.reason ?? req.body.suspensionReason ?? '';
+    const targetUser = await User.findById(req.params.id);
+
+    if (!targetUser) return res.status(404).json({ message: 'User not found' });
+    if (targetUser._id.toString() === req.user._id.toString()) {
+      return res.status(400).json({ message: 'You cannot suspend yourself' });
+    }
+    if (targetUser.role === 'admin') {
+      return res.status(400).json({ message: 'You cannot suspend an admin account' });
+    }
+
+    targetUser.isSuspended = suspended;
+    targetUser.suspendedReason = suspended ? reason.trim() : '';
+    if (suspended) targetUser.suspendedAt = new Date();
+    await targetUser.save();
+
+    await logAuditAction({
+      action: suspended ? 'USER_SUSPENDED' : 'USER_UNSUSPENDED',
+      actor: req.user._id,
+      targetType: 'User',
+      targetId: targetUser._id,
+      details: { reason },
+      req,
+    });
+
+    return res.json({ message: `User ${suspended ? 'suspended' : 'unsuspended'} successfully`, user: targetUser });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const getSuspiciousUsers = async (req, res) => {
+  try {
+    // Users who have risk flags, are suspended, or have multiple reports
+    const suspicious = await User.find({
+      $or: [
+        { isSuspended: true },
+        { 'riskFlags.0': { $exists: true } }
+      ]
+    }).select('-password -refreshTokens').lean();
+
+    // Also fetch users with open reports
+    const reportCounts = await Report.aggregate([
+      { $match: { targetType: { $in: ['user', 'chat'] }, status: { $in: ['open', 'reviewed'] } } },
+      { $group: { _id: '$reportedUser', count: { $sum: 1 } } },
+      { $match: { count: { $gte: 2 } } }
+    ]);
+
+    const reportedUserIds = reportCounts.map(u => u._id);
+    const reportedUsers = await User.find({ _id: { $in: reportedUserIds } }).select('-password -refreshTokens').lean();
+
+    // Merge and deduplicate
+    const combinedMap = new Map();
+    suspicious.forEach(u => combinedMap.set(u._id.toString(), u));
+    reportedUsers.forEach(u => {
+      if (!combinedMap.has(u._id.toString())) combinedMap.set(u._id.toString(), u);
+    });
+
+    const result = Array.from(combinedMap.values()).map((user) => {
+      const reports = reportCounts.find(r => r._id.toString() === user._id.toString())?.count || 0;
+      return { ...user, currentRiskScore: computeUserRiskScore(user, { openReportCount: reports }) };
+    }).sort((a, b) => b.currentRiskScore - a.currentRiskScore);
+
+    return res.json({ users: result });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 const getProducts = async (req, res) => {
   try {
     const { cursor, limit = 50, category, status, search } = req.query;
@@ -264,6 +343,21 @@ const getProducts = async (req, res) => {
       nextCursor,
       total,
     });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const getSuspiciousProducts = async (req, res) => {
+  try {
+    const products = await Product.find({
+      $or: [
+        { flagged: true },
+        { riskScore: { $gte: 40 } }
+      ]
+    }).populate('seller', 'name email').sort({ riskScore: -1 }).limit(100);
+
+    return res.json({ products });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -493,7 +587,7 @@ const getOrders = async (req, res) => {
 const updateOrder = async (req, res) => {
   try {
     const { status } = req.body;
-    const allowedStatuses = ['processing', 'shipped', 'delivered', 'cancelled'];
+    const allowedStatuses = ['requested', 'accepted', 'meetup_scheduled', 'completed', 'cancelled', 'no_show'];
 
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({ message: 'Invalid order status' });
@@ -564,6 +658,7 @@ const getReports = async (req, res) => {
       .populate('reporter', 'name email')
       .populate('reportedUser', 'name email')
       .populate('product', 'title images category')
+      .populate('message', 'content timestamp')
       .sort({ _id: -1 })
       .limit(numericLimit);
 
@@ -593,6 +688,7 @@ const updateReport = async (req, res) => {
       .populate('reporter', 'name email')
       .populate('reportedUser', 'name email')
       .populate('product', 'title images category');
+
 
     if (!report) {
       return res.status(404).json({ message: 'Report not found' });
@@ -705,9 +801,12 @@ module.exports = {
   getOverview,
   getUsers,
   updateUser,
+  suspendUser,
+  getSuspiciousUsers,
   getProducts,
   updateProduct,
   deleteProduct,
+  getSuspiciousProducts,
   getOrders,
   updateOrder,
   getReports,

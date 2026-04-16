@@ -30,7 +30,24 @@ const messageSchema = new mongoose.Schema({
   isEdited: {
     type: Boolean,
     default: false
-  }
+  },
+
+  // --- Anti-spam / Safety ---
+  flaggedSpam: {          // NEW: system or admin flagged as spam
+    type: Boolean,
+    default: false,
+  },
+  isTemplate: {           // NEW: quick-start template message
+    type: Boolean,
+    default: false,
+  },
+
+  // Context: which product this conversation is about
+  productRef: {           // NEW: optional product this chat was initiated from
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Product',
+    default: null,
+  },
 });
 
 // Compound index for fetching messages between two users, sorted by time
