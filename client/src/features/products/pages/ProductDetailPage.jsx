@@ -7,7 +7,6 @@ import {
   MapPin,
   Eye,
   Calendar,
-  Phone,
   Mail,
   User,
   Edit,
@@ -19,6 +18,9 @@ import {
   Heart,
   Star,
   Flag,
+  Minus,
+  Plus,
+  PackageCheck,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
@@ -51,6 +53,7 @@ const ProductDetailPage = () => {
   const navigate = useNavigate();
   const { user, refreshUser } = useAuth();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [quantity, setQuantity] = useState(1);
   const [reviewForm, setReviewForm] = useState({
     rating: 5,
     comment: '',
@@ -79,6 +82,14 @@ const ProductDetailPage = () => {
     queryFn: () => getUserProfile(product.seller._id),
     enabled: !!product?.seller?._id,
   });
+  
+  const { data: cartData } = useQuery({
+    queryKey: ['cart'],
+    queryFn: () => axios.get(`${API_BASE_URL}/api/cart`).then((res) => res.data),
+    enabled: !!user,
+  });
+
+  const isInCart = cartData?.items?.some(item => item.product?._id === id);
 
   const isAvailable = product && !product.isSold && product.isActive !== false;
   const isWishlisted = Boolean(user?.wishlist?.includes(id));
@@ -191,7 +202,7 @@ const ProductDetailPage = () => {
       return;
     }
 
-    addToCart.mutate({ productId: product._id, quantity: 1 });
+    addToCart.mutate({ productId: product._id, quantity });
   };
 
   const handleWishlist = () => {
@@ -444,17 +455,6 @@ const ProductDetailPage = () => {
                 </div>
 
                 <div className="space-y-3">
-                  {product.contactInfo?.phone && (
-                    <a
-                      href={`tel:${product.contactInfo.phone}`}
-                      className="flex items-center text-gray-600 hover:text-primary-600 transition-colors group"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center mr-3 group-hover:bg-primary-50 transition-colors">
-                        <Phone className="w-4 h-4" />
-                      </div>
-                      {product.contactInfo.phone}
-                    </a>
-                  )}
 
                   {product.contactInfo?.email && (
                     <a
@@ -489,18 +489,56 @@ const ProductDetailPage = () => {
                         <p><strong>Meetup Tip:</strong> Meet the seller safely on campus. Check the product thoroughly before completing the deal.</p>
                       </div>
 
+                      {!product.isSold && (
+                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 mb-2">
+                          <span className="text-sm font-bold text-gray-700">Quantity</span>
+                          <div className="flex items-center gap-4">
+                            <button
+                              type="button"
+                              onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
+                              className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm"
+                            >
+                              <Minus className="w-4 h-4 text-gray-600" />
+                            </button>
+                            <span className="text-xl font-black text-gray-900 w-8 text-center">{quantity}</span>
+                            <button
+                              type="button"
+                              onClick={() => setQuantity(prev => prev + 1)}
+                              disabled={quantity >= (product.stock || 1)}
+                              className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-30"
+                            >
+                              <Plus className="w-4 h-4 text-gray-600" />
+                            </button>
+                            {product.stock <= 5 && product.stock > 0 && (
+                              <span className="text-[10px] font-bold text-orange-600 ml-2 whitespace-nowrap">
+                                Only {product.stock} left!
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       <div className="flex flex-col sm:flex-row gap-3">
                         <Button
                           onClick={handleAddToCart}
-                          disabled={addToCart.isPending || !isAvailable}
-                          className="flex-1 h-14 text-lg font-bold rounded-2xl"
-                          variant="secondary"
+                          disabled={addToCart.isPending || !isAvailable || isInCart || product.stock === 0}
+                          className={`flex-1 h-14 text-lg font-bold rounded-2xl ${isInCart ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : ''}`}
+                          variant={isInCart ? 'outline' : 'secondary'}
                         >
                           {addToCart.isPending ? 'Adding...' : (
-                            <>
-                              <ShoppingCart className="w-5 h-5 mr-3" />
-                              Add to Cart
-                            </>
+                            isInCart ? (
+                              <>
+                                <PackageCheck className="w-5 h-5 mr-3" />
+                                In Cart
+                              </>
+                            ) : product.stock === 0 ? (
+                              'Out of Stock'
+                            ) : (
+                              <>
+                                <ShoppingCart className="w-5 h-5 mr-3" />
+                                Add to Cart
+                              </>
+                            )
                           )}
                         </Button>
 

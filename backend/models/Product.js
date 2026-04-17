@@ -110,7 +110,6 @@ const productSchema = new mongoose.Schema({
     ref: 'User'
   }],
   contactInfo: {
-    phone: String,
     email: String
   },
   reviews: [reviewSchema],
@@ -137,6 +136,11 @@ const productSchema = new mongoose.Schema({
   relistCount: {          // NEW: how many times relisted
     type: Number,
     default: 0,
+  },
+  stock: {               // NEW: number of items available for sale
+    type: Number,
+    default: 1,
+    min: 0,
   },
 
   // --- Moderation / Safety ---

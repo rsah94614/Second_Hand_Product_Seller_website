@@ -5,6 +5,7 @@ import { Screen } from "../../components/ui/Screen";
 import { Loading } from "../../components/Loading";
 import { EmptyState } from "../../components/EmptyState";
 import { useAuth } from "../../context/AuthContext";
+import { useSocket } from "../../context/SocketContext";
 import { getConversations } from "../../lib/api/chat";
 
 type Conv = {
@@ -16,8 +17,10 @@ type Conv = {
 
 export default function ChatTabScreen() {
   const { user } = useAuth();
+  const socket = useSocket();
   const [list, setList] = useState<Conv[]>([]);
   const [loading, setLoading] = useState(true);
+  const [online, setOnline] = useState<Record<string, boolean>>({});
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -34,6 +37,40 @@ export default function ChatTabScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!socket || !user) return undefined;
+
+    const onPresenceBatch = (data: Record<string, boolean>) => {
+      if (!data || typeof data !== "object") return;
+      setOnline((prev) => ({ ...prev, ...data }));
+    };
+    const onOnline = ({ userId: uid }: { userId?: string }) => {
+      if (!uid) return;
+      setOnline((prev) => ({ ...prev, [uid]: true }));
+    };
+    const onOffline = ({ userId: uid }: { userId?: string }) => {
+      if (!uid) return;
+      setOnline((prev) => ({ ...prev, [uid]: false }));
+    };
+
+    socket.on("presence_batch", onPresenceBatch);
+    socket.on("user_online", onOnline);
+    socket.on("user_offline", onOffline);
+
+    return () => {
+      socket.off("presence_batch", onPresenceBatch);
+      socket.off("user_online", onOnline);
+      socket.off("user_offline", onOffline);
+    };
+  }, [socket, user]);
+
+  useEffect(() => {
+    if (!socket || !user) return;
+    const ids = list.map((c) => c._id).filter(Boolean);
+    if (ids.length === 0) return;
+    socket.emit("get_presence", ids);
+  }, [socket, user, list]);
 
   if (!user) {
     return <Redirect href="/(auth)/login" />;
@@ -70,6 +107,9 @@ export default function ChatTabScreen() {
                  <Text className="text-xl font-outfit-sb text-primary-700 dark:text-primary-400">
                     {(item.name || "U")[0].toUpperCase()}
                  </Text>
+                 {online[item._id] ? (
+                   <View className="absolute bottom-0 right-0 h-4 w-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900" />
+                 ) : null}
               </View>
               
               <View className="ml-4 flex-1 justify-center">

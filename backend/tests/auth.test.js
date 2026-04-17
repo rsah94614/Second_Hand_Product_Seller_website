@@ -19,7 +19,7 @@ const runAuthTests = async (app) => {
         collegeName: 'Gauhati University',
         department: 'Computer Science',
         year: '3rd',
-        residentType: 'hostel',
+        residentType: 'hosteler',
       },
     });
 
@@ -36,33 +36,19 @@ const runAuthTests = async (app) => {
   assert.equal(meResponse.statusCode, 200);
   assert.equal(meResponse.body.user.name, 'Rohit');
 
-  const otpRequestResponse = await request(app)
-    .post('/api/auth/otp/request-login')
-    .send({ phone: '9999999999' });
+  // Test Phone + Password Login (New unified flow)
+  const phoneLoginResponse = await request(app)
+    .post('/api/auth/login')
+    .send({
+      email: '9999999999', // 'email' field used as generic identifier
+      password: 'password123',
+    });
 
-  assert.equal(otpRequestResponse.statusCode, 200);
-  assert.ok(otpRequestResponse.body.otpDebugCode);
+  assert.equal(phoneLoginResponse.statusCode, 200, `Phone login failed: ${JSON.stringify(phoneLoginResponse.body)}`);
+  assert.ok(phoneLoginResponse.body.token);
+  assert.equal(phoneLoginResponse.body.user.phone, '+919999999999');
 
-  const otpCooldownResponse = await request(app)
-    .post('/api/auth/otp/request-login')
-    .send({ phone: '9999999999' });
-
-  assert.equal(otpCooldownResponse.statusCode, 429);
-
-  const invalidOtpResponse = await request(app)
-    .post('/api/auth/otp/verify-login')
-    .send({ phone: '9999999999', otp: '000000' });
-
-  assert.equal(invalidOtpResponse.statusCode, 400);
-
-  const otpVerifyResponse = await request(app)
-    .post('/api/auth/otp/verify-login')
-    .send({ phone: '9999999999', otp: otpRequestResponse.body.otpDebugCode });
-
-  assert.equal(otpVerifyResponse.statusCode, 200);
-  assert.equal(otpVerifyResponse.body.user.phoneVerified, true);
-
-  const storedUser = await User.findOne({ phone: '9999999999' }).select('phoneVerified otpAuth');
+  const storedUser = await User.findOne({ phone: '+919999999999' }).select('phoneVerified otpAuth');
   assert.equal(storedUser.phoneVerified, true);
   assert.equal(storedUser.otpAuth.purpose, '');
 

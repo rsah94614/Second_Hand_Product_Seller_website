@@ -1,7 +1,8 @@
 const rateLimit = require('express-rate-limit');
 
 const isDev = process.env.NODE_ENV !== 'production';
-const skipInDev = () => isDev && process.env.DISABLE_RATE_LIMIT === 'true';
+const isTest = process.env.NODE_ENV === 'test';
+const skipRateLimit = () => isTest || (isDev && process.env.DISABLE_RATE_LIMIT === 'true');
 
 // ─── General API limiter ────────────────────────────────────────────────────
 // Dev: 2000 req / 15 min  (React StrictMode + hot-reload fire many calls)
@@ -12,42 +13,63 @@ const apiLimiter = rateLimit({
   message: { message: 'Too many requests from this IP, please try again after 15 minutes' },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: skipInDev,
+  skip: skipRateLimit,
 });
 
-// ─── Auth limiter ───────────────────────────────────────────────────────────
-// Protects /api/auth/login and /api/auth/register
-// Prod: 10 attempts / 15 min per IP
-const authLimiter = rateLimit({
+// ─── Auth / Login limiter ───────────────────────────────────────────────────
+// Stricter — 5 attempts per 15 minutes
+const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: isDev ? 100 : 10,
-  message: { message: 'Too many authentication attempts from this IP, please try again after 15 minutes' },
+  message: { message: 'Too many login attempts. Please try again after 15 minutes' },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: skipInDev,
+  skip: skipRateLimit,
 });
 
-// ─── Register / OTP limiter ─────────────────────────────────────────────────
-// Stricter — 5 signups per hour per IP
+// ─── OTP limiter ────────────────────────────────────────────────────────────
+// High protection — 3 OTP requests per 5 minutes
+const otpLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: isDev ? 50 : 3,
+  message: { message: 'Too many OTP requests. Please wait 5 minutes before trying again.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: skipRateLimit,
+});
+
+// ─── Register limiter ───────────────────────────────────────────────────────
+// 5 signups per hour per IP
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: isDev ? 50 : 5,
   message: { message: 'Too many account registrations from this IP. Try again in an hour.' },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: skipInDev,
+  skip: skipRateLimit,
+});
+
+// ─── Per-User API Limiter ────────────────────────────────────────────────────
+// Prevents authenticated users from abusing API endpoints
+const userLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: isDev ? 500 : 60,
+  keyGenerator: (req) => req.user._id.toString(),
+  message: { message: 'You are performing too many actions. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => skipRateLimit() || !req.user, // Only apply to auth'd users, or skip in dev/test
 });
 
 // ─── Listing creation limiter ────────────────────────────────────────────────
 // Max 10 listing creates per user / per hour (backend safety net)
-// Note: per-user enforcement is in newUser.middleware for new accounts
 const listingCreateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: isDev ? 200 : 10,
   message: { message: 'You are creating listings too fast. Please wait before trying again.' },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: skipInDev,
+  skip: skipRateLimit,
 });
 
 // ─── Report limiter ──────────────────────────────────────────────────────────
@@ -58,7 +80,7 @@ const reportLimiter = rateLimit({
   message: { message: 'You have submitted too many reports recently. Please wait before submitting another.' },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: skipInDev,
+  skip: skipRateLimit,
 });
 
 // ─── Chat initiation limiter ─────────────────────────────────────────────────
@@ -69,13 +91,15 @@ const chatStartLimiter = rateLimit({
   message: { message: 'You have started too many conversations today. Try again tomorrow.' },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: skipInDev,
+  skip: skipRateLimit,
 });
 
 module.exports = {
   apiLimiter,
-  authLimiter,
+  loginLimiter,
+  otpLimiter,
   registerLimiter,
+  userLimiter,
   listingCreateLimiter,
   reportLimiter,
   chatStartLimiter,

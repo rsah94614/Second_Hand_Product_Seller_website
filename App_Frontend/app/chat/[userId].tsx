@@ -1,11 +1,12 @@
 import { Redirect, Stack, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { Alert, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
 import { Screen } from "../../components/ui/Screen";
 import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
-import { getConversationMessages, markConversationAsRead } from "../../lib/api/chat";
+import { getConversationMessages, markConversationAsRead, reportChatUser } from "../../lib/api/chat";
 import { Ionicons } from "@expo/vector-icons";
+import { blockUser } from "../../lib/api/users";
 
 type Msg = {
   _id: string;
@@ -23,13 +24,19 @@ const getName = (v: unknown) =>
   typeof v === "object" && v && "name" in v ? String((v as { name?: string }).name || "") : "";
 
 export default function ChatThreadScreen() {
-  const { userId } = useLocalSearchParams<{ userId: string }>();
+  const { userId, name } = useLocalSearchParams<{ userId: string; name?: string }>();
   const { user } = useAuth();
   const socket = useSocket();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
+  const [partnerTyping, setPartnerTyping] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("spam");
+  const [reportDetails, setReportDetails] = useState("");
+  const [reportSubmitting, setReportSubmitting] = useState(false);
   const listRef = useRef<FlatList>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const partnerId = String(userId || "");
   const partnerName =
@@ -41,7 +48,43 @@ export default function ChatThreadScreen() {
         if (receiverId === partnerId) return getName(message.receiver);
         return "";
       })
-      .find(Boolean) || "Chat";
+      .find(Boolean) || (name ? String(name) : "Chat");
+
+  const openActions = () => {
+    Alert.alert(partnerName, "Chat actions", [
+      {
+        text: "Report chat",
+        onPress: () => {
+          setReportReason("spam");
+          setReportDetails("");
+          setReportOpen(true);
+        },
+      },
+      {
+        text: "Block user",
+        style: "destructive",
+        onPress: () => {
+          Alert.alert("Block user", "You will no longer receive messages from this user. Continue?", [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Block",
+              style: "destructive",
+              onPress: async () => {
+                try {
+                  await blockUser(partnerId);
+                  Alert.alert("Blocked", "User blocked successfully.");
+                } catch (e: unknown) {
+                  const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+                  Alert.alert("Error", msg || "Failed to block user.");
+                }
+              },
+            },
+          ]);
+        },
+      },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  };
 
   const load = useCallback(async () => {
     if (!partnerId || !user) return;
@@ -50,12 +93,13 @@ export default function ChatThreadScreen() {
       const data = await getConversationMessages(partnerId);
       setMessages(Array.isArray(data) ? data : []);
       await markConversationAsRead(partnerId);
+      socket?.emit?.("mark_seen", { receiverId: partnerId });
     } catch {
       setMessages([]);
     } finally {
       setLoading(false);
     }
-  }, [partnerId, user]);
+  }, [partnerId, user, socket]);
 
   useEffect(() => {
     load();
@@ -90,17 +134,48 @@ export default function ChatThreadScreen() {
     socket.on("receive_message", onReceive);
     socket.on("message_edited", onEdited);
     socket.on("message_deleted", onDeleted);
+    const onMessagesRead = ({ receiverId }: { receiverId?: string }) => {
+      if (String(receiverId || "") !== partnerId) return;
+      setMessages((prev) =>
+        prev.map((m) => {
+          const mine = getId(m.sender) === user.id;
+          const toPartner = getId(m.receiver) === partnerId;
+          if (mine && toPartner) return { ...m, read: true };
+          return m;
+        })
+      );
+    };
+    socket.on("messages_read", onMessagesRead);
+
+    const onTyping = ({ userId: typerId }: { userId?: string }) => {
+      if (String(typerId || "") === partnerId) setPartnerTyping(true);
+    };
+    const onStopTyping = ({ userId: typerId }: { userId?: string }) => {
+      if (String(typerId || "") === partnerId) setPartnerTyping(false);
+    };
+    socket.on("user_typing", onTyping);
+    socket.on("user_stop_typing", onStopTyping);
 
     return () => {
       socket.off("receive_message", onReceive);
       socket.off("message_edited", onEdited);
       socket.off("message_deleted", onDeleted);
+      socket.off("messages_read", onMessagesRead);
+      socket.off("user_typing", onTyping);
+      socket.off("user_stop_typing", onStopTyping);
     };
   }, [socket, user, partnerId]);
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    };
+  }, []);
 
   const send = () => {
     const trimmed = text.trim();
     if (!trimmed || !socket || !partnerId) return;
+    socket.emit("typing_stop", { receiverId: partnerId });
     socket.emit("send_message", { receiver: partnerId, content: trimmed });
     setText("");
   };
@@ -118,7 +193,16 @@ export default function ChatThreadScreen() {
 
   return (
     <Screen className="bg-slate-50 dark:bg-slate-950">
-      <Stack.Screen options={{ title: partnerName }} />
+      <Stack.Screen
+        options={{
+          title: partnerName,
+          headerRight: () => (
+            <Pressable onPress={openActions} className="px-2 py-1 active:opacity-70">
+              <Ionicons name="ellipsis-vertical" size={18} color="#64748b" />
+            </Pressable>
+          ),
+        }}
+      />
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -137,50 +221,65 @@ export default function ChatThreadScreen() {
             <Text className="text-[14px] font-outfit text-slate-500 dark:text-slate-400 text-center">Say hello and make a deal!</Text>
           </View>
         ) : (
-          <FlatList
-            ref={listRef}
-            data={messages}
-            keyExtractor={(m) => m._id}
-            contentContainerStyle={{ padding: 16, paddingBottom: 8 }}
-            onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
-            renderItem={({ item: m }) => {
-              const mine = getId(m.sender) === user.id;
-              return (
-                <View className={`mb-2.5 max-w-[80%] ${mine ? "self-end" : "self-start"}`}>
-                  <View
-                    className={`rounded-2xl px-4 py-2.5 ${
-                      mine
-                        ? "bg-primary-600 dark:bg-primary-500 rounded-br-sm"
-                        : "bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-bl-sm"
-                    }`}
-                  >
-                    <Text
-                      className={`text-[15px] font-outfit leading-relaxed ${
-                        mine ? "text-white" : "text-slate-900 dark:text-slate-100"
+          <View className="flex-1">
+            {partnerTyping ? (
+              <View className="px-4 pt-2">
+                <Text className="text-[12px] font-outfit-m text-slate-500 dark:text-slate-400">Typing…</Text>
+              </View>
+            ) : null}
+            <FlatList
+              ref={listRef}
+              data={messages}
+              keyExtractor={(m) => m._id}
+              contentContainerStyle={{ padding: 16, paddingBottom: 8 }}
+              onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
+              renderItem={({ item: m }) => {
+                const mine = getId(m.sender) === user.id;
+                return (
+                  <View className={`mb-2.5 max-w-[80%] ${mine ? "self-end" : "self-start"}`}>
+                    <View
+                      className={`rounded-2xl px-4 py-2.5 ${
+                        mine
+                          ? "bg-primary-600 dark:bg-primary-500 rounded-br-sm"
+                          : "bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-bl-sm"
                       }`}
                     >
-                      {m.isDeleted ? "This message was deleted" : m.content}
+                      <Text
+                        className={`text-[15px] font-outfit leading-relaxed ${
+                          mine ? "text-white" : "text-slate-900 dark:text-slate-100"
+                        }`}
+                      >
+                        {m.isDeleted ? "This message was deleted" : m.content}
+                      </Text>
+                    </View>
+                    <Text
+                      className={`text-[10px] font-outfit-m text-slate-400 dark:text-slate-500 mt-1 ${
+                        mine ? "text-right mr-1" : "ml-1"
+                      }`}
+                    >
+                      {formatTime(m)}
+                      {mine && m.read ? " · Read" : ""}
                     </Text>
                   </View>
-                  <Text
-                    className={`text-[10px] font-outfit-m text-slate-400 dark:text-slate-500 mt-1 ${
-                      mine ? "text-right mr-1" : "ml-1"
-                    }`}
-                  >
-                    {formatTime(m)}
-                    {mine && m.read ? " · Read" : ""}
-                  </Text>
-                </View>
-              );
-            }}
-          />
+                );
+              }}
+            />
+          </View>
         )}
 
         {/* Input Bar */}
         <View className="flex-row items-end gap-2 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 pb-3">
           <TextInput
             value={text}
-            onChangeText={setText}
+            onChangeText={(t) => {
+              setText(t);
+              if (!socket || !partnerId) return;
+              socket.emit("typing_start", { receiverId: partnerId });
+              if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+              typingTimeoutRef.current = setTimeout(() => {
+                socket.emit("typing_stop", { receiverId: partnerId });
+              }, 1500);
+            }}
             placeholder="Type a message..."
             placeholderTextColor="#94a3b8"
             multiline
@@ -198,6 +297,73 @@ export default function ChatThreadScreen() {
             <Ionicons name="send" size={18} color={text.trim() ? "#fff" : "#94a3b8"} />
           </Pressable>
         </View>
+
+        <Modal visible={reportOpen} transparent animationType="slide" onRequestClose={() => setReportOpen(false)}>
+          <View className="flex-1 justify-end bg-black/60">
+            <View className="rounded-t-3xl bg-white dark:bg-slate-950 p-6">
+              <View className="items-center mb-4">
+                <View className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+              </View>
+              <Text className="text-xl font-outfit-bl text-slate-900 dark:text-white mb-4">Report chat</Text>
+
+              <Text className="text-[12px] font-outfit-m text-slate-500 dark:text-slate-400 mb-1">Reason</Text>
+              <TextInput
+                value={reportReason}
+                onChangeText={setReportReason}
+                placeholder="e.g. spam, scam attempt, abusive language"
+                placeholderTextColor="#94a3b8"
+                className="mb-3 rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white"
+              />
+
+              <Text className="text-[12px] font-outfit-m text-slate-500 dark:text-slate-400 mb-1">Details (optional)</Text>
+              <TextInput
+                value={reportDetails}
+                onChangeText={setReportDetails}
+                placeholder="Extra details for moderators"
+                placeholderTextColor="#94a3b8"
+                multiline
+                className="mb-4 rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white"
+              />
+
+              <View className="flex-row gap-3">
+                <View className="flex-1">
+                  <Pressable
+                    onPress={() => setReportOpen(false)}
+                    className="rounded-xl border border-slate-300 dark:border-slate-700 px-4 py-3 items-center"
+                    disabled={reportSubmitting}
+                  >
+                    <Text className="text-[15px] font-outfit-sb text-slate-700 dark:text-slate-200">Cancel</Text>
+                  </Pressable>
+                </View>
+                <View className="flex-1">
+                  <Pressable
+                    onPress={async () => {
+                      if (!reportReason.trim()) {
+                        Alert.alert("Reason required", "Please enter a reason for reporting.");
+                        return;
+                      }
+                      setReportSubmitting(true);
+                      try {
+                        await reportChatUser(partnerId, { reason: reportReason.trim(), details: reportDetails.trim() });
+                        setReportOpen(false);
+                        Alert.alert("Reported", "Chat report submitted successfully.");
+                      } catch (e: unknown) {
+                        const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+                        Alert.alert("Error", msg || "Failed to submit report.");
+                      } finally {
+                        setReportSubmitting(false);
+                      }
+                    }}
+                    className="rounded-xl bg-red-600 px-4 py-3 items-center"
+                    disabled={reportSubmitting}
+                  >
+                    <Text className="text-[15px] font-outfit-sb text-white">{reportSubmitting ? "Reporting..." : "Report"}</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </KeyboardAvoidingView>
     </Screen>
   );

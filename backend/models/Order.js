@@ -26,9 +26,8 @@ const orderItemSchema = new mongoose.Schema(
     },
     quantity: {
       type: Number,
-      default: 1,   // Always 1 for campus second-hand goods
+      default: 1,
       min: 1,
-      max: 1,
     },
   },
   { _id: false }
@@ -93,7 +92,6 @@ const orderSchema = new mongoose.Schema(
     // Shipping/pickup details (kept for compat — maps to campus meetup address)
     shippingDetails: {
       fullName: String,
-      phone: String,
       email: String,
       addressLine1: String,
       addressLine2: String,

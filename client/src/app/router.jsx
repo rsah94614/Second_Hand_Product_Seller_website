@@ -5,6 +5,7 @@ import SignInPage from '../features/auth/pages/Sign-In';
 import SignUpPage from '../features/auth/pages/Sign-Up';
 import ForgotPasswordPage from '../features/auth/pages/ForgotPasswordPage';
 import ResetPasswordPage from '../features/auth/pages/ResetPasswordPage';
+import VerifyEmailPage from '../features/auth/pages/VerifyEmailPage';
 import ProductListPage from '../features/products/pages/ProductListPage';
 import ProductDetailPage from '../features/products/pages/ProductDetailPage';
 import ProfilePage from '../features/users/pages/ProfilePage';
@@ -36,6 +37,7 @@ const AppRouter = () => (
     <Route path="/register" element={<SignUpPage />} />
     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
     <Route path="/reset-password" element={<ResetPasswordPage />} />
+    <Route path="/verify-email" element={<VerifyEmailPage />} />
     <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
     <Route path="/wishlist" element={<ProtectedRoute><WishlistPage /></ProtectedRoute>} />
     <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />

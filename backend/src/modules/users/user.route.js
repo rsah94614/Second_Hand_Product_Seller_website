@@ -1,6 +1,7 @@
 const express = require('express');
 const auth = require('../../shared/middleware/auth.middleware');
 const userController = require('./user.controller');
+const upload = require('../../shared/middleware/upload.middleware');
 
 const router = express.Router();
 
@@ -20,6 +21,7 @@ router.delete('/block/:userId', auth, userController.unblockUser);
 
 // ── Public profile ────────────────────────────────────────────────────────────
 router.get('/:id', userController.getUserProfile);
+router.post('/:id/avatar', auth, upload.single('avatar'), userController.uploadAvatar);
 router.put('/:id', auth, userController.updateUserProfile);
 
 module.exports = router;

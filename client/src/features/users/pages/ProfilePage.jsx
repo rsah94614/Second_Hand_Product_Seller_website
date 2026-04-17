@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Phone, MapPin, Edit, Save, X, ShieldCheck, LogOut, GraduationCap, Building2, CheckCircle2, BadgeCheck, AlertCircle } from 'lucide-react';
+import { User, Mail, MapPin, Edit, Save, X, ShieldCheck, LogOut, GraduationCap, Building2, CheckCircle2, BadgeCheck, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -24,7 +24,7 @@ const getTrustLabelColor = (colorStr) => {
 };
 
 const ProfilePage = () => {
-  const { user: authUser, logout, sendPhoneVerificationOtp, confirmPhoneVerificationOtp } = useAuth();
+  const { user: authUser, logout } = useAuth();
 
   const { data: profileData, isLoading, refetch } = useQuery({
     queryKey: ['profile', authUser?.id],
@@ -35,13 +35,9 @@ const ProfilePage = () => {
   const profile = profileData?.user || authUser;
   const trustSignals = profileData?.trustSignals;
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [verificationOtp, setVerificationOtp] = useState('');
-  const [verificationPending, setVerificationPending] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    phone: '',
     location: '',
     profileRole: '',
     avatar: '',
@@ -62,7 +58,6 @@ const ProfilePage = () => {
       setFormData({
         name: profile.name || '',
         email: profile.email || '',
-        phone: profile.phone || '',
         location: profile.location || '',
         profileRole: profile.profileRole || '',
         avatar: profile.avatar || '',
@@ -105,13 +100,11 @@ const ProfilePage = () => {
       toast.error('Failed to update profile.');
     }
   };
-
   const handleCancel = () => {
     if (profile) {
       setFormData({
         name: profile.name || '',
         email: profile.email || '',
-        phone: profile.phone || '',
         location: profile.location || '',
         profileRole: profile.profileRole || '',
         avatar: profile.avatar || '',
@@ -128,33 +121,6 @@ const ProfilePage = () => {
       });
     }
     setIsEditing(false);
-  };
-
-  const handleSendVerificationOtp = async () => {
-    const result = await sendPhoneVerificationOtp();
-    if (result.success) {
-      setVerificationPending(true);
-      toast.success(result.otpDebugCode ? `OTP sent. Demo code: ${result.otpDebugCode}` : result.message);
-    } else {
-      toast.error(result.message);
-    }
-  };
-
-  const handleVerifyPhone = async () => {
-    if (!verificationOtp.trim()) {
-      toast.error('Enter the OTP first');
-      return;
-    }
-
-    const result = await confirmPhoneVerificationOtp(verificationOtp);
-    if (result.success) {
-      setVerificationOtp('');
-      setVerificationPending(false);
-      toast.success(result.message);
-      refetch();
-    } else {
-      toast.error(result.message);
-    }
   };
 
   if (!authUser) {
@@ -243,13 +209,11 @@ const ProfilePage = () => {
                   style={{ width: `${trustSignals.profileCompletionScore}%` }}
                 ></div>
               </div>
-              {trustSignals.profileCompletionScore < 60 || !profile.phoneVerified ? (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex gap-3 text-amber-800 text-sm">
+              {trustSignals.profileCompletionScore < 60 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex gap-3 text-amber-800 text-sm focus-within:animate-pulse">
                   <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-                  <p>Your profile is not ready for campus trading yet. Verify your phone and complete the campus fields below to create listings or start new chats.</p>
+                  <p>Your profile completion is low. Complete the campus fields below to build trust and fully unlock trading features.</p>
                 </div>
-              ) : (
-                <p className="text-xs text-indigo-600/70 font-medium">Complete your profile to unlock the 'Profile Complete' badge and build trust with buyers.</p>
               )}
             </CardContent>
           </Card>
@@ -303,14 +267,6 @@ const ProfilePage = () => {
                   value: formData.email,
                   display: profile.email,
                   type: 'email',
-                },
-                {
-                  icon: Phone,
-                  label: 'Phone Number',
-                  name: 'phone',
-                  value: formData.phone,
-                  display: profile.phone || 'Not provided',
-                  type: 'tel',
                 },
                 {
                   icon: User,
@@ -380,34 +336,7 @@ const ProfilePage = () => {
               ))}
             </div>
 
-            {!profile.phoneVerified && (
-              <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <p className="text-sm font-bold text-amber-900">Phone verification is required for trading</p>
-                    <p className="mt-1 text-xs text-amber-700">
-                      Verify your number to unlock listing creation and new campus chats.
-                    </p>
-                  </div>
-                  <Button type="button" variant="outline" className="rounded-full border-amber-300 text-amber-800 hover:bg-amber-100" onClick={handleSendVerificationOtp}>
-                    Send OTP
-                  </Button>
-                </div>
-                {verificationPending && (
-                  <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-                    <Input
-                      value={verificationOtp}
-                      onChange={(e) => setVerificationOtp(e.target.value)}
-                      placeholder="Enter 6-digit OTP"
-                      className="sm:max-w-xs"
-                    />
-                    <Button type="button" className="rounded-full" onClick={handleVerifyPhone}>
-                      Verify Phone
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Email is pre-verified via OTP during registration */}
 
             <div className="pt-6 mt-6 border-t border-gray-100">
               <Button

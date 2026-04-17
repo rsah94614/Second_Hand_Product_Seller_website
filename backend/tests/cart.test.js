@@ -30,6 +30,7 @@ const runCartTests = async (app) => {
     seller: seller.user.id,
     price: 9000,
     title: 'Cart Test Product',
+    stock: 10,
   });
 
   const addToCartResponse = await request(app)
@@ -41,8 +42,8 @@ const runCartTests = async (app) => {
     });
 
   assert.equal(addToCartResponse.statusCode, 201);
-  assert.equal(addToCartResponse.body.summary.itemCount, 1);
-  assert.equal(addToCartResponse.body.summary.totalAmount, 9000);
+  assert.equal(addToCartResponse.body.summary.itemCount, 2);
+  assert.equal(addToCartResponse.body.summary.totalAmount, 18000);
 
   const checkoutResponse = await request(app)
     .post('/api/cart/checkout')
@@ -50,7 +51,7 @@ const runCartTests = async (app) => {
     .send({ shippingDetails });
 
   assert.equal(checkoutResponse.statusCode, 201);
-  assert.equal(checkoutResponse.body.total, 9000);
+  assert.equal(checkoutResponse.body.total, 18000);
   assert.equal(checkoutResponse.body.items.length, 1);
 
   const cart = await Cart.findOne({ user: buyer.user.id });
@@ -80,6 +81,7 @@ const runCartTests = async (app) => {
     seller: secondSeller.user.id,
     isSold: true,
     title: 'Unavailable Product',
+    stock: 1,
   });
 
   await request(app)
@@ -97,6 +99,25 @@ const runCartTests = async (app) => {
 
   assert.equal(unavailableCheckoutResponse.statusCode, 400);
   assert.match(unavailableCheckoutResponse.body.message, /no longer available/i);
+
+  // Test Stock Limit
+  const stockLimitedProduct = await createProduct({
+    seller: seller.user.id,
+    price: 500,
+    title: 'Limited Stock Product',
+    stock: 3,
+  });
+
+  const overStockResponse = await request(app)
+    .post('/api/cart')
+    .set('Authorization', `Bearer ${buyer.token}`)
+    .send({
+      productId: stockLimitedProduct._id.toString(),
+      quantity: 5,
+    });
+
+  assert.equal(overStockResponse.statusCode, 400);
+  assert.match(overStockResponse.body.message, /Insufficient stock/i);
 };
 
 module.exports = {

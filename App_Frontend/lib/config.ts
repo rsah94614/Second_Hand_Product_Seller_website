@@ -11,4 +11,14 @@ export const API_BASE_URL = trimSlash(fromEnv || defaultDev);
 const socketEnv = process.env.EXPO_PUBLIC_SOCKET_URL?.trim();
 export const SOCKET_URL = socketEnv ? trimSlash(socketEnv) : API_BASE_URL;
 
+declare global {
+  var __campusMitraConfigLogged__: boolean | undefined;
+}
+
+if (__DEV__ && !globalThis.__campusMitraConfigLogged__) {
+  globalThis.__campusMitraConfigLogged__ = true;
+  console.log("[config] API_BASE_URL =", API_BASE_URL);
+  console.log("[config] SOCKET_URL =", SOCKET_URL);
+}
+
 export const MOBILE_CLIENT_HEADER = { "X-Client": "mobile" } as const;

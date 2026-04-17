@@ -3,6 +3,8 @@ const Product = require('../../../models/Product');
 const Order = require('../../../models/Order');
 const Report = require('../../../models/Report');
 const BlockedUser = require('../../../models/BlockedUser');
+const { v2: cloudinary } = require('cloudinary');
+const fs = require('fs');
 const { buildWishlistPayload } = require('./user.service');
 const { createNotification } = require('../../shared/utils/notification.utils');
 const { computeProfileScore, canTradeOnCampus } = require('../../shared/utils/profileCompletion.utils');
@@ -26,7 +28,6 @@ const buildTrustLabels = (user, { completedOrders = 0, openReports = 0 } = {}) =
   const ageDays = (Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24);
   const score = computeProfileScore(user);
 
-  if (user.phoneVerified) labels.push({ key: 'phone_verified', label: 'Phone Verified', color: 'green' });
   if (score >= 80) labels.push({ key: 'profile_complete', label: 'Profile Complete', color: 'blue' });
   if (ageDays < 7) labels.push({ key: 'new_member', label: 'New Member', color: 'gray' });
   if (completedOrders >= 3 && user.averageRating >= 4.0 && openReports === 0) {
@@ -140,7 +141,6 @@ const getUserProfile = async (req, res) => {
         reportCount: openReportCount,
         reviewCount: user.reviewCount,
         averageRating: user.averageRating,
-        phoneVerified: user.phoneVerified,
         isNewSeller: ageDays < 7,
       },
     });
@@ -156,18 +156,9 @@ const updateUserProfile = async (req, res) => {
     }
 
     const allowedUpdates = {};
-    const fields = ['name', 'email', 'phone', 'location', 'avatar', 'profileRole'];
+    const fields = ['name', 'email', 'location', 'avatar', 'profileRole'];
     fields.forEach((f) => { if (req.body[f] !== undefined) allowedUpdates[f] = req.body[f]; });
 
-    // Phone uniqueness check if phone is being changed
-    if (req.body.phone && req.body.phone.trim()) {
-      const newPhone = req.body.phone.trim();
-      const phoneOwner = await User.findOne({ phone: newPhone, _id: { $ne: req.params.id } });
-      if (phoneOwner) {
-        return res.status(400).json({ message: 'This phone number is already registered to another account.' });
-      }
-      allowedUpdates.phone = newPhone;
-    }
 
     if (req.body.campus) {
       const c = req.body.campus;
@@ -189,10 +180,37 @@ const updateUserProfile = async (req, res) => {
       const messages = Object.values(error.errors).map(e => e.message);
       return res.status(400).json({ message: 'Validation failed', errors: messages });
     }
-    if (error.code === 11000 && error.keyPattern?.phone) {
-      return res.status(400).json({ message: 'This phone number is already registered to another account.' });
-    }
     return res.status(500).json({ message: error.message });
+  }
+};
+
+const uploadAvatar = async (req, res) => {
+  const tempPath = req.file?.path;
+  try {
+    if (req.params.id !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to update this profile' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ message: 'Avatar image is required' });
+    }
+
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'campusmitra-avatars',
+    });
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      { avatar: result.secure_url },
+      { new: true, runValidators: true }
+    ).select('-password -refreshTokens -resetPasswordToken -resetPasswordExpires');
+
+    return res.json({ message: 'Avatar updated', avatar: result.secure_url, user: updatedUser });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  } finally {
+    if (tempPath && fs.existsSync(tempPath)) {
+      try { fs.unlinkSync(tempPath); } catch { /* ignore */ }
+    }
   }
 };
 
@@ -344,7 +362,7 @@ const getBlockedUsers = async (req, res) => {
 const getProfileCompletion = async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
-      .select('name phone phoneVerified avatar campus profileRole location');
+      .select('name avatar campus profileRole location');
 
     if (!user) return res.status(404).json({ message: 'User not found' });
 
@@ -361,6 +379,7 @@ module.exports = {
   toggleWishlist,
   getUserProfile,
   addSellerReview,
+  uploadAvatar,
   updateUserProfile,
   blockUser,
   unblockUser,

@@ -29,7 +29,6 @@ const CreateProductPage = () => {
     condition: '',
     price: '',
     contactInfo: {
-      phone: '',
       email: '',
     },
   });
@@ -57,7 +56,6 @@ const CreateProductPage = () => {
     setFormData((prev) => ({
       ...prev,
       contactInfo: {
-        phone: prev.contactInfo.phone || user.phone || '',
         email: prev.contactInfo.email || user.email || '',
       },
     }));
@@ -285,19 +283,6 @@ const CreateProductPage = () => {
                     We&apos;ve pre-filled your profile contact details. You can keep them or override them just for this listing.
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex flex-col">
-                      <label htmlFor="contactInfo.phone" className="form-label pr-2">
-                        Phone Number :
-                      </label>
-                      <Input
-                        type="tel"
-                        id="contactInfo.phone"
-                        name="contactInfo.phone"
-                        value={formData.contactInfo.phone}
-                        onChange={handleChange}
-                        placeholder="Your phone number"
-                      />
-                    </div>
 
                     <div className="flex flex-col">
                       <label htmlFor="contactInfo.email" className="form-label pr-2">

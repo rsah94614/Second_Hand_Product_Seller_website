@@ -58,6 +58,13 @@ const addToCart = async (req, res) => {
       (item) => item.product.toString() === productId
     );
 
+    const totalProposedQty = (existingItem ? existingItem.quantity : 0) + normalizedQty;
+    if (totalProposedQty > product.stock) {
+      return res.status(400).json({
+        message: `Insufficient stock. Only ${product.stock} items available. ${existingItem ? `You already have ${existingItem.quantity} in your cart.` : ''}`
+      });
+    }
+
     if (existingItem) {
       existingItem.quantity += normalizedQty;
     } else {
@@ -102,6 +109,10 @@ const updateCartItem = async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
+    if (normalizedQty > product.stock) {
+      return res.status(400).json({ message: `Only ${product.stock} items available.` });
+    }
+
     item.quantity = normalizedQty;
     await cart.save();
     await populateCart(cart);
@@ -140,7 +151,7 @@ const removeFromCart = async (req, res) => {
 const checkout = async (req, res) => {
   try {
     const { shippingDetails = {} } = req.body;
-    const requiredFields = ['fullName', 'phone', 'addressLine1', 'city', 'state', 'postalCode'];
+    const requiredFields = ['fullName', 'addressLine1', 'city', 'state', 'postalCode'];
     const missingFields = requiredFields.filter((field) => !shippingDetails[field]);
 
     if (missingFields.length) {
@@ -161,9 +172,15 @@ const checkout = async (req, res) => {
       (item) => !item.product || item.product.isSold || item.product.isActive === false
     );
 
-    if (unavailableProduct) {
+    const stockUnavailableProduct = cart.items.find(
+      (item) => item.quantity > (item.product.stock || 0)
+    );
+
+    if (unavailableProduct || stockUnavailableProduct) {
       return res.status(400).json({
-        message: 'One or more products in your cart are no longer available.',
+        message: unavailableProduct 
+          ? 'One or more products in your cart are no longer available.'
+          : `Some items have insufficient stock: ${stockUnavailableProduct.product.title} (Available: ${stockUnavailableProduct.product.stock || 0})`,
       });
     }
 
@@ -188,7 +205,6 @@ const checkout = async (req, res) => {
       status: 'requested',
       shippingDetails: {
         fullName: shippingDetails.fullName || req.user.name || '',
-        phone: shippingDetails.phone || req.user.phone || '',
         email: shippingDetails.email || req.user.email || '',
         addressLine1: shippingDetails.addressLine1 || '',
         addressLine2: shippingDetails.addressLine2 || '',

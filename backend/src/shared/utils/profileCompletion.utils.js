@@ -4,11 +4,9 @@ const computeProfileScore = (user) => {
   let score = 0;
 
   if (user.name?.trim()) score += 15;
-  if (user.phone?.trim()) score += 10;
-  if (user.phoneVerified) score += 15;
-  if (user.avatar?.trim()) score += 5;
+  if (user.avatar?.trim()) score += 15;
   if (user.campus?.collegeName?.trim()) score += 5;
-  if (user.campus?.department?.trim()) score += 10;
+  if (user.campus?.department?.trim()) score += 15;
   if (user.campus?.course?.trim()) score += 5;
   if (user.profileRole) score += 10;
   if (user.campus?.year && user.campus.year !== '') score += 10;
@@ -22,8 +20,6 @@ const getProfileMissingFields = (user) => {
   const missing = [];
 
   if (!user.name?.trim()) missing.push('Full name');
-  if (!user.phone?.trim()) missing.push('Phone number');
-  if (!user.phoneVerified) missing.push('Phone verification');
   if (!user.campus?.department?.trim()) missing.push('Department');
   if (!user.profileRole) missing.push('Campus role');
   if (!user.campus?.year || user.campus.year === '') missing.push('Year / study level');

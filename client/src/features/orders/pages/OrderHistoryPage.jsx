@@ -283,6 +283,11 @@ const OrderHistoryPage = () => {
                         <div className="flex-1 min-w-0">
                           <h3 className="text-base sm:text-lg font-semibold text-gray-800 truncate">
                             {item.title}
+                            {item.quantity > 1 && (
+                              <span className="ml-2 text-sm font-normal text-gray-500">
+                                x{item.quantity}
+                              </span>
+                            )}
                           </h3>
                           <div className="flex flex-wrap items-center text-sm text-gray-600 gap-x-4 gap-y-1 mt-1">
                             <span className="flex items-center">
@@ -305,7 +310,6 @@ const OrderHistoryPage = () => {
                           Delivery / Meetup Details
                         </p>
                         <p>{order.shippingDetails.fullName}</p>
-                        {order.shippingDetails.phone && <p>{order.shippingDetails.phone}</p>}
                         <p className="text-gray-600">{shippingAddress.primaryLine}</p>
                         <p className="text-gray-600">{shippingAddress.secondaryLine}</p>
                         <p className="text-gray-600">{shippingAddress.country}</p>

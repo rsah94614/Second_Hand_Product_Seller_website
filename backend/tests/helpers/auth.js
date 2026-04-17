@@ -15,7 +15,7 @@ const registerAndLogin = async (app, overrides = {}) => {
       department: 'Computer Science',
       course: 'B.Tech',
       year: '3rd',
-      residentType: 'hostel',
+      residentType: 'hosteler',
     },
     ...overrides,
   };

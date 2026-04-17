@@ -29,6 +29,8 @@ type AuthContextValue = {
   resetPassword: (token: string, newPassword: string) => Promise<{ success: boolean; message?: string }>;
   refreshUser: () => Promise<void>;
   updateProfile: (payload: Record<string, unknown>) => Promise<void>;
+  sendPhoneVerificationOtp: () => Promise<{ success: boolean; message?: string }>;
+  confirmPhoneVerificationOtp: (otp: string) => Promise<{ success: boolean; message?: string }>;
   isUser: boolean;
   isAdmin: boolean;
 };
@@ -150,6 +152,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await fetchUser();
   }, [user, fetchUser]);
 
+  const sendPhoneVerificationOtp = useCallback(async () => {
+    try {
+      const res = await api.post<{ message: string }>(`/api/auth/otp/request-verification`);
+      return { success: true, message: res.data.message };
+    } catch (e: unknown) {
+      const msg = getApiErrorMessage(e, "Failed to send OTP");
+      return { success: false, message: msg };
+    }
+  }, []);
+
+  const confirmPhoneVerificationOtp = useCallback(
+    async (otp: string) => {
+      try {
+        const res = await api.post<{ message: string }>("/api/auth/otp/verify-phone", { otp });
+        await fetchUser();
+        return { success: true, message: res.data.message };
+      } catch (e: unknown) {
+        const msg = getApiErrorMessage(e, "Failed to verify phone OTP");
+        return { success: false, message: msg };
+      }
+    },
+    [fetchUser]
+  );
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -161,10 +187,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       resetPassword,
       refreshUser: fetchUser,
       updateProfile,
+      sendPhoneVerificationOtp,
+      confirmPhoneVerificationOtp,
       isUser: user?.role === "user",
       isAdmin: user?.role === "admin",
     }),
-    [user, loading, login, register, logout, forgotPassword, resetPassword, fetchUser, updateProfile]
+    [
+      user,
+      loading,
+      login,
+      register,
+      logout,
+      forgotPassword,
+      resetPassword,
+      fetchUser,
+      updateProfile,
+      sendPhoneVerificationOtp,
+      confirmPhoneVerificationOtp,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

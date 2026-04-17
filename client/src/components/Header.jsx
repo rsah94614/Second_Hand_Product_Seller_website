@@ -1,15 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
 import toast from 'react-hot-toast';
+import { globalSearch } from '../features/search/api/searchApi';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { Search, Plus, User, LogOut, Menu, Briefcase, ShoppingCart, History, MessageCircle, LayoutDashboard, ShieldCheck, Users, FolderTree, Package, Heart, Flag, Bell, CheckCheck } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Badge } from './ui/Badge';
-import { API_BASE_URL } from '../config/api';
 import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../lib/fallbackImages';
 import {
   getNotifications,
@@ -54,10 +53,7 @@ const Header = () => {
 
   const { data: globalSearchData } = useQuery({
     queryKey: ['global-search', debouncedSearch],
-    queryFn: () =>
-      axios.get(`${API_BASE_URL}/api/search`, {
-        params: { q: debouncedSearch, limit: 5 },
-      }).then((res) => res.data),
+    queryFn: () => globalSearch(debouncedSearch, 5),
     enabled: debouncedSearch.length >= 2,
     staleTime: 60 * 1000,
   });

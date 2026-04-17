@@ -4,8 +4,10 @@ export type AuthUser = {
   email: string;
   phone?: string;
   location?: string;
+  avatar?: string;
   role: "user" | "admin";
   isVerified?: boolean;
+  profileRole?: string;
   campus?: Record<string, string>;
   wishlist?: string[];
   wishlistCount?: number;

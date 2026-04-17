@@ -5,11 +5,12 @@ import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import {
   MapPin,
-  Phone,
   Mail,
   Package,
   ArrowLeft,
   Loader2,
+  Minus,
+  Plus,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { Badge } from '../../../components/ui/Badge';
@@ -28,6 +29,7 @@ const PlaceOrderPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [quantity, setQuantity] = React.useState(1);
 
   const {
     register,
@@ -37,7 +39,6 @@ const PlaceOrderPage = () => {
     defaultValues: {
       fullName: user?.name || '',
       email: user?.email || '',
-      phone: user?.phone || '',
       addressLine1: '',
       addressLine2: '',
       landmark: '',
@@ -84,11 +85,10 @@ const PlaceOrderPage = () => {
 
     placeOrderMutation.mutate({
       productId: product._id,
-      quantity: 1,
+      quantity,
       shippingDetails: {
         fullName: values.fullName,
         email: values.email,
-        phone: values.phone,
         addressLine1: values.addressLine1,
         addressLine2: values.addressLine2,
         landmark: values.landmark,
@@ -193,11 +193,6 @@ const PlaceOrderPage = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
                     <Input type="email" {...register('email')} placeholder="you@example.com" />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone*</label>
-                    <Input type="tel" {...register('phone', { required: 'Phone number is required' })} placeholder="+91 98765 43210" />
-                    {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>}
-                  </div>
                 </div>
 
                 <div>
@@ -265,25 +260,42 @@ const PlaceOrderPage = () => {
                     <span>Listing Price</span>
                     <span className="font-medium">{formatPrice(product.price)}</span>
                   </div>
+                  <div className="flex justify-between items-center text-gray-600">
+                    <span>Quantity</span>
+                    <div className="flex items-center rounded-lg border border-gray-200 bg-white p-1">
+                      <button
+                        type="button"
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                        disabled={quantity <= 1}
+                        className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-gray-50 text-gray-500 disabled:opacity-30 transition-all"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+                      <span className="w-10 text-center font-bold text-gray-800">{quantity}</span>
+                      <button
+                        type="button"
+                        onClick={() => setQuantity(quantity + 1)}
+                        className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-gray-50 text-gray-500 transition-all"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
                   <div className="h-px bg-gray-200 my-2" />
                   <div className="flex justify-between text-lg font-bold text-gray-900">
                     <span>Total Amount</span>
-                    <span className="text-primary-600">{formatPrice(product.price || 0)}</span>
+                    <span className="text-primary-600">{formatPrice((product.price || 0) * quantity)}</span>
                   </div>
                 </div>
                 <div className="space-y-3 text-sm text-gray-600 bg-blue-50 p-4 rounded-xl border border-blue-100">
                   <p className="font-semibold text-blue-900 mb-2">Listing Owner Contact</p>
-                  <div className="flex items-center">
-                    <Phone className="w-4 h-4 mr-2 text-blue-500" />
-                    {product.contactInfo?.phone || 'Phone not provided'}
-                  </div>
                   <div className="flex items-center">
                     <Mail className="w-4 h-4 mr-2 text-blue-500" />
                     {product.contactInfo?.email || 'Email not provided'}
                   </div>
                 </div>
               </div>
-              </CardContent>
+            </CardContent>
             </Card>
           </div>
         </div>

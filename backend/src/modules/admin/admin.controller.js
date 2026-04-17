@@ -331,7 +331,7 @@ const getProducts = async (req, res) => {
     const numericLimit = Number(limit);
 
     const products = await Product.find(query)
-      .populate('seller', 'name email phone')
+      .populate('seller', 'name email')
       .sort({ _id: -1 })
       .limit(numericLimit);
       
@@ -567,7 +567,7 @@ const getOrders = async (req, res) => {
     }
 
     const orders = await Order.find(query)
-      .populate('user', 'name email phone location')
+      .populate('user', 'name email location')
       .sort({ _id: -1 })
       .limit(numericLimit);
 
@@ -593,7 +593,7 @@ const updateOrder = async (req, res) => {
       return res.status(400).json({ message: 'Invalid order status' });
     }
 
-    const order = await Order.findById(req.params.id).populate('user', 'name email phone location');
+    const order = await Order.findById(req.params.id).populate('user', 'name email location');
 
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
