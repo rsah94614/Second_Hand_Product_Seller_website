@@ -7,6 +7,8 @@ import {
   ShoppingCart,
   Trash2,
   PackageCheck,
+  Minus,
+  Plus,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import Header from '../../../components/Header';
@@ -28,7 +30,6 @@ const CartPage = () => {
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [shippingDetails, setShippingDetails] = useState({
     fullName: user?.name || '',
-    phone: user?.phone || '',
     addressLine1: '',
     addressLine2: '',
     landmark: '',
@@ -40,7 +41,6 @@ const CartPage = () => {
       setShippingDetails(prev => ({
         ...prev,
         fullName: prev.fullName || user.name || '',
-        phone: prev.phone || user.phone || ''
       }));
     }
   }, [user]);
@@ -65,6 +65,17 @@ const CartPage = () => {
 
     onError: () => {
       toast.error('Unable to remove item. Please try again.');
+    },
+  });
+
+  const updateQuantity = useMutation({
+    mutationFn: ({ productId, quantity }) =>
+      axios.put(`${API_BASE_URL}/api/cart/${productId}`, { quantity }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to update quantity');
     },
   });
 
@@ -96,7 +107,6 @@ const CartPage = () => {
   const validateShippingDetails = () => {
     const requiredFields = [
       ['fullName', 'full name'],
-      ['phone', 'phone number'],
       ['addressLine1', 'hostel / department / meetup spot'],
     ];
 
@@ -276,7 +286,40 @@ const CartPage = () => {
                         </p>
                       </div>
 
-                      <div className="flex items-end justify-between">
+                      <div className="flex items-center justify-between mt-4">
+                        <div className="flex items-center gap-3">
+                          {!isItemUnavailable && (
+                            <div className="flex items-center rounded-lg border border-gray-200 bg-gray-50 p-1">
+                              <button
+                                type="button"
+                                onClick={() => updateQuantity.mutate({ productId: item.product?._id, quantity: Math.max(1, item.quantity - 1) })}
+                                disabled={updateQuantity.isPending || item.quantity <= 1}
+                                className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-white hover:shadow-sm text-gray-500 disabled:opacity-30 transition-all"
+                              >
+                                <Minus className="h-4 w-4" />
+                              </button>
+                              <span className="w-10 text-center font-bold text-gray-800">{item.quantity}</span>
+                              <button
+                                type="button"
+                                onClick={() => updateQuantity.mutate({ productId: item.product?._id, quantity: item.quantity + 1 })}
+                                disabled={updateQuantity.isPending || item.quantity >= (item.product?.stock || 1)}
+                                className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-white hover:shadow-sm text-gray-500 disabled:opacity-30 transition-all"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </button>
+                            </div>
+                          )}
+                          {!isItemUnavailable && item.product?.stock <= 5 && (
+                             <span className="text-[10px] font-bold text-orange-600 ml-1">
+                               Only {item.product.stock} left
+                             </span>
+                          )}
+                          {!isItemUnavailable && (
+                            <span className="text-xs text-gray-400 font-medium font-serif italic">
+                              {formatPrice(item.product?.price || 0)} / unit
+                            </span>
+                          )}
+                        </div>
                         <div className="text-right">
                           <p className={`text-xl font-bold ${isItemUnavailable ? 'text-gray-500 line-through' : 'text-primary-600'}`}>
                             {formatPrice(item.subtotal)}
@@ -346,16 +389,10 @@ const CartPage = () => {
             <DialogTitle className="text-xl font-bold">Campus Checkout</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-semibold">Full Name</label>
                 <Input value={shippingDetails.fullName} onChange={e => setShippingDetails(prev => ({...prev, fullName: e.target.value}))} placeholder="John Doe" />
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-semibold">Phone Number</label>
-                <Input value={shippingDetails.phone} onChange={e => setShippingDetails(prev => ({...prev, phone: e.target.value}))} placeholder="+91 9876543210" />
-              </div>
-            </div>
             <div className="space-y-2">
               <label className="text-sm font-semibold">Hostel / Department / Meetup Spot</label>
               <Input value={shippingDetails.addressLine1} onChange={e => setShippingDetails(prev => ({...prev, addressLine1: e.target.value}))} placeholder="Girls Hostel, Admin Block, Library gate..." />

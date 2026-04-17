@@ -32,6 +32,7 @@ const corsOriginHandler = (allowedList) => (origin, callback) => {
 
 const createApp = () => {
   const app = express();
+  app.set('trust proxy', 1);
   const server = http.createServer(app);
   const allowedOrigins = parseAllowedOrigins();
   const clientDistPath = path.join(__dirname, '../../client/dist');
@@ -107,9 +108,10 @@ const createApp = () => {
     });
   });
   // Rate Limiting
-  const { apiLimiter, authLimiter, registerLimiter } = require('./shared/middleware/rateLimiter.middleware');
+  const { apiLimiter, loginLimiter, registerLimiter, userLimiter } = require('./shared/middleware/rateLimiter.middleware');
   app.use('/api', apiLimiter);
-  app.use('/api/auth/login', authLimiter);
+  app.use('/api', userLimiter);
+  app.use('/api/auth/login', loginLimiter);
   app.use('/api/auth/register', registerLimiter);
 
   app.use('/api/auth', require('./modules/auth/auth.route'));
@@ -245,7 +247,7 @@ const createApp = () => {
         }
 
         // New account restriction: check if sender account < 24h old
-        const senderUser = await User.findById(sender).select('createdAt isSuspended suspendedReason name phone phoneVerified avatar campus profileRole location');
+        const senderUser = await User.findById(sender).select('createdAt isSuspended suspendedReason name avatar campus profileRole location');
         const senderAgeHours = senderUser
           ? (Date.now() - new Date(senderUser.createdAt).getTime()) / (1000 * 60 * 60)
           : 999;

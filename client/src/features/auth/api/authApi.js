@@ -7,17 +7,8 @@ export const getCurrentUser = () =>
 export const loginUser = (email, password) =>
   axios.post(`${API_BASE_URL}/api/auth/login`, { email, password }).then((res) => res.data);
 
-export const requestLoginOtp = (phone) =>
-  axios.post(`${API_BASE_URL}/api/auth/otp/request-login`, { phone }).then((res) => res.data);
-
-export const verifyLoginOtp = (phone, otp) =>
-  axios.post(`${API_BASE_URL}/api/auth/otp/verify-login`, { phone, otp }).then((res) => res.data);
-
-export const requestPhoneVerificationOtp = () =>
-  axios.post(`${API_BASE_URL}/api/auth/otp/request-verification`).then((res) => res.data);
-
-export const verifyPhoneOtp = (otp) =>
-  axios.post(`${API_BASE_URL}/api/auth/otp/verify-phone`, { otp }).then((res) => res.data);
+export const requestSignupOtp = (email) =>
+  axios.post(`${API_BASE_URL}/api/auth/otp/request-signup`, { email }).then((res) => res.data);
 
 export const registerUser = (userData) =>
   axios.post(`${API_BASE_URL}/api/auth/register`, userData).then((res) => res.data);
@@ -27,3 +18,14 @@ export const forgotPasswordApi = (email) =>
 
 export const resetPasswordApi = (token, newPassword) =>
   axios.post(`${API_BASE_URL}/api/auth/reset-password`, { token, newPassword }).then((res) => res.data);
+
+// Email verification APIs
+export const verifyEmailApi = (token) =>
+  axios.post(`${API_BASE_URL}/api/auth/verify-email`, { token }).then((res) => res.data);
+
+export const resendVerificationEmailApi = () =>
+  axios.post(`${API_BASE_URL}/api/auth/resend-verification`).then((res) => res.data);
+
+// CSRF token API
+export const getCsrfToken = () =>
+  axios.get(`${API_BASE_URL}/api/csrf-token`).then((res) => res.data);

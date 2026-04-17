@@ -58,20 +58,22 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
+  emailVerified: {
+    type: Boolean,
+    default: false
+  },
+  emailVerificationToken: {
+    type: String,
+    default: ''
+  },
+  emailVerificationExpires: {
+    type: Date,
+    default: null
+  },
   password: {
     type: String,
     required: true,
     minlength: 6
-  },
-  phone: {
-    type: String,
-    trim: true,
-    unique: true,
-    sparse: true, // allows null without breaking unique index on multiple null values
-  },
-  phoneVerified: {
-    type: Boolean,
-    default: false
   },
   location: {
     type: String,
@@ -98,8 +100,8 @@ const userSchema = new mongoose.Schema({
   },
   profileRole: {                                              // NEW: campus role
     type: String,
-    enum: ['', 'student', 'staff', 'alumni'],
-    default: ''
+    enum: ['', 'student', 'faculty', 'staff', 'alumni'],
+    default: 'student'
   },
   avatar: {
     type: String,
@@ -153,6 +155,14 @@ const userSchema = new mongoose.Schema({
   resetPasswordToken: { type: String },
   resetPasswordExpires: { type: Date },
   refreshTokens: [{ type: String }],
+  loginAttempts: {             // NEW: track failed logins
+    type: Number,
+    required: true,
+    default: 0,
+  },
+  lockUntil: {                 // NEW: timestamp for account lockout
+    type: Date,
+  },
   otpAuth: {
     codeHash: { type: String, default: '' },
     purpose: { type: String, enum: ['', 'login', 'verify_phone'], default: '' },
@@ -184,7 +194,6 @@ userSchema.virtual('trustLabels').get(function () {
   const ageMs = Date.now() - new Date(this.createdAt).getTime();
   const ageDays = ageMs / (1000 * 60 * 60 * 24);
 
-  if (this.phoneVerified) labels.push('Phone Verified');
   if (this.profileCompletionScore >= 80) labels.push('Profile Complete');
   if (ageDays < 7) labels.push('New Member');
   if (this.reviewCount >= 5 && this.averageRating >= 4.0) labels.push('Trusted Seller');

@@ -5,7 +5,6 @@ import {
   Alert,
   ScrollView,
   Text,
-  TextInput,
   View,
   Pressable,
 } from "react-native";
@@ -21,7 +20,7 @@ import {
   getRelatedProducts,
   reportProduct,
 } from "../../lib/api/products";
-import { submitSellerReview, toggleWishlist } from "../../lib/api/users";
+import { toggleWishlist } from "../../lib/api/users";
 import { PRODUCT_FALLBACK_IMAGE } from "../../lib/fallbackImage";
 import { formatInr } from "../../lib/format";
 import { getImageUri } from "../../lib/product-image";
@@ -33,8 +32,6 @@ export default function ProductDetailScreen() {
   const { user, refreshUser } = useAuth();
   const queryClient = useQueryClient();
   const [imgIdx, setImgIdx] = useState(0);
-  const [reviewRating, setReviewRating] = useState("5");
-  const [reviewComment, setReviewComment] = useState("");
   const [reportReason, setReportReason] = useState("");
   const [reportDetails, setReportDetails] = useState("");
 
@@ -76,23 +73,6 @@ export default function ProductDetailScreen() {
     onSuccess: async (res: { message?: string }) => {
       await refreshUser();
       queryClient.invalidateQueries({ queryKey: ["wishlist"] });
-    },
-  });
-
-  const reviewM = useMutation({
-    mutationFn: () =>
-      submitSellerReview(String(sellerId), {
-        rating: Math.min(5, Math.max(1, parseInt(reviewRating, 10) || 5)),
-        comment: reviewComment.trim(),
-        productId: String(id),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["product", id] });
-      setReviewComment("");
-      Alert.alert("Thanks", "Seller review submitted.");
-    },
-    onError: (e: { response?: { data?: { message?: string } } }) => {
-      Alert.alert("Error", e.response?.data?.message || "Review failed.");
     },
   });
 
@@ -218,7 +198,14 @@ export default function ProductDetailScreen() {
                  </View>
                </View>
                {user && sellerId && sellerId !== user.id && (
-                  <Pressable onPress={() => router.push(`/chat/${sellerId}` as never)} className="h-10 w-10 rounded-full bg-primary-50 dark:bg-primary-900/40 items-center justify-center active:scale-95">
+                  <Pressable
+                    onPress={() =>
+                      router.push(
+                        (`/chat/${sellerId}?name=${encodeURIComponent(String(sellerName || "Chat"))}` as never)
+                      )
+                    }
+                    className="h-10 w-10 rounded-full bg-primary-50 dark:bg-primary-900/40 items-center justify-center active:scale-95"
+                  >
                     <Ionicons name="chatbubbles" size={20} color="#6366f1" />
                   </Pressable>
                )}
@@ -243,27 +230,15 @@ export default function ProductDetailScreen() {
           )}
 
           {user && sellerId && sellerId !== user.id && (
-             <View className="mt-8 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm shadow-slate-200/50 dark:shadow-none">
-               <Text className="font-outfit-sb text-slate-900 dark:text-white mb-4">Review this seller</Text>
-               <TextInput
-                 value={reviewRating}
-                 onChangeText={setReviewRating}
-                 keyboardType="numeric"
-                 placeholder="Rating (1-5)"
-                 className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-3 font-outfit text-slate-900 dark:text-white mb-3"
-                 placeholderTextColor="#94a3b8"
-               />
-               <TextInput
-                 value={reviewComment}
-                 onChangeText={setReviewComment}
-                 placeholder="Share your experience with the seller..."
-                 multiline
-                 className="min-h-[100px] rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-3 font-outfit text-slate-900 dark:text-white mb-4"
-                 placeholderTextColor="#94a3b8"
-                 textAlignVertical="top"
-               />
-               <Button title="Submit Seller Review" onPress={() => reviewM.mutate()} loading={reviewM.isPending} />
-             </View>
+            <View className="mt-8 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm shadow-slate-200/50 dark:shadow-none">
+              <Text className="font-outfit-sb text-slate-900 dark:text-white mb-2">Reviews</Text>
+              <Text className="text-[13px] font-outfit text-slate-500 dark:text-slate-400">
+                You can leave a review after completing an order with this seller.
+              </Text>
+              <View className="mt-4">
+                <Button title="Go to Orders" variant="outline" onPress={() => router.push("/(tabs)/orders" as never)} />
+              </View>
+            </View>
           )}
 
           {sellerReviews.length > 0 && (

@@ -12,7 +12,7 @@ import { getImageUri } from "../lib/product-image";
 import type { ProductImage } from "../lib/types";
 
 export default function WishlistScreen() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const queryClient = useQueryClient();
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -23,7 +23,8 @@ export default function WishlistScreen() {
 
   const removeM = useMutation({
     mutationFn: (productId: string) => toggleWishlist(productId),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await refreshUser();
       queryClient.invalidateQueries({ queryKey: ["wishlist"] });
     },
   });

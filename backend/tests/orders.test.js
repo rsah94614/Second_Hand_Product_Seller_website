@@ -29,6 +29,7 @@ const runOrderTests = async (app) => {
     seller: seller.user.id,
     price: 18000,
     title: 'Order Test Phone',
+    stock: 1,
   });
 
   const createOrderResponse = await request(app)
@@ -95,6 +96,7 @@ const runOrderTests = async (app) => {
     seller: directSeller.user.id,
     price: 12000,
     title: 'Direct Order Test Product',
+    stock: 5,
   });
 
   const directOrderResponse = await request(app)

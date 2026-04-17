@@ -1,7 +1,8 @@
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const User = require('../../../models/User');
-const { sendResetEmail } = require('../../shared/utils/emailService');
+const RegistrationOtp = require('../../../models/RegistrationOtp');
+const { sendResetEmail, sendVerificationEmail, sendLockoutEmail, sendSignupOtpEmail } = require('../../shared/utils/emailService');
 const {
   detectCollegeDomain,
   buildAuthUser,
@@ -75,78 +76,152 @@ const buildOtpResponse = (basePayload, code) => ({
 
 const register = async (req, res) => {
   try {
-    const { name, email, password, phone, location, campus, profileRole } = req.body;
+    const { name, email, password, location, campus, profileRole, otp } = req.body;
 
     // ── Email uniqueness check ─────────────────────────────────────────────
-    const existingEmail = await User.findOne({ email });
+    const normalizedEmail = email.toLowerCase().trim();
+    const existingEmail = await User.findOne({ email: normalizedEmail });
     if (existingEmail) {
       return res.status(400).json({ message: 'An account with this email already exists' });
     }
 
-    // ── Phone uniqueness check (required for new registrations) ───────────
-    if (!phone || !phone.trim()) {
-      return res.status(400).json({ message: 'Phone number is required for registration' });
+    // ── OTP Verification ───────────────────────────────────────────────────
+    if (!otp) {
+      return res.status(400).json({ message: 'Email verification is required to complete registration' });
     }
 
-    const normalizedPhone = phone.trim();
-    const existingPhone = await User.findOne({ phone: normalizedPhone });
-    if (existingPhone) {
-      return res.status(400).json({
-        message: 'An account with this phone number already exists. Please login instead.',
-      });
+    const regOtp = await RegistrationOtp.findOne({ email: normalizedEmail });
+    if (!regOtp) {
+      return res.status(400).json({ message: 'No active verification request found for this email' });
     }
 
-    const collegeInfo = detectCollegeDomain(email);
+    if (new Date(regOtp.expiresAt).getTime() < Date.now()) {
+      await RegistrationOtp.deleteOne({ email: normalizedEmail });
+      return res.status(400).json({ message: 'Verification code has expired. Please request a new one.' });
+    }
+
+    if (regOtp.codeHash !== hashOtpCode(otp)) {
+      regOtp.attemptsLeft -= 1;
+      if (regOtp.attemptsLeft <= 0) {
+        await RegistrationOtp.deleteOne({ email: normalizedEmail });
+        return res.status(400).json({ message: 'Too many invalid attempts. Please request a new code.' });
+      }
+      await regOtp.save();
+      return res.status(400).json({ message: 'Invalid verification code' });
+    }
+
+    // OTP is valid, proceed with registration
+    const collegeInfo = detectCollegeDomain(normalizedEmail);
     const isVerified = !!collegeInfo?.verified;
 
     const campusData = {
       collegeName: campus?.collegeName || collegeInfo?.collegeName || '',
-      department:  campus?.department  || '',
-      course:      campus?.course      || '',
-      year:        campus?.year        || '',
-      semester:    campus?.semester    || '',
-      enrollmentId:campus?.enrollmentId|| '',
-      hostel:      campus?.hostel      || '',
-      residentType:campus?.residentType|| '',
+      department: campus?.department || '',
+      course: campus?.course || '',
+      year: campus?.year || '',
+      semester: campus?.semester || '',
+      enrollmentId: campus?.enrollmentId || '',
+      hostel: campus?.hostel || '',
+      residentType: campus?.residentType || '',
     };
 
     const user = new User({
       name,
-      email,
+      email: normalizedEmail,
       password,
-      phone: normalizedPhone,
       location,
       campus: campusData,
-      profileRole: profileRole || '',
+      profileRole: profileRole || 'student',
       isVerified,
+      emailVerified: true, // Marker as verified because registration was successful via OTP
       role: 'user',
     });
 
     user.refreshTokens = [];
     await user.save();
 
-    const body = await issueSession(req, res, user, 'Account created successfully');
+    // Clean up registration OTP
+    await RegistrationOtp.deleteOne({ email: normalizedEmail });
+
+    const body = await issueSession(req, res, user, 'Account created successfully. Email verified.');
     return res.status(201).json(body);
   } catch (error) {
-    // Handle MongoDB duplicate key error gracefully
     if (error.code === 11000) {
-      const field = Object.keys(error.keyPattern || {})[0];
-      if (field === 'phone') {
-        return res.status(400).json({ message: 'An account with this phone number already exists.' });
+      return res.status(400).json({ message: 'An account with this email already exists.' });
+    }
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const requestSignupOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email address is required' });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: normalizedEmail });
+    if (existingUser) {
+      return res.status(400).json({ message: 'An account with this email already exists. Please login instead.' });
+    }
+
+    const now = Date.now();
+    
+    // Check cooldown
+    const existingOtp = await RegistrationOtp.findOne({ email: normalizedEmail });
+    if (existingOtp && now - new Date(existingOtp.requestedAt).getTime() < OTP_COOLDOWN_MS) {
+      const waitSeconds = Math.ceil((OTP_COOLDOWN_MS - (now - new Date(existingOtp.requestedAt).getTime())) / 1000);
+      return res.status(429).json({ message: `Please wait ${waitSeconds}s before requesting another code.`, cooldownSeconds: waitSeconds });
+    }
+
+    const code = generateOtpCode();
+    
+    await RegistrationOtp.findOneAndUpdate(
+      { email: normalizedEmail },
+      {
+        codeHash: hashOtpCode(code),
+        expiresAt: new Date(now + OTP_TTL_MS),
+        requestedAt: new Date(now),
+        attemptsLeft: 3,
+      },
+      { upsert: true }
+    );
+
+    // Send Email
+    try {
+      await sendSignupOtpEmail(normalizedEmail, code);
+    } catch (error) {
+      console.error('Failed to send signup OTP Email:', error);
+      
+      // Development Fallback: Log to terminal so developer can see the code
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`\n[DEV ONLY] SIGNUP OTP FOR ${normalizedEmail}: ${code}\n`);
       }
-      if (field === 'email') {
-        return res.status(400).json({ message: 'An account with this email already exists.' });
+
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(500).json({ message: 'Failed to send verification code. Please try again.' });
       }
     }
+
+    return res.json(buildOtpResponse({ message: 'Verification code sent to your email address.', email: normalizedEmail }, code));
+  } catch (error) {
     return res.status(500).json({ message: error.message });
   }
 };
 
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body; // 'email' field is used as the unique identifier
 
-    const user = await User.findOne({ email });
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
@@ -159,6 +234,15 @@ const login = async (req, res) => {
       });
     }
 
+    // ── Account Lockout check ──────────────────────────────────────────────
+    if (user.lockUntil && user.lockUntil > Date.now()) {
+      const waitMinutes = Math.ceil((user.lockUntil - Date.now()) / (1000 * 60));
+      return res.status(403).json({
+        message: `Account is temporarily locked due to multiple failed attempts. Please try again in ${waitMinutes} minutes.`,
+        code: 'ACCOUNT_LOCKED',
+      });
+    }
+
     if (!user.role || !['admin', 'user'].includes(user.role)) {
       user.role = 'user';
       await user.save();
@@ -166,8 +250,37 @@ const login = async (req, res) => {
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
+      // Increment login attempts
+      user.loginAttempts = (user.loginAttempts || 0) + 1;
+
+      if (user.loginAttempts >= 5) {
+        const lockoutDuration = 30 * 60 * 1000; // 30 minutes
+        const unlockTime = new Date(Date.now() + lockoutDuration);
+        user.lockUntil = unlockTime;
+        user.loginAttempts = 0; // Reset for next cycle after unlock
+        await user.save();
+
+        // Notify user via email
+        try {
+          await sendLockoutEmail(user.email, unlockTime);
+        } catch (emailError) {
+          console.error('Failed to send lockout email:', emailError);
+        }
+
+        return res.status(403).json({
+          message: 'Too many failed login attempts. Your account has been locked for 30 minutes.',
+          code: 'ACCOUNT_LOCKED',
+        });
+      }
+
+      await user.save();
       return res.status(400).json({ message: 'Invalid credentials' });
     }
+
+    // Reset login attempts on success
+    user.loginAttempts = 0;
+    user.lockUntil = undefined;
+    await user.save();
 
     const body = await issueSession(req, res, user, 'Login successful');
     return res.json(body);
@@ -176,183 +289,6 @@ const login = async (req, res) => {
   }
 };
 
-const requestLoginOtp = async (req, res) => {
-  try {
-    const { phone } = req.body;
-    const normalizedPhone = String(phone || '').trim();
-
-    if (!normalizedPhone) {
-      return res.status(400).json({ message: 'Phone number is required' });
-    }
-
-    const user = await User.findOne({ phone: normalizedPhone });
-    if (!user) {
-      return res.status(404).json({ message: 'No account found for this phone number' });
-    }
-    if (user.isSuspended) {
-      return res.status(403).json({
-        message: `Your account has been suspended. Reason: ${user.suspendedReason || 'Violation of campus marketplace rules.'}`,
-        code: 'ACCOUNT_SUSPENDED',
-      });
-    }
-
-    const now = Date.now();
-    const requestedAt = user.otpAuth?.requestedAt ? new Date(user.otpAuth.requestedAt).getTime() : 0;
-    if (requestedAt && now - requestedAt < OTP_COOLDOWN_MS) {
-      const waitSeconds = Math.ceil((OTP_COOLDOWN_MS - (now - requestedAt)) / 1000);
-      return res.status(429).json({ message: `Please wait ${waitSeconds}s before requesting another OTP.` });
-    }
-
-    const code = generateOtpCode();
-    user.otpAuth = {
-      codeHash: hashOtpCode(code),
-      purpose: 'login',
-      expiresAt: new Date(now + OTP_TTL_MS),
-      requestedAt: new Date(now),
-      attemptsLeft: OTP_MAX_ATTEMPTS,
-      lastVerifiedAt: user.otpAuth?.lastVerifiedAt || null,
-    };
-    await user.save();
-
-    return res.json(buildOtpResponse({ message: 'OTP sent to your phone number.', phone: normalizedPhone }, code));
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
-
-const verifyLoginOtp = async (req, res) => {
-  try {
-    const { phone, otp } = req.body;
-    const normalizedPhone = String(phone || '').trim();
-    const normalizedOtp = String(otp || '').trim();
-
-    if (!normalizedPhone || !normalizedOtp) {
-      return res.status(400).json({ message: 'Phone number and OTP are required' });
-    }
-
-    const user = await User.findOne({ phone: normalizedPhone });
-    if (!user) {
-      return res.status(404).json({ message: 'No account found for this phone number' });
-    }
-
-    const otpAuth = user.otpAuth || {};
-    if (otpAuth.purpose !== 'login' || !otpAuth.codeHash || !otpAuth.expiresAt) {
-      return res.status(400).json({ message: 'No active login OTP request found' });
-    }
-
-    if (new Date(otpAuth.expiresAt).getTime() < Date.now()) {
-      user.otpAuth = { codeHash: '', purpose: '', expiresAt: null, requestedAt: null, attemptsLeft: 0, lastVerifiedAt: otpAuth.lastVerifiedAt || null };
-      await user.save();
-      return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
-    }
-
-    if (otpAuth.attemptsLeft <= 0) {
-      return res.status(429).json({ message: 'Too many invalid OTP attempts. Please request a new code.' });
-    }
-
-    if (otpAuth.codeHash !== hashOtpCode(normalizedOtp)) {
-      user.otpAuth.attemptsLeft -= 1;
-      await user.save();
-      return res.status(400).json({ message: 'Invalid OTP' });
-    }
-
-    user.phoneVerified = true;
-    user.otpAuth = {
-      codeHash: '',
-      purpose: '',
-      expiresAt: null,
-      requestedAt: null,
-      attemptsLeft: 0,
-      lastVerifiedAt: new Date(),
-    };
-
-    const body = await issueSession(req, res, user, 'OTP login successful');
-    return res.json(body);
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
-
-const requestPhoneVerificationOtp = async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    if (!user.phone?.trim()) {
-      return res.status(400).json({ message: 'Add a phone number to your profile first.' });
-    }
-
-    const now = Date.now();
-    const requestedAt = user.otpAuth?.requestedAt ? new Date(user.otpAuth.requestedAt).getTime() : 0;
-    if (requestedAt && now - requestedAt < OTP_COOLDOWN_MS) {
-      const waitSeconds = Math.ceil((OTP_COOLDOWN_MS - (now - requestedAt)) / 1000);
-      return res.status(429).json({ message: `Please wait ${waitSeconds}s before requesting another OTP.` });
-    }
-
-    const code = generateOtpCode();
-    user.otpAuth = {
-      codeHash: hashOtpCode(code),
-      purpose: 'verify_phone',
-      expiresAt: new Date(now + OTP_TTL_MS),
-      requestedAt: new Date(now),
-      attemptsLeft: OTP_MAX_ATTEMPTS,
-      lastVerifiedAt: user.otpAuth?.lastVerifiedAt || null,
-    };
-    await user.save();
-
-    return res.json(buildOtpResponse({ message: 'Phone verification OTP sent.', phone: user.phone }, code));
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
-
-const verifyPhoneOtp = async (req, res) => {
-  try {
-    const { otp } = req.body;
-    const normalizedOtp = String(otp || '').trim();
-    if (!normalizedOtp) {
-      return res.status(400).json({ message: 'OTP is required' });
-    }
-
-    const user = await User.findById(req.user._id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    const otpAuth = user.otpAuth || {};
-    if (otpAuth.purpose !== 'verify_phone' || !otpAuth.codeHash || !otpAuth.expiresAt) {
-      return res.status(400).json({ message: 'No active phone verification OTP request found' });
-    }
-
-    if (new Date(otpAuth.expiresAt).getTime() < Date.now()) {
-      user.otpAuth = { codeHash: '', purpose: '', expiresAt: null, requestedAt: null, attemptsLeft: 0, lastVerifiedAt: otpAuth.lastVerifiedAt || null };
-      await user.save();
-      return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
-    }
-
-    if (otpAuth.attemptsLeft <= 0) {
-      return res.status(429).json({ message: 'Too many invalid OTP attempts. Please request a new code.' });
-    }
-
-    if (otpAuth.codeHash !== hashOtpCode(normalizedOtp)) {
-      user.otpAuth.attemptsLeft -= 1;
-      await user.save();
-      return res.status(400).json({ message: 'Invalid OTP' });
-    }
-
-    user.phoneVerified = true;
-    user.otpAuth = {
-      codeHash: '',
-      purpose: '',
-      expiresAt: null,
-      requestedAt: null,
-      attemptsLeft: 0,
-      lastVerifiedAt: new Date(),
-    };
-    await user.save();
-
-    return res.json({ message: 'Phone number verified successfully', user: buildAuthUser(user) });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
 
 const getMe = async (req, res) => {
   try {
@@ -467,16 +403,86 @@ const logout = async (req, res) => {
   }
 };
 
+/**
+ * Verify email with token
+ */
+const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ message: 'Verification token is required' });
+    }
+
+    const user = await User.findOne({
+      emailVerificationToken: token,
+      emailVerificationExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Email verification token is invalid or has expired' });
+    }
+
+    user.emailVerified = true;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpires = undefined;
+    await user.save();
+
+    return res.json({
+      message: 'Email verified successfully',
+      user: buildAuthUser(user)
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * Resend email verification
+ */
+const resendVerificationEmail = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.emailVerified) {
+      return res.status(400).json({ message: 'Email is already verified' });
+    }
+
+    // Generate new verification token
+    const emailVerificationToken = crypto.randomBytes(32).toString('hex');
+    const emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+
+    user.emailVerificationToken = emailVerificationToken;
+    user.emailVerificationExpires = emailVerificationExpires;
+    await user.save();
+
+    // Send verification email
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    const verificationUrl = new URL(`/verify-email?token=${emailVerificationToken}`, clientUrl).toString();
+
+    try {
+      await sendVerificationEmail(user.email, verificationUrl, user.name);
+      return res.json({ message: 'Verification email sent successfully' });
+    } catch (error) {
+      return res.status(500).json({ message: 'Failed to send verification email. Please try again.' });
+    }
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   register,
   login,
-  requestLoginOtp,
-  verifyLoginOtp,
-  requestPhoneVerificationOtp,
-  verifyPhoneOtp,
+  requestSignupOtp,
   getMe,
   forgotPassword,
   resetPassword,
   refreshToken,
   logout,
+  verifyEmail,
+  resendVerificationEmail,
 };

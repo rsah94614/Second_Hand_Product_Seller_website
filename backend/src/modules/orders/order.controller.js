@@ -10,7 +10,9 @@ const formatOrderId = (id) => id.toString().slice(-6).toUpperCase();
 
 const createOrder = async (req, res) => {
   try {
-    const { productId, shippingDetails = {} } = req.body;
+    const { productId, quantity = 1, shippingDetails = {} } = req.body;
+    const { normalizeQuantity } = require('../cart/cart.service');
+    const normalizedQty = normalizeQuantity(quantity);
 
     if (!productId) {
       return res.status(400).json({ message: 'Product ID is required' });
@@ -20,8 +22,8 @@ const createOrder = async (req, res) => {
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
-    if (product.isSold || !product.isActive || product.isExpired) {
-      return res.status(400).json({ message: 'This item is no longer available' });
+    if (product.stock < normalizedQty || product.isSold || !product.isActive || product.isExpired) {
+      return res.status(400).json({ message: product.stock < normalizedQty ? `Insufficient stock. Only ${product.stock} available.` : 'This item is no longer available' });
     }
     if (product.seller._id.toString() === req.user._id.toString()) {
       return res.status(400).json({ message: 'You cannot order your own listing' });
@@ -48,13 +50,12 @@ const createOrder = async (req, res) => {
         title: product.title,
         image: product.images?.[0] || '',
         price: product.price,
-        quantity: 1,          // Always 1 for campus second-hand
+        quantity: normalizedQty,
       }],
-      total: product.price,
+      total: product.price * normalizedQty,
       status: 'requested',
       shippingDetails: {
         fullName: shippingDetails.fullName || req.user.name || '',
-        phone: shippingDetails.phone || req.user.phone || '',
         email: shippingDetails.email || req.user.email || '',
         addressLine1: shippingDetails.addressLine1 || '',
         landmark: shippingDetails.landmark || '',
@@ -194,8 +195,20 @@ const markCompleted = async (req, res) => {
     order.reviewUnlocked = true;
     await order.save();
 
-    // Mark product as sold
-    await Product.findByIdAndUpdate(order.items[0]?.product, { isSold: true, isActive: false });
+    // Mark product as sold or decrement stock
+    const stockUpdates = order.items.map(async (item) => {
+      const p = await Product.findById(item.product);
+      if (p) {
+        const newStock = Math.max(0, p.stock - item.quantity);
+        p.stock = newStock;
+        if (newStock === 0) {
+          p.isSold = true;
+          p.isActive = false;
+        }
+        await p.save();
+      }
+    });
+    await Promise.all(stockUpdates);
 
     await Promise.all([
       createNotification({
@@ -322,8 +335,8 @@ const getOrders = async (req, res) => {
 
     const orders = await Order.find(query)
       .populate('items.product', 'title images price category')
-      .populate('user', 'name phone avatar')
-      .populate('seller', 'name phone avatar')
+      .populate('user', 'name avatar')
+      .populate('seller', 'name location')
       .sort({ createdAt: -1 });
 
     return res.json(orders);
@@ -336,8 +349,8 @@ const getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
       .populate('items.product', 'title images price category condition')
-      .populate('user', 'name phone avatar')
-      .populate('seller', 'name phone avatar');
+      .populate('user', 'name avatar')
+      .populate('seller', 'name location');
 
     if (!order) return res.status(404).json({ message: 'Order not found' });
 

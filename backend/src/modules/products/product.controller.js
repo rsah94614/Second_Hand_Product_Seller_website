@@ -43,7 +43,7 @@ const listProducts = async (req, res) => {
 const getProductsByUser = async (req, res) => {
   try {
     const products = await Product.find({ seller: req.params.userId })
-      .populate('seller', 'name phone location')
+      .populate('seller', 'name location')
       .sort({ createdAt: -1 });
     return res.json(products);
   } catch (error) {
@@ -65,7 +65,7 @@ const getProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id).populate({
       path: 'seller',
-      select: 'name phone location email reviews averageRating reviewCount createdAt profileRole campus phoneVerified isSuspended',
+      select: 'name location email reviews averageRating reviewCount createdAt profileRole campus isSuspended',
       populate: { path: 'reviews.user', select: 'name' },
     });
 
@@ -163,7 +163,7 @@ const createProduct = async (req, res) => {
   const tempFilePaths = (req.files || []).map((f) => f.path).filter(Boolean);
 
   try {
-    const { title, description, category, condition, price, contactInfo } = req.body;
+    const { title, description, category, condition, price, contactInfo, stock = 1 } = req.body;
 
     // ── Image requirement ─────────────────────────────────────────────────
     if (!req.files || req.files.length === 0) {
@@ -209,6 +209,7 @@ const createProduct = async (req, res) => {
     const productData = {
       title, description, category, condition,
       price: Number(price),
+      stock: Number(stock),
       contactInfo: parseContactInfo(contactInfo),
       images: uploadedImages,
       seller: req.user._id,
@@ -246,7 +247,7 @@ const createProduct = async (req, res) => {
     }
 
     const populatedProduct = await Product.findById(product._id)
-      .populate('seller', 'name phone location');
+      .populate('seller', 'name location');
 
     return res.status(201).json(populatedProduct);
   } catch (error) {
@@ -303,9 +304,9 @@ const updateProduct = async (req, res) => {
 
     const updatedProduct = await Product.findByIdAndUpdate(
       req.params.id,
-      { ...req.body, contactInfo, images: allImages },
+      { ...req.body, contactInfo, images: allImages, stock: req.body.stock !== undefined ? Number(req.body.stock) : product.stock },
       { new: true, runValidators: true }
-    ).populate('seller', 'name phone location');
+    ).populate('seller', 'name location');
 
     const nextPrice = Number(updatedProduct.price);
     if (Number.isFinite(nextPrice) && Number(previousPrice) !== nextPrice) {
@@ -392,7 +393,7 @@ const relistProduct = async (req, res) => {
     product.relistCount += 1;
     await product.save();
 
-    const populatedProduct = await Product.findById(product._id).populate('seller', 'name phone location');
+    const populatedProduct = await Product.findById(product._id).populate('seller', 'name location');
     return res.json({
       message: `Listing relisted successfully. It will expire on ${newExpiry.toLocaleDateString('en-IN')}.`,
       product: populatedProduct,
@@ -438,7 +439,7 @@ const updateProductStatus = async (req, res) => {
       });
     }
 
-    const populated = await Product.findById(product._id).populate('seller', 'name phone location');
+    const populated = await Product.findById(product._id).populate('seller', 'name location');
     return res.json(populated);
   } catch (error) {
     return res.status(500).json({ message: error.message });

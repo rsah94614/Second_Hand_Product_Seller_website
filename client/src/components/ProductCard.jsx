@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { MapPin, Heart, ShoppingCart, Calendar } from 'lucide-react';
+import { MapPin, Heart, ShoppingCart, Calendar, Minus, Plus } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config/api';
 import { useAuth } from '../context/AuthContext';
@@ -11,13 +11,22 @@ import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../lib/fallbackImages'
 import { getCampusPickupLabel } from '../lib/campus';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
-import { Flag, Clock } from 'lucide-react';
+import { Flag, Clock, PackageCheck } from 'lucide-react';
 
 const ProductCard = ({ product, highlightLabel = '', highlightTone = 'bg-primary-600 text-white' }) => {
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [quantity, setQuantity] = React.useState(1);
   const isWishlisted = Boolean(user?.wishlist?.includes(product._id));
+  
+  const { data: cartData } = useQuery({
+    queryKey: ['cart'],
+    queryFn: () => axios.get(`${API_BASE_URL}/api/cart`).then((res) => res.data),
+    enabled: !!user,
+  });
+
+  const isInCart = cartData?.items?.some(item => item.product?._id === product._id);
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('en-IN', {
@@ -41,7 +50,7 @@ const ProductCard = ({ product, highlightLabel = '', highlightTone = 'bg-primary
   });
 
   const addToCartMutation = useMutation({
-    mutationFn: () => axios.post(`${API_BASE_URL}/api/cart`, { productId: product._id, quantity: 1 }),
+    mutationFn: () => axios.post(`${API_BASE_URL}/api/cart`, { productId: product._id, quantity }),
     onSuccess: () => {
       toast.success('Added to cart');
       queryClient.invalidateQueries({ queryKey: ['cart'] });
@@ -165,18 +174,54 @@ const ProductCard = ({ product, highlightLabel = '', highlightTone = 'bg-primary
               </div>
             </div>
 
-            <Button
-              type="button"
-              size="sm"
-              variant={product.isSold ? "secondary" : "primary"}
-              onClick={handleAddToCartClick}
-              disabled={product.isSold || addToCartMutation.isPending}
-              className="h-8 sm:h-9 px-3 rounded-full shadow-sm shrink-0"
-              title={product.isSold ? 'Sold Out' : 'Add to Cart'}
-            >
-              <ShoppingCart className="h-3.5 w-3.5 sm:mr-1.5 shrink-0" />
-              <span className="hidden sm:inline text-xs font-bold">{addToCartMutation.isPending ? '...' : 'Add to Cart'}</span>
-            </Button>
+            <div className="flex items-center">
+              {/* {!product.isSold && (
+                <div className="flex items-center rounded-full border border-gray-200 bg-gray-50/50 p-1">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setQuantity(prev => Math.max(1, prev - 1));
+                    }}
+                    className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-white hover:shadow-sm text-gray-500 transition-all"
+                  >
+                    <Minus className="h-3 w-3" />
+                  </button>
+                  <span className="w-6 text-center text-xs font-bold text-gray-700">{quantity}</span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setQuantity(prev => Math.min(product.stock || 1, prev + 1));
+                    }}
+                    disabled={quantity >= (product.stock || 1)}
+                    className="flex h-6 w-6 items-center justify-center rounded-full hover:bg-white hover:shadow-sm text-gray-500 transition-all disabled:opacity-30"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </button>
+                </div>
+              )} */}
+              <Button
+                type="button"
+                size="sm"
+                variant={product.isSold || product.stock === 0 ? "secondary" : isInCart ? "outline" : "primary"}
+                onClick={handleAddToCartClick}
+                disabled={product.isSold || product.stock === 0 || addToCartMutation.isPending || isInCart}
+                className={`h-8 sm:h-9 px-3 rounded-full shadow-sm shrink-0 ${isInCart ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : ''}`}
+                title={product.isSold || product.stock === 0 ? 'Sold Out' : isInCart ? 'In Cart' : 'Add to Cart'}
+              >
+                {isInCart ? (
+                   <PackageCheck className="h-3.5 w-3.5 sm:mr-1.5 shrink-0" />
+                ) : (
+                   <ShoppingCart className="h-3.5 w-3.5 sm:mr-1.5 shrink-0" />
+                )}
+                <span className="hidden sm:inline text-xs font-bold">
+                  {addToCartMutation.isPending ? '...' : isInCart ? 'In Cart' : product.stock === 0 ? 'Sold' : 'Add to Cart'}
+                </span>
+              </Button>
+            </div>
           </div>
         </div>
       </article>

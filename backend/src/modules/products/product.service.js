@@ -151,7 +151,7 @@ const findProducts = async ({ cursor, limit = 12, category, minPrice, maxPrice, 
   let total = 0;
 
   if (search && (!sortBy || sortBy === 'createdAt')) {
-    const matchedProducts = await Product.find(query).populate('seller', 'name phone location');
+    const matchedProducts = await Product.find(query).populate('seller', 'name location');
 
     const rankedProducts = matchedProducts
       .map((product) => ({
@@ -169,7 +169,7 @@ const findProducts = async ({ cursor, limit = 12, category, minPrice, maxPrice, 
       .map((entry) => entry.product);
   } else {
     products = await Product.find(query)
-      .populate('seller', 'name phone location')
+      .populate('seller', 'name location')
       .sort(sortOptions)
       .limit(numericLimit);
 
@@ -199,7 +199,7 @@ const findRelatedProducts = async (productId) => {
     category: product.category,
     price: { $gte: minPrice, $lte: maxPrice },
   })
-    .populate('seller', 'name phone location')
+    .populate('seller', 'name location')
     .sort({ averageRating: -1, views: -1, createdAt: -1 })
     .limit(8);
 
@@ -213,7 +213,7 @@ const findRelatedProducts = async (productId) => {
       isSold: false,
       category: product.category,
     })
-      .populate('seller', 'name phone location')
+      .populate('seller', 'name location')
       .sort({ views: -1, averageRating: -1, createdAt: -1 })
       .limit(8 - relatedProducts.length);
 

@@ -3,13 +3,12 @@ import axios from 'axios';
 import {
   getCurrentUser,
   loginUser,
-  requestLoginOtp,
   registerUser,
-  requestPhoneVerificationOtp,
+  requestSignupOtp,
   forgotPasswordApi,
   resetPasswordApi,
-  verifyLoginOtp,
-  verifyPhoneOtp,
+  verifyEmailApi,
+  resendVerificationEmailApi,
 } from '../features/auth/api/authApi';
 
 const AuthContext = createContext();
@@ -66,35 +65,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const loginWithOtp = async (phone, otp) => {
-    try {
-      const response = await verifyLoginOtp(phone, otp);
-      const { token, user } = response;
-
-      localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      setUser(user);
-
-      return { success: true, message: response.message };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data?.message || 'OTP login failed',
-      };
-    }
-  };
-
-  const sendLoginOtp = async (phone) => {
-    try {
-      const response = await requestLoginOtp(phone);
-      return { success: true, ...response };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Failed to send OTP',
-      };
-    }
-  };
 
   const register = async (userData) => {
     try {
@@ -138,27 +108,39 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const sendPhoneVerificationOtp = async () => {
+  const sendSignupOtp = async (email) => {
     try {
-      const response = await requestPhoneVerificationOtp();
+      const response = await requestSignupOtp(email);
       return { success: true, ...response };
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to send phone verification OTP.',
+        message: error.response?.data?.message || 'Failed to send verification code',
       };
     }
   };
 
-  const confirmPhoneVerificationOtp = async (otp) => {
+  const verifyEmail = async (token) => {
     try {
-      const response = await verifyPhoneOtp(otp);
+      const response = await verifyEmailApi(token);
       await fetchUser();
       return { success: true, message: response.message };
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to verify phone OTP.',
+        message: error.response?.data?.message || 'Failed to verify email.',
+      };
+    }
+  };
+
+  const resendVerificationEmail = async () => {
+    try {
+      const response = await resendVerificationEmailApi();
+      return { success: true, message: response.message };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to resend verification email.',
       };
     }
   };
@@ -166,14 +148,13 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     login,
-    loginWithOtp,
-    sendLoginOtp,
     register,
+    sendSignupOtp,
     logout,
     forgotPassword,
     resetPassword,
-    sendPhoneVerificationOtp,
-    confirmPhoneVerificationOtp,
+    verifyEmail,
+    resendVerificationEmail,
     loading,
     refreshUser: fetchUser,
     isUser: user?.role === 'user',

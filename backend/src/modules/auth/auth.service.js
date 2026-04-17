@@ -27,13 +27,14 @@ const detectCollegeDomain = (email) => {
   return null;
 };
 
+
 const buildAuthUser = (user) => ({
   id: user._id,
   name: user.name,
   email: user.email,
-  phone: user.phone,
-  phoneVerified: user.phoneVerified || false,
+  emailVerified: user.emailVerified || false,
   location: user.location,
+  avatar: user.avatar || '',
   role: user.role,
   isVerified: user.isVerified || false,
   profileRole: user.profileRole || '',
@@ -48,8 +49,18 @@ const signAccessToken = (userId) => jwt.sign({ userId }, process.env.JWT_SECRET,
 const signRefreshToken = (userId) => jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
 const hashOtpCode = (code) => crypto.createHash('sha256').update(String(code)).digest('hex');
 const generateOtpCode = () => String(Math.floor(100000 + Math.random() * 900000));
-const otpDebugPayload = (code) =>
-  process.env.NODE_ENV !== 'production' ? { otpDebugCode: code } : {};
+
+/**
+ * Return OTP debug payload only in development mode
+ * SECURITY: Never expose OTP in production
+ */
+const otpDebugPayload = (code) => {
+  // Only return debug code in development AND if explicitly enabled
+  if ((process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') && (process.env.OTP_DEBUG === 'true' || process.env.NODE_ENV === 'test')) {
+    return { otpDebugCode: code };
+  }
+  return {};
+};
 
 module.exports = {
   COLLEGE_DOMAINS,

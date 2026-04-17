@@ -31,9 +31,7 @@ const EditProductPage = () => {
     price: '',
     category: '',
     condition: '',
-    condition: '',
     contactInfo: {
-      phone: '',
       email: '',
     },
   });
@@ -59,7 +57,6 @@ const EditProductPage = () => {
       category: product.category || '',
       condition: product.condition || '',
       contactInfo: {
-        phone: product.contactInfo?.phone || user?.phone || '',
         email: product.contactInfo?.email || user?.email || '',
       },
     });
@@ -266,10 +263,6 @@ const EditProductPage = () => {
                   These fields use the saved listing details first and fall back to your current profile if anything was missing.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="flex flex-col">
-                    <label htmlFor="contactInfo.phone" className="form-label">Phone Number</label>
-                    <Input type="tel" id="contactInfo.phone" name="contactInfo.phone" value={formData.contactInfo.phone} onChange={handleChange} placeholder="Your phone number" />
-                  </div>
 
                   <div className="flex flex-col">
                     <label htmlFor="contactInfo.email" className="form-label">Email</label>

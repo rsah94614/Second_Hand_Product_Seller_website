@@ -46,7 +46,7 @@ api.interceptors.response.use(
       await storage.setAccessToken(data.token);
       originalRequest.headers.Authorization = `Bearer ${data.token}`;
       return api(originalRequest);
-    } catch (refreshError) {
+    } catch (refreshError: any) {
       const status = refreshError?.response?.status;
       if (status === 401 || status === 403) {
         await storage.clearTokens();

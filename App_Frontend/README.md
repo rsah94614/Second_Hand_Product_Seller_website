@@ -48,6 +48,70 @@ Set `EXPO_PUBLIC_SOCKET_URL` to the same backend URL unless socket runs elsewher
 npm run start
 ```
 
+## Local API setups
+
+Use one API target at a time and restart Expo after every `.env` change.
+
+### Expo web on localhost
+
+Recommended for day-to-day local development:
+
+```env
+EXPO_PUBLIC_API_URL=http://127.0.0.1:5000
+EXPO_PUBLIC_SOCKET_URL=http://127.0.0.1:5000
+```
+
+Requirements:
+
+- backend running on `http://127.0.0.1:5000`
+- Expo web running on `http://localhost:8081`
+- backend `CLIENT_URL` set to `http://localhost:8081`
+
+### Android emulator
+
+```env
+EXPO_PUBLIC_API_URL=http://10.0.2.2:5000
+EXPO_PUBLIC_SOCKET_URL=http://10.0.2.2:5000
+```
+
+### iOS simulator
+
+```env
+EXPO_PUBLIC_API_URL=http://127.0.0.1:5000
+EXPO_PUBLIC_SOCKET_URL=http://127.0.0.1:5000
+```
+
+### Physical device on same Wi-Fi
+
+```env
+EXPO_PUBLIC_API_URL=http://YOUR_LAPTOP_LAN_IP:5000
+EXPO_PUBLIC_SOCKET_URL=http://YOUR_LAPTOP_LAN_IP:5000
+```
+
+### Optional ngrok / tunnel
+
+Only use a tunnel when testing off-network access or sharing a temporary backend:
+
+```env
+EXPO_PUBLIC_API_URL=https://YOUR-NGROK-URL.ngrok-free.dev
+EXPO_PUBLIC_SOCKET_URL=https://YOUR-NGROK-URL.ngrok-free.dev
+```
+
+Important:
+
+- restart Expo after switching between localhost and a tunnel
+- prefer `npx expo start -c` after changing `.env`
+- if the browser still shows old requests, hard refresh `http://localhost:8081`
+
+## Verification checklist
+
+Before opening the app, confirm:
+
+1. Backend health works: `http://127.0.0.1:5000/health`
+2. Categories endpoint works: `http://127.0.0.1:5000/api/categories`
+3. Expo web is running at `http://localhost:8081`
+4. Browser Network tab shows requests going to the expected host
+
 ## Notes
 
 - The backend must be running first.

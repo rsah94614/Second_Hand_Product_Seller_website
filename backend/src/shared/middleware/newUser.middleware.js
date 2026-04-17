@@ -13,7 +13,7 @@ const { canTradeOnCampus } = require('../utils/profileCompletion.utils');
 const enforceProfileRequired = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id).select(
-      'name phone phoneVerified avatar campus profileRole location createdAt'
+      'name avatar campus profileRole location createdAt'
     );
 
     if (!user) return res.status(401).json({ message: 'User not found' });

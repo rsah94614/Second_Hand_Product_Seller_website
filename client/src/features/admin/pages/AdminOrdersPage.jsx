@@ -198,7 +198,6 @@ const AdminOrdersPage = () => {
                             <div>
                               <p className="font-semibold text-gray-900">{order.user?.name || 'Unknown user'}</p>
                               <p className="text-sm text-gray-500">{order.user?.email || 'No email'}</p>
-                              {order.user?.phone && <p className="text-sm text-gray-500">{order.user.phone}</p>}
                             </div>
                           </div>
                         </div>
@@ -235,7 +234,6 @@ const AdminOrdersPage = () => {
                             </div>
                             <div className="text-sm text-gray-700">
                               <p className="font-semibold text-gray-900">{order.shippingDetails.fullName}</p>
-                              {order.shippingDetails.phone && <p>{order.shippingDetails.phone}</p>}
                               {order.shippingDetails.email && <p>{order.shippingDetails.email}</p>}
                               <p>{shippingAddress.primaryLine}</p>
                               <p>{shippingAddress.secondaryLine}</p>

@@ -7,8 +7,10 @@ let mongoServer;
 let appInstance;
 
 const defaultEnv = {
+  NODE_ENV: 'test',
   JWT_SECRET: 'test-secret',
   CLIENT_URL: 'http://localhost:5173',
+  DISABLE_RATE_LIMIT: 'true',
 };
 
 const applyTestEnv = () => {

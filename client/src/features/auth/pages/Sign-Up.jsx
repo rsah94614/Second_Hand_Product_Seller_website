@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, Phone, MapPin, GraduationCap, Building2 } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, MapPin, GraduationCap, Building2, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext';
 import { Input } from '../../../components/ui/Input';
@@ -12,8 +12,9 @@ const SignUpPage = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    phone: '',
     location: '',
+    otp: '',
+    profileRole: 'student',
   });
   const [campusData, setCampusData] = useState({
     collegeName: '',
@@ -24,10 +25,23 @@ const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [timer, setTimer] = useState(0);
   const [errors, setErrors] = useState({});
 
-  const { register } = useAuth();
+  const { register, sendSignupOtp } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    let interval;
+    if (timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [timer]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -53,6 +67,36 @@ const SignUpPage = () => {
     }
   };
 
+  const handleSendOtp = async () => {
+    if (!formData.email) {
+      setErrors((prev) => ({ ...prev, email: 'Email is required to send code' }));
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setErrors((prev) => ({ ...prev, email: 'Please enter a valid email address' }));
+      return;
+    }
+
+    setIsSendingOtp(true);
+    setErrors((prev) => ({ ...prev, email: '' }));
+    const result = await sendSignupOtp(formData.email);
+    setIsSendingOtp(false);
+
+    if (result.success) {
+      setIsOtpSent(true);
+      setTimer(60);
+      toast.success('Verification code sent to your email!');
+      
+      // Development Fallback: Log OTP to console for easy testing
+      if (process.env.NODE_ENV !== 'production' && result.code) {
+        console.log(`[DEBUG] Signup OTP: ${result.code}`);
+      }
+    } else {
+      toast.error(result.message);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
@@ -60,18 +104,17 @@ const SignUpPage = () => {
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'Full name is required';
-    }
-
+    if (!formData.name.trim()) newErrors.name = 'Full name is required';
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!emailRegex.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
 
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
+    if (!isOtpSent) {
+      newErrors.otp = 'Please verify your email first';
+    } else if (!formData.otp || formData.otp.length !== 6) {
+      newErrors.otp = 'Please enter a valid 6-digit verification code';
     }
 
     if (!formData.password) {
@@ -86,6 +129,7 @@ const SignUpPage = () => {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      if (newErrors.otp) toast.error(newErrors.otp);
       return;
     }
 
@@ -95,9 +139,8 @@ const SignUpPage = () => {
     delete userData.confirmPassword;
     // Attach campus data if any field is filled
     const hasCampus = Object.values(campusData).some((v) => v.trim());
-    if (hasCampus) {
-      userData.campus = campusData;
-    }
+    if (hasCampus) userData.campus = campusData;
+
     const result = await register(userData);
 
     if (result.success) {
@@ -126,10 +169,7 @@ const SignUpPage = () => {
             </h2>
             <p className="mt-3 text-sm text-gray-600">
               Or{' '}
-              <Link
-                to="/login"
-                className="font-semibold text-primary-600 hover:text-primary-500 transition-colors"
-              >
+              <Link to="/login" className="font-semibold text-primary-600 hover:text-primary-500 transition-colors">
                 sign in to your existing account
               </Link>
             </p>
@@ -154,9 +194,8 @@ const SignUpPage = () => {
                     autoComplete="name"
                     value={formData.name}
                     onChange={handleChange}
-                    className={`pl-10 pr-10 bg-white placeholder:text-gray-600 ${
-                      errors.name ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800'
-                    }`}
+                    className={`pl-10 pr-10 bg-white placeholder:text-gray-600 ${errors.name ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800'
+                      }`}
                     placeholder="Enter your full name"
                   />
                   <User className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${errors.name ? 'text-red-500' : 'text-gray-600'}`} />
@@ -168,44 +207,70 @@ const SignUpPage = () => {
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                   Email address
                 </label>
-                <div className="relative">
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className={`pl-10 pr-10 bg-white placeholder:text-gray-600 ${
-                      errors.email ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800'
-                    }`}
-                    placeholder="Enter your email"
-                  />
-                  <Mail className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${errors.email ? 'text-red-500' : 'text-gray-600'}`} />
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      disabled={isOtpSent && timer > 0}
+                      className={`pl-10 pr-10 bg-white placeholder:text-gray-600 ${errors.email ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800'
+                        }`}
+                      placeholder="Enter your email"
+                    />
+                    <Mail className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${errors.email ? 'text-red-500' : 'text-gray-600'}`} />
+                  </div>
+                  <Button type="button" onClick={handleSendOtp} disabled={isSendingOtp || timer > 0} className="h-11 px-6 text-xs font-bold bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all shadow-sm shadow-primary-600/20 whitespace-nowrap">
+                    {timer > 0 ? `Resend in ${timer}s` : isOtpSent ? 'Resend' : 'Send Code'}
+                  </Button>
                 </div>
                 {errors.email && <p className="mt-1 text-[11px] font-bold text-red-600 animate-fade-in">{errors.email}</p>}
+
+                {isOtpSent && (
+                  <div className="mt-3 animate-fade-in space-y-2">
+                    <div className="relative">
+                      <Input id="otp" name="otp" type="text" maxLength={6} value={formData.otp} onChange={handleChange}
+                        className={`pl-10 pr-10 bg-white font-mono tracking-[0.5em] text-center text-lg ${errors.otp ? 'border-red-500' : 'border-primary-600 ring-1 ring-primary-100'}`}
+                        placeholder="000000" />
+                      <CheckCircle2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-600" />
+                    </div>
+                    <p className="text-[10px] text-primary-600 font-medium flex items-center gap-1">
+                      <span className="w-1 h-1 rounded-full bg-primary-600" />
+                      Check your inbox for the 6-digit verification code
+                    </p>
+                    {errors.otp && <p className="text-[10px] font-bold text-red-600">{errors.otp}</p>}
+                  </div>
+                )}
               </div>
 
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone Number
-                </label>
-                <div className="relative">
-                  <Input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    autoComplete="tel"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className={`pl-10 pr-10 bg-white placeholder:text-gray-600 ${
-                      errors.phone ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800'
-                    }`}
-                    placeholder="Enter your phone number"
-                  />
-                  <Phone className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${errors.phone ? 'text-red-500' : 'text-gray-600'}`} />
+              {/* Password Fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                  <div className="relative">
+                    <Input id="password" name="password" type={showPassword ? 'text' : 'password'} value={formData.password} onChange={handleChange}
+                      className="pl-10 pr-10 bg-white border-gray-800" placeholder="Password" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
-                {errors.phone && <p className="mt-1 text-[11px] font-bold text-red-600 animate-fade-in">{errors.phone}</p>}
+                <div>
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                  <div className="relative">
+                    <Input id="confirmPassword" name="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} value={formData.confirmPassword} onChange={handleChange}
+                      className={`pl-10 pr-10 bg-white border-gray-800 ${errors.confirmPassword ? 'border-red-500 ring-1 ring-red-500' : ''}`} placeholder="Confirm Password" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && <p className="mt-1 text-[11px] font-bold text-red-600 animate-fade-in">{errors.confirmPassword}</p>}
+                </div>
               </div>
 
               <div>
@@ -220,40 +285,49 @@ const SignUpPage = () => {
                     value={formData.location}
                     onChange={handleChange}
                     className="pl-10 pr-10 bg-white border-gray-800 placeholder:text-gray-600"
-                    placeholder="Enter your address (If Day Scholar)"
+                    placeholder="Enter your address (if day scholar) or hostel"
                   />
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 w-5 h-5" />
+                </div>
+              </div>
+
+              {/* Campus Role Selection */}
+              <div className="pt-2">
+                <label className="block text-sm font-medium text-gray-700 mb-3">I am a...</label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { id: 'student', label: 'Student', icon: GraduationCap },
+                    { id: 'faculty', label: 'Faculty', icon: User },
+                    { id: 'staff', label: 'Staff Member', icon: Building2 },
+                  ].map((role) => (
+                    <button
+                      key={role.id}
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, profileRole: role.id }))}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all border ${
+                        formData.profileRole === role.id 
+                          ? 'bg-primary-600 border-primary-600 text-white shadow-md shadow-primary-600/20' 
+                          : 'bg-white border-gray-200 text-gray-600 hover:border-primary-400 hover:text-primary-600'
+                      }`}
+                    >
+                      <role.icon className="w-3 h-3" />
+                      {role.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
               {/* Campus Details */}
               <div className="pt-3 border-t border-gray-100">
                 <div className="flex items-center gap-2 mb-3">
-                  <GraduationCap className="w-4 h-4 text-primary-600" />
+                  <Building2 className="w-4 h-4 text-primary-600" />
                   <span className="text-xs font-bold uppercase tracking-widest text-gray-700">Campus Details (Optional)</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="col-span-2">
-                    <label htmlFor="collegeName" className="block text-sm font-medium text-gray-700 mb-1">
-                  College / University name
-                </label>
-                    <div className="relative">
-                      <Input
-                        id="collegeName"
-                        name="collegeName"
-                        type="text"
-                        value={campusData.collegeName}
-                        onChange={handleCampusChange}
-                        className="pl-10 bg-white border-gray-800 placeholder:text-gray-600 text-sm"
-                        placeholder="College / University name"
-                      />
-                      <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 w-4 h-4" />
-                    </div>
-                  </div>
-                  <div>
+                  <div className={formData.profileRole === 'student' ? 'col-span-1' : 'col-span-2'}>
                     <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-1">
-                  Department
-                </label>
+                      Department
+                    </label>
                     <Input
                       id="department"
                       name="department"
@@ -261,104 +335,53 @@ const SignUpPage = () => {
                       value={campusData.department}
                       onChange={handleCampusChange}
                       className="bg-white border-gray-800 placeholder:text-gray-600 text-sm"
-                      placeholder="Department"
+                      placeholder="Enter Department"
                     />
                   </div>
-                  <div>
-                    <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-1">
-                  Year
-                </label>
-                    <select
-                      id="year"
-                      name="year"
-                      value={campusData.year}
-                      onChange={handleCampusChange}
-                      className="w-full h-11 rounded-lg border border-gray-800 bg-white px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    >
-                      <option value="">Select Year</option>
-                      <option value="1st">1st Year</option>
-                      <option value="2nd">2nd Year</option>
-                      <option value="3rd">3rd Year</option>
-                      <option value="4th">4th Year</option>
-                      <option value="5th">5th Year</option>
-                      <option value="Alumni">Alumni</option>
-                      <option value="Faculty">Faculty</option>
-                    </select>
-                  </div>
-                  <div className="col-span-2">
-                    <label htmlFor="hostel" className="block text-sm font-medium text-gray-700 mb-1">
-                  Hostel Name
-                </label>
-                    <Input
-                      id="hostel"
-                      name="hostel"
-                      type="text"
-                      value={campusData.hostel}
-                      onChange={handleCampusChange}
-                      className="bg-white border-gray-800 placeholder:text-gray-600 text-sm"
-                      placeholder="Hostel name (if applicable)"
-                    />
-                  </div>
+                  
+                  {formData.profileRole === 'student' && (
+                    <div className="animate-fade-in">
+                      <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-1">
+                        Current Year
+                      </label>
+                      <select
+                        id="year"
+                        name="year"
+                        value={campusData.year}
+                        onChange={handleCampusChange}
+                        className="w-full h-11 rounded-lg border border-gray-800 bg-white px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      >
+                        <option value="">Select Year</option>
+                        <option value="1st">1st Year</option>
+                        <option value="2nd">2nd Year</option>
+                        <option value="3rd">3rd Year</option>
+                        <option value="4th">4th Year</option>
+                        <option value="5th">5th Year</option>
+                        <option value="Alumni">Alumni</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {formData.profileRole === 'student' && (
+                    <div className="col-span-2 animate-fade-in">
+                      <label htmlFor="hostel" className="block text-sm font-medium text-gray-700 mb-1">
+                        Hostel Name
+                      </label>
+                      <Input
+                        id="hostel"
+                        name="hostel"
+                        type="text"
+                        value={campusData.hostel}
+                        onChange={handleCampusChange}
+                        className="bg-white border-gray-800 placeholder:text-gray-600 text-sm"
+                        placeholder="Hostel name (if applicable)"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                  Password
-                </label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete="new-password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className={`pl-10 pr-10 bg-white placeholder:text-gray-600 ${
-                      errors.password ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800'
-                    }`}
-                    placeholder="Create a password"
-                  />
-                  <Lock className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${errors.password ? 'text-red-500' : 'text-gray-600'}`} />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    {showPassword ? <EyeOff className={`w-5 h-5 ${errors.password ? 'text-red-500' : 'text-gray-600'}`} /> : <Eye className={`w-5 h-5 ${errors.password ? 'text-red-500' : 'text-gray-600'}`} />}
-                  </button>
-                </div>
-                {errors.password && <p className="mt-1 text-[11px] font-bold text-red-600 animate-fade-in">{errors.password}</p>}
-              </div>
 
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                  Confirm Password
-                </label>
-                <div className="relative">
-                  <Input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    autoComplete="new-password"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    className={`pl-10 pr-10 bg-white placeholder:text-gray-600 ${
-                      errors.confirmPassword ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800'
-                    }`}
-                    placeholder="Confirm your password"
-                  />
-                  <Lock className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${errors.confirmPassword ? 'text-red-500' : 'text-gray-600'}`} />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword((prev) => !prev)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 hover:text-gray-600 transition-colors"
-                  >
-                    {showConfirmPassword ? <EyeOff className={`w-5 h-5 ${errors.confirmPassword ? 'text-red-500' : 'text-gray-600'}`} /> : <Eye className={`w-5 h-5 ${errors.confirmPassword ? 'text-red-500' : 'text-gray-600'}`} />}
-                  </button>
-                </div>
-                {errors.confirmPassword && <p className="mt-1 text-[11px] font-bold text-red-600 animate-fade-in">{errors.confirmPassword}</p>}
-              </div>
             </div>
 
             <div className="pt-2">
@@ -396,7 +419,7 @@ const SignUpPage = () => {
                 { icon: '🌱', title: 'Eco Friendly', desc: 'Recycle & reuse items' },
                 { icon: '📚', title: 'Study Better', desc: 'Get books from seniors' },
                 { icon: '📦', title: 'Easy Listing', desc: 'Sell in under 60 sec' },
-                { icon: '🛡️', title: 'Secure', desc: 'Phone-verified campus trading' },
+                { icon: '🛡️', title: 'Secure', desc: 'Email-verified campus trading' },
                 { icon: '💬', title: 'Connect', desc: 'In-app chat system' },
                 { icon: '⚡', title: 'Instant', desc: 'Right here on campus' },
               ].map((item, i) => (
