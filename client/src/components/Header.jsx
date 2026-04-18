@@ -262,6 +262,8 @@ const Header = () => {
     { to: '/admin/categories', label: 'Categories', icon: FolderTree },
     { to: '/admin/orders', label: 'Orders', icon: History },
     { to: '/admin/reports', label: 'Reports', icon: Flag },
+    { to: '/admin/moderation-queue', label: 'Mod Queue', icon: ShieldCheck },
+    { to: '/admin/seller-verifications', label: 'Verifications', icon: ShieldCheck },
   ];
 
   const utilityLinks = isAdmin

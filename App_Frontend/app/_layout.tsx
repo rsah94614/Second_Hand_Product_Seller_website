@@ -65,6 +65,8 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="(auth)" options={{ headerShown: false }} />
               <Stack.Screen name="admin" options={{ headerShown: false }} />
+              <Stack.Screen name="notification-preferences" options={{ title: "Notification Preferences", headerTintColor: isDark ? "#fff" : "#1e293b", headerStyle: { backgroundColor: isDark ? "#0f172a" : "#fff" } }} />
+              <Stack.Screen name="devices" options={{ title: "Active Devices", headerTintColor: isDark ? "#fff" : "#1e293b", headerStyle: { backgroundColor: isDark ? "#0f172a" : "#fff" } }} />
             </Stack>
           </SocketProvider>
         </AuthProvider>

@@ -314,7 +314,7 @@ const ProductDetailPage = () => {
     );
   }
 
-  const isOwner = user && user.id === product.seller._id;
+  const isOwner = user && user.id === product.seller?._id;
   const relatedProducts = (relatedResponse?.products || []).filter((item) => item._id !== product._id);
 
   return (
@@ -427,18 +427,18 @@ const ProductDetailPage = () => {
                 <h3 className="text-xl font-black tracking-tight text-gray-900 mb-6">Seller</h3>
                 <div className="flex items-center gap-5 mb-8">
                   <div className="w-14 h-14 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center font-bold text-xl">
-                    {product.seller.name?.[0] || <User className="w-6 h-6" />}
+                    {product.seller?.name?.[0] || <User className="w-6 h-6" />}
                   </div>
                   <div>
-                    <p className="font-bold text-gray-900 text-lg">{product.seller.name}</p>
+                    <p className="font-bold text-gray-900 text-lg">{product.seller?.name || 'Unknown Seller'}</p>
                     <p className="text-gray-500 text-sm flex items-center mt-1">
                       <MapPin className="w-3 h-3 mr-1" />
-                      {getCampusPickupLabel(product.seller.location)}
+                      {product.seller ? getCampusPickupLabel(product.seller.location) : 'Location unavailable'}
                     </p>
                     <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
                       <Star className="h-4 w-4 fill-current text-amber-500" />
                       <span>
-                        {product.seller.reviewCount
+                        {product.seller?.reviewCount
                           ? `${Number(product.seller.averageRating || 0).toFixed(1)} (${product.seller.reviewCount} review${product.seller.reviewCount === 1 ? '' : 's'})`
                           : 'No seller reviews yet'}
                       </span>
@@ -564,9 +564,10 @@ const ProductDetailPage = () => {
                           {isWishlisted ? 'Saved' : 'Save Item'}
                         </Button>
                         <Button
-                          onClick={() => navigate('/chat', { state: { sellerId: product.seller._id, sellerName: product.seller.name } })}
+                          onClick={() => navigate('/chat', { state: { sellerId: product.seller?._id, sellerName: product.seller?.name || 'Unknown Seller' } })}
                           variant="outline"
                           className="flex-1 h-11 min-w-0"
+                          disabled={!product.seller}
                         >
                           <MessageSquare className="w-4 h-4 mr-2 shrink-0" />
                           Message Seller
@@ -600,16 +601,16 @@ const ProductDetailPage = () => {
                     <div>
                       <h3 className="text-lg font-bold text-gray-900">Seller Ratings & Reviews</h3>
                       <p className="mt-1 text-sm text-gray-600">
-                        {product.seller.reviewCount || 0} review{product.seller.reviewCount === 1 ? '' : 's'} about this seller
+                        {product.seller?.reviewCount || 0} review{product.seller?.reviewCount === 1 ? '' : 's'} about this seller
                       </p>
                     </div>
                     <div className="flex items-center gap-2 rounded-full bg-amber-50 px-4 py-2 text-amber-700">
                       <Star className="h-4 w-4 fill-current" />
-                      <span className="font-semibold">{product.seller.averageRating || 0}/5</span>
+                      <span className="font-semibold">{product.seller?.averageRating || 0}/5</span>
                     </div>
                   </div>
 
-                  {!isOwner && (
+                  {!isOwner && product.seller && (
                     <form onSubmit={handleReviewSubmit} className="mb-6 rounded-2xl border border-gray-100 bg-gray-50 p-4">
                       <div className="mb-4">
                         <p className="mb-2 text-sm font-semibold text-gray-800">
@@ -697,13 +698,15 @@ const ProductDetailPage = () => {
                         >
                           Report Listing
                         </Button>
-                        <Button
-                          type="button"
-                          variant={reportForm.targetType === 'user' ? 'primary' : 'outline'}
-                          onClick={() => setReportForm((prev) => ({ ...prev, targetType: 'user' }))}
-                        >
-                          Report Owner
-                        </Button>
+                        {product.seller && (
+                          <Button
+                            type="button"
+                            variant={reportForm.targetType === 'user' ? 'primary' : 'outline'}
+                            onClick={() => setReportForm((prev) => ({ ...prev, targetType: 'user' }))}
+                          >
+                            Report Owner
+                          </Button>
+                        )}
                       </div>
                       <Textarea
                         value={reportForm.reason}

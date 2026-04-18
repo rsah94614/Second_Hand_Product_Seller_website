@@ -133,7 +133,14 @@ const reportProduct = async (req, res) => {
     const product = await Product.findById(req.params.id).populate('seller', '_id name');
     if (!product) return res.status(404).json({ message: 'Product not found' });
 
-    if (product.seller._id.toString() === req.user._id.toString()) {
+    if (!product.seller) {
+      if (targetType === 'user') {
+        return res.status(400).json({ message: 'Cannot report seller: Seller account no longer exists.' });
+      }
+      // For product reporting, we can still proceed but need to be careful with notifications
+    }
+
+    if (product.seller && product.seller._id.toString() === req.user._id.toString()) {
       return res.status(400).json({ message: 'You cannot report your own listing' });
     }
 
@@ -150,7 +157,7 @@ const reportProduct = async (req, res) => {
     const report = await Report.create({
       reporter: req.user._id,
       product: product._id,
-      reportedUser: product.seller._id,
+      reportedUser: product.seller?._id,
       targetType,
       reason: reason.trim(),
       details: details.trim(),
@@ -163,7 +170,7 @@ const reportProduct = async (req, res) => {
       reportId: report._id,
       type: 'new_report',
       title: 'New report submitted',
-      message: `${req.user.name} reported ${targetType === 'product' ? `"${product.title}"` : product.seller.name}.`,
+      message: `${req.user.name} reported ${targetType === 'product' ? `"${product.title}"` : (product.seller?.name || 'Unknown Seller')}.`,
       link: '/admin/reports',
       metadata: { targetType, reason: reason.trim() },
     });
