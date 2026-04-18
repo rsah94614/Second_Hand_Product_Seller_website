@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const helmet = require('helmet');
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
@@ -10,9 +11,9 @@ const Message = require('../models/Message');
 const User = require('../models/User');
 const BlockedUser = require('../models/BlockedUser');
 const { canTradeOnCampus } = require('./shared/utils/profileCompletion.utils');
-const {
-  setNotificationIO,
-} = require('./shared/utils/notification.utils');
+const { setNotificationIO } = require('./shared/utils/notification.utils');
+const logger = require('./services/logger.service');
+const requestLogger = require('./shared/middleware/requestLogger.middleware');
 
 const parseAllowedOrigins = () => {
   const main = process.env.CLIENT_URL || 'http://localhost:5173';
@@ -79,7 +80,7 @@ const createApp = () => {
       socket.user = user;
       return next();
     } catch (error) {
-      console.error('Socket auth failed:', error.message);
+      logger.error('Socket auth failed:', { message: error.message });
       return next(new Error('Authentication failed'));
     }
   });
@@ -94,9 +95,14 @@ const createApp = () => {
   app.use(express.urlencoded({ extended: true }));
   app.use(cookieParser());
 
-  // Observability: Log all incoming requests
-  // const requestLogger = require('./shared/middleware/requestLogger.middleware');
-  // app.use(requestLogger);
+  // Security headers (Phase 4)
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' }, // allow Cloudinary images
+    contentSecurityPolicy: false, // disabled — frontend handles its own CSP
+  }));
+
+  // Request logging (Phase 4)
+  app.use(requestLogger);
 
   // Health check endpoint
   app.get('/health', (req, res) => {
@@ -307,7 +313,7 @@ const createApp = () => {
         io.to(receiver).emit('receive_message', newMessage);
         io.to(sender).emit('receive_message', newMessage);
       } catch (error) {
-        console.error('Error saving message:', error);
+        logger.error('Error saving message:', { message: error.message });
         socket.emit('error', { message: 'Failed to save message' });
       }
     });
@@ -332,7 +338,7 @@ const createApp = () => {
         io.to(message.receiver._id.toString()).emit('message_edited', message);
         io.to(userId).emit('message_edited', message);
       } catch (error) {
-        console.error('Error editing message:', error);
+        logger.error('Error editing message:', { message: error.message });
         socket.emit('error', { message: 'Failed to edit message' });
       }
     });
@@ -352,7 +358,7 @@ const createApp = () => {
         io.to(message.receiver._id.toString()).emit('message_deleted', message);
         io.to(userId).emit('message_deleted', message);
       } catch (error) {
-        console.error('Error deleting message:', error);
+        logger.error('Error deleting message:', { message: error.message });
         socket.emit('error', { message: 'Failed to delete message' });
       }
     });
@@ -369,7 +375,7 @@ const createApp = () => {
         );
         io.to(receiverId).emit('messages_read', { receiverId: userId });
       } catch (error) {
-        console.error('Error marking seen:', error);
+        logger.error('Error marking seen:', { message: error.message });
       }
     });
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -11,6 +11,8 @@ import {
   X,
   CheckCircle,
   AlertTriangle,
+  Camera,
+  Flag,
 } from 'lucide-react';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
@@ -19,7 +21,7 @@ import Footer from '../../../components/Footer';
 import Header from '../../../components/Header';
 import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
 import { formatCampusAddress } from '../../../lib/campus';
-import { cancelOrder, completeOrder, reportNoShow, getOrders } from '../api/orderApi';
+import { cancelOrder, completeOrder, reportNoShow, getOrders, uploadConfirmationPhoto, createDispute } from '../api/orderApi';
 import { ErrorState } from '../../../components/ui/ErrorState';
 
 const statusStyles = {
@@ -34,6 +36,7 @@ const statusStyles = {
 const OrderHistoryPage = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const photoInputRef = useRef({});
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['orders'],
@@ -73,6 +76,41 @@ const OrderHistoryPage = () => {
       toast.error(error.response?.data?.message || 'Failed to report no-show');
     },
   });
+
+  const confirmPhotoMutation = useMutation({
+    mutationFn: ({ orderId, formData }) => uploadConfirmationPhoto(orderId, formData),
+    onSuccess: () => {
+      toast.success('Confirmation photo uploaded');
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+    },
+    onError: (err) => toast.error(err.response?.data?.message || 'Failed to upload photo'),
+  });
+
+  const disputeMutation = useMutation({
+    mutationFn: ({ orderId, formData }) => createDispute(orderId, formData),
+    onSuccess: () => {
+      toast.success('Dispute submitted. Our team will review it.');
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+    },
+    onError: (err) => toast.error(err.response?.data?.message || 'Failed to submit dispute'),
+  });
+
+  const handlePhotoUpload = (orderId, file) => {
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('photo', file);
+    confirmPhotoMutation.mutate({ orderId, formData });
+  };
+
+  const handleDispute = (orderId) => {
+    const reason = window.prompt('Reason for dispute (e.g. item not as described, no-show, scam):');
+    if (!reason?.trim()) return;
+    const details = window.prompt('Additional details (optional):') || '';
+    const formData = new FormData();
+    formData.append('reason', reason.trim());
+    formData.append('description', details.trim());
+    disputeMutation.mutate({ orderId, formData });
+  };
 
   const handleCancelOrder = (orderId) => {
     if (window.confirm('Are you sure you want to cancel this order?')) {
@@ -267,6 +305,43 @@ const OrderHistoryPage = () => {
                             No-Show
                           </Button>
                         </div>
+                      )}
+
+                      {/* Confirmation photo for completed orders */}
+                      {order.status === 'completed' && !order.confirmationPhoto?.url && (
+                        <label className="cursor-pointer">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-blue-600 border-blue-200 hover:bg-blue-50 pointer-events-none"
+                            asChild
+                          >
+                            <span>
+                              <Camera className="w-4 h-4 mr-1" />
+                              Add Photo
+                            </span>
+                          </Button>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => handlePhotoUpload(order._id, e.target.files?.[0])}
+                          />
+                        </label>
+                      )}
+
+                      {/* Dispute button for completed/no-show orders */}
+                      {['completed', 'no_show', 'meetup_scheduled'].includes(order.status) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDispute(order._id)}
+                          disabled={disputeMutation.isPending}
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                        >
+                          <Flag className="w-4 h-4 mr-1" />
+                          Dispute
+                        </Button>
                       )}
                     </div>
                   </div>

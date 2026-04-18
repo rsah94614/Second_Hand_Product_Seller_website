@@ -9,6 +9,7 @@ import {
   getNotifications,
   markAllNotificationsRead,
   markNotificationRead,
+  snoozeNotification,
 } from "../lib/api/notifications";
 import { notificationLinkToHref } from "../lib/notificationLink";
 import { Ionicons } from "@expo/vector-icons";
@@ -45,6 +46,12 @@ export default function NotificationsScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications-list"] });
     },
+  });
+
+  const snoozeM = useMutation({
+    mutationFn: ({ id, duration }: { id: string; duration: "1h" | "1d" | "1w" }) =>
+      snoozeNotification(id, duration),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications-list"] }),
   });
 
   if (!user) {
@@ -109,6 +116,20 @@ export default function NotificationsScreen() {
               <Text className={`text-[16px] font-outfit-sb ${n.isRead ? 'text-slate-700 dark:text-slate-300' : 'text-slate-900 dark:text-white'}`}>{n.title}</Text>
               <Text className={`mt-1 text-[14px] font-outfit ${n.isRead ? 'text-slate-500 dark:text-slate-400' : 'text-slate-700 dark:text-slate-300'} leading-snug`}>{n.message}</Text>
               <Text className="mt-2 text-[11px] font-outfit-m uppercase tracking-widest text-slate-400 dark:text-slate-500">{n.type?.replace(/_/g, " ")}</Text>
+              {/* Snooze buttons */}
+              <View className="flex-row gap-2 mt-2">
+                {(["1h", "1d", "1w"] as const).map((d) => (
+                  <Pressable
+                    key={d}
+                    onPress={(e) => { e.stopPropagation?.(); snoozeM.mutate({ id: n._id, duration: d }); }}
+                    className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800"
+                  >
+                    <Text className="text-[10px] font-outfit-sb text-slate-500 dark:text-slate-400">
+                      {d === "1h" ? "1h" : d === "1d" ? "1d" : "1w"}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
             </View>
             {!n.isRead && <View className="h-2.5 w-2.5 rounded-full bg-primary-500 mt-2" />}
           </Pressable>

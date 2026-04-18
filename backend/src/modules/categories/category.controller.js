@@ -151,3 +151,94 @@ module.exports = {
   updateCategory,
   deleteCategory,
 };
+
+// ─── Category Analytics (Phase 3 - Task 3.6.2) ───────────────────────────────
+
+const Order = require('../../../models/Order');
+
+const getCategoryAnalytics = async (req, res) => {
+  try {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+    const sixtyDaysAgo = new Date(now - 60 * 24 * 60 * 60 * 1000);
+
+    // Current period: last 30 days
+    const [currentStats, previousStats, orderStats, viewStats] = await Promise.all([
+      // Listings created in last 30 days per category
+      Product.aggregate([
+        { $match: { createdAt: { $gte: thirtyDaysAgo } } },
+        { $group: { _id: '$category', newListings: { $sum: 1 } } },
+      ]),
+
+      // Listings created in previous 30 days (30-60 days ago) for trend comparison
+      Product.aggregate([
+        { $match: { createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo } } },
+        { $group: { _id: '$category', newListings: { $sum: 1 } } },
+      ]),
+
+      // Orders per category in last 30 days
+      Order.aggregate([
+        { $match: { createdAt: { $gte: thirtyDaysAgo }, status: { $ne: 'cancelled' } } },
+        { $unwind: '$items' },
+        { $group: { _id: '$items.category', orders: { $sum: 1 } } },
+      ]),
+
+      // Total views per category (all time)
+      Product.aggregate([
+        { $group: { _id: '$category', totalViews: { $sum: '$views' }, totalListings: { $sum: 1 }, activeListings: { $sum: { $cond: ['$isActive', 1, 0] } } } },
+      ]),
+    ]);
+
+    // Build lookup maps
+    const currentMap = currentStats.reduce((acc, s) => { acc[s._id] = s.newListings; return acc; }, {});
+    const previousMap = previousStats.reduce((acc, s) => { acc[s._id] = s.newListings; return acc; }, {});
+    const orderMap = orderStats.reduce((acc, s) => { acc[s._id] = s.orders; return acc; }, {});
+
+    // Merge all into per-category analytics
+    const analytics = viewStats.map((s) => {
+      const category = s._id;
+      const newListings = currentMap[category] || 0;
+      const prevListings = previousMap[category] || 0;
+
+      // Trend: percentage change vs previous period
+      let trend = 0;
+      if (prevListings > 0) {
+        trend = Math.round(((newListings - prevListings) / prevListings) * 100);
+      } else if (newListings > 0) {
+        trend = 100; // New activity where there was none
+      }
+
+      return {
+        category,
+        totalListings: s.totalListings,
+        activeListings: s.activeListings,
+        totalViews: s.totalViews,
+        newListings30d: newListings,
+        orders30d: orderMap[category] || 0,
+        trend, // % change in new listings vs previous 30 days
+        trendLabel: trend > 10 ? 'rising' : trend < -10 ? 'falling' : 'stable',
+      };
+    });
+
+    // Sort by total views descending (most popular first)
+    analytics.sort((a, b) => b.totalViews - a.totalViews);
+
+    return res.json({
+      analytics,
+      period: '30d',
+      generatedAt: now,
+    });
+  } catch (error) {
+    console.error('Category analytics error:', error);
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = {
+  getCategories,
+  getAdminCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  getCategoryAnalytics,
+};

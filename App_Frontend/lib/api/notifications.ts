@@ -19,3 +19,17 @@ export const markNotificationRead = (notificationId: string) =>
 
 export const markAllNotificationsRead = () =>
   api.patch(`/api/notifications/read-all`).then((r) => r.data);
+
+// ── Phase 2: Notification Preferences ────────────────────────────────────────
+export const getNotificationPreferences = () =>
+  api.get(`/api/notifications/preferences`).then((r) => r.data);
+
+export const updateNotificationPreferences = (payload: Record<string, boolean>) =>
+  api.put(`/api/notifications/preferences`, payload).then((r) => r.data);
+
+// ── Phase 2: Notification Snooze ─────────────────────────────────────────────
+export const snoozeNotification = (notificationId: string, duration: "1h" | "1d" | "1w") =>
+  api.post(`/api/notifications/${notificationId}/snooze`, { duration }).then((r) => r.data);
+
+export const unsnoozeNotification = (notificationId: string) =>
+  api.post(`/api/notifications/${notificationId}/unsnooze`).then((r) => r.data);

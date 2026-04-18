@@ -85,3 +85,63 @@ export const updateAdminReport = async (reportId, payload) => {
   const response = await axios.patch(`${API_BASE_URL}/api/admin/reports/${reportId}`, payload);
   return response.data;
 };
+
+// ── Phase 2: Moderation Queue ─────────────────────────────────────────────────
+export const getModerationQueue = async (queryString = '') =>
+  axios.get(`${API_BASE_URL}/api/admin/moderation-queue${queryString ? `?${queryString}` : ''}`).then((r) => r.data);
+
+export const addToModerationQueue = async (payload) =>
+  axios.post(`${API_BASE_URL}/api/admin/moderation-queue`, payload).then((r) => r.data);
+
+export const assignModerationItem = async (itemId, payload) =>
+  axios.patch(`${API_BASE_URL}/api/admin/moderation-queue/${itemId}/assign`, payload).then((r) => r.data);
+
+export const resolveModerationItem = async (itemId, payload) =>
+  axios.patch(`${API_BASE_URL}/api/admin/moderation-queue/${itemId}/resolve`, payload).then((r) => r.data);
+
+export const getModerationStats = async () =>
+  axios.get(`${API_BASE_URL}/api/admin/moderation-queue/stats`).then((r) => r.data);
+
+// ── Phase 2: Moderation Rules ─────────────────────────────────────────────────
+export const getModerationRules = async () =>
+  axios.get(`${API_BASE_URL}/api/admin/rules`).then((r) => r.data);
+
+export const createModerationRule = async (payload) =>
+  axios.post(`${API_BASE_URL}/api/admin/rules`, payload).then((r) => r.data);
+
+export const updateModerationRule = async (ruleId, payload) =>
+  axios.put(`${API_BASE_URL}/api/admin/rules/${ruleId}`, payload).then((r) => r.data);
+
+export const deleteModerationRule = async (ruleId) =>
+  axios.delete(`${API_BASE_URL}/api/admin/rules/${ruleId}`).then((r) => r.data);
+
+export const toggleModerationRule = async (ruleId) =>
+  axios.patch(`${API_BASE_URL}/api/admin/rules/${ruleId}/toggle`).then((r) => r.data);
+
+// ── Phase 2: Seller Verifications ─────────────────────────────────────────────
+export const getSellerVerifications = async (status = 'pending') =>
+  axios.get(`${API_BASE_URL}/api/admin/seller-verifications`, { params: { status } }).then((r) => r.data);
+
+export const approveSellerVerification = async (userId) =>
+  axios.post(`${API_BASE_URL}/api/admin/seller-verifications/${userId}/approve`).then((r) => r.data);
+
+export const rejectSellerVerification = async (userId, payload) =>
+  axios.post(`${API_BASE_URL}/api/admin/seller-verifications/${userId}/reject`, payload).then((r) => r.data);
+
+// ── Phase 3: Activity Timeline ────────────────────────────────────────────────
+export const getAdminActivityTimeline = async (queryString = '') =>
+  axios.get(`${API_BASE_URL}/api/admin/activity${queryString ? `?${queryString}` : ''}`).then((r) => r.data);
+
+// ── Phase 3: Bulk Actions ─────────────────────────────────────────────────────
+export const bulkSuspendUsers = async (payload) =>
+  axios.post(`${API_BASE_URL}/api/admin/bulk/users/suspend`, payload).then((r) => r.data);
+
+export const bulkDeleteProducts = async (payload) =>
+  axios.post(`${API_BASE_URL}/api/admin/bulk/products/delete`, payload).then((r) => r.data);
+
+export const bulkUpdateProducts = async (payload) =>
+  axios.post(`${API_BASE_URL}/api/admin/bulk/products/update`, payload).then((r) => r.data);
+
+// ── Phase 3: Category Analytics ───────────────────────────────────────────────
+export const getCategoryAnalytics = async () =>
+  axios.get(`${API_BASE_URL}/api/categories/analytics`).then((r) => r.data);

@@ -6,7 +6,7 @@ import { Image } from "expo-image";
 import { Screen } from "../components/ui/Screen";
 import { Loading } from "../components/Loading";
 import { useAuth } from "../context/AuthContext";
-import { getUserProducts, patchProduct } from "../lib/api/products";
+import { getUserProducts, patchProduct, getSellerAnalyticsSummary } from "../lib/api/products";
 import { formatInr } from "../lib/format";
 import { getImageUri } from "../lib/product-image";
 import type { ProductImage } from "../lib/types";
@@ -25,6 +25,12 @@ export default function SellerDashboardScreen() {
   const { data: products = [], isLoading, refetch } = useQuery({
     queryKey: ["user-dashboard-products", user?.id],
     queryFn: () => getUserProducts(user!.id),
+    enabled: !!user?.id && user.role === "user",
+  });
+
+  const { data: analyticsData } = useQuery({
+    queryKey: ["seller-analytics-summary"],
+    queryFn: getSellerAnalyticsSummary,
     enabled: !!user?.id && user.role === "user",
   });
 
@@ -84,6 +90,27 @@ export default function SellerDashboardScreen() {
             />
           ))}
         </View>
+
+        {/* Analytics summary from backend */}
+        {analyticsData && (
+          <View className="mb-6 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm shadow-slate-200/50 dark:shadow-none">
+            <Text className="text-[13px] font-outfit-sb text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Analytics</Text>
+            <View className="flex-row flex-wrap gap-3">
+              {[
+                { label: "Total Views", value: analyticsData.totalViews ?? 0, icon: "eye" as const, color: "#d97706" },
+                { label: "Inquiries", value: analyticsData.totalInquiries ?? 0, icon: "chatbubble-ellipses" as const, color: "#6366f1" },
+                { label: "Orders", value: analyticsData.totalOrders ?? 0, icon: "cart" as const, color: "#059669" },
+                { label: "Wishlist Saves", value: analyticsData.totalWishlistSaves ?? 0, icon: "heart" as const, color: "#e11d48" },
+              ].map((s) => (
+                <View key={s.label} className="flex-1 min-w-[40%] rounded-2xl bg-slate-50 dark:bg-slate-800/50 p-3">
+                  <Ionicons name={s.icon} size={18} color={s.color} />
+                  <Text className="text-[22px] font-outfit-bl text-slate-900 dark:text-white mt-1">{s.value}</Text>
+                  <Text className="text-[11px] font-outfit-m text-slate-500 dark:text-slate-400">{s.label}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         <Link href="/create-product" asChild>
           <Pressable className="mb-4 flex-row items-center justify-center gap-2 rounded-2xl bg-primary-600 py-4 shadow-sm shadow-primary-600/30 active:bg-primary-700">

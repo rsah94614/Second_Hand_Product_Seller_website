@@ -134,6 +134,12 @@ export default function ProductDetailScreen() {
           }[];
         }).reviews || [])
       : [];
+  const sellerVerified =
+    product.seller && typeof product.seller === "object"
+      ? Boolean((product.seller as { sellerVerified?: boolean }).sellerVerified)
+      : false;
+  const daysRemaining = product.daysRemaining ?? null;
+  const isExpiringSoon = Boolean(product.isExpiringSoon);
 
   return (
     <Screen className="bg-white dark:bg-slate-950" safeAreaTop={false}>
@@ -180,6 +186,13 @@ export default function ProductDetailScreen() {
                   <Text className="text-[13px] font-outfit-m text-red-600 dark:text-red-400 uppercase tracking-widest">Sold Out</Text>
                </View>
             )}
+            {daysRemaining !== null && daysRemaining !== undefined && available && (
+              <View className={`px-3 py-1.5 rounded-full ${isExpiringSoon ? 'bg-amber-50 dark:bg-amber-950/40' : 'bg-slate-100 dark:bg-slate-800'}`}>
+                <Text className={`text-[12px] font-outfit-m ${isExpiringSoon ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                  {daysRemaining > 0 ? `${daysRemaining}d left` : "Expired"}
+                </Text>
+              </View>
+            )}
           </View>
 
           {sellerName && (
@@ -189,7 +202,14 @@ export default function ProductDetailScreen() {
                </View>
                <View className="flex-1">
                  <Text className="text-[12px] font-outfit-m text-slate-500 uppercase tracking-widest">Sold By</Text>
-                 <Text className="text-[16px] font-outfit-b text-slate-900 dark:text-white">{sellerName}</Text>
+                 <View className="flex-row items-center gap-1.5 flex-wrap">
+                   <Text className="text-[16px] font-outfit-b text-slate-900 dark:text-white">{sellerName}</Text>
+                   {sellerVerified && (
+                     <View className="bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded-md">
+                       <Text className="text-[10px] font-outfit-b text-emerald-600 dark:text-emerald-400">✓ Verified</Text>
+                     </View>
+                   )}
+                 </View>
                  <View className="mt-1 flex-row items-center gap-1">
                    <Ionicons name="star" size={14} color="#fbbf24" />
                    <Text className="text-[13px] font-outfit-m text-slate-600 dark:text-slate-300">

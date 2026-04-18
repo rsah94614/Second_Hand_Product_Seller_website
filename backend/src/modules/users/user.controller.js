@@ -8,6 +8,8 @@ const fs = require('fs');
 const { buildWishlistPayload } = require('./user.service');
 const { createNotification } = require('../../shared/utils/notification.utils');
 const { computeProfileScore, canTradeOnCampus } = require('../../shared/utils/profileCompletion.utils');
+const { calculateReputation, getReputationHistory, checkVerificationEligibility } = require('../../services/reputation.service');
+const { logAuditAction } = require('../../shared/utils/audit.utils');
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -373,6 +375,114 @@ const getProfileCompletion = async (req, res) => {
   }
 };
 
+// ─── Seller Verification (Task 2.7.1) ────────────────────────────────────────
+
+const requestSellerVerification = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Check if already verified
+    if (user.sellerVerified) {
+      return res.status(400).json({ message: 'You are already verified as a seller' });
+    }
+
+    // Check if already pending
+    if (user.sellerVerificationStatus === 'pending') {
+      return res.status(400).json({ message: 'Your verification request is already pending' });
+    }
+
+    // Check eligibility
+    const reputation = await calculateReputation(user._id);
+    const eligibility = checkVerificationEligibility(user, reputation);
+
+    if (!eligibility.eligible) {
+      return res.status(400).json({
+        message: eligibility.message,
+        criteria: eligibility.criteria,
+        reputation,
+      });
+    }
+
+    // Update user
+    user.sellerVerificationStatus = 'pending';
+    user.sellerVerificationRequestedAt = new Date();
+    await user.save();
+
+    // Notify admins
+    const admins = await User.find({ role: 'admin', isActive: true }).select('_id');
+    if (admins.length > 0) {
+      const { createNotifications } = require('../../shared/utils/notification.utils');
+      await createNotifications(admins.map(a => a._id), {
+        actorId: user._id,
+        type: 'seller_verification_request',
+        title: 'New seller verification request',
+        message: `${user.name} requested seller verification`,
+        link: '/admin/seller-verifications',
+        metadata: { userId: user._id, reputation },
+      });
+    }
+
+    return res.json({
+      message: 'Seller verification requested successfully',
+      status: user.sellerVerificationStatus,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const getSellerVerificationStatus = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id)
+      .select('sellerVerified sellerVerificationStatus sellerVerificationDate sellerVerificationReason sellerVerificationRequestedAt');
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Get reputation and eligibility
+    const reputation = await calculateReputation(user._id);
+    const eligibility = checkVerificationEligibility(user, reputation);
+
+    return res.json({
+      sellerVerified: user.sellerVerified,
+      status: user.sellerVerificationStatus,
+      verificationDate: user.sellerVerificationDate,
+      reason: user.sellerVerificationReason,
+      requestedAt: user.sellerVerificationRequestedAt,
+      eligibility,
+      reputation,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// ─── Reputation System (Task 2.7.2) ──────────────────────────────────────────
+
+const getUserReputation = async (req, res) => {
+  try {
+    const userId = req.params.id || req.user._id;
+    const reputation = await calculateReputation(userId);
+
+    return res.json({ reputation });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const getUserReputationHistory = async (req, res) => {
+  try {
+    const userId = req.params.id || req.user._id;
+    const days = parseInt(req.query.days) || 30;
+
+    const history = await getReputationHistory(userId, days);
+
+    return res.json({ history });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getWishlist,
   getRecentlyViewed,
@@ -385,4 +495,8 @@ module.exports = {
   unblockUser,
   getBlockedUsers,
   getProfileCompletion,
+  requestSellerVerification,
+  getSellerVerificationStatus,
+  getUserReputation,
+  getUserReputationHistory,
 };

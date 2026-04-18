@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Redirect, router } from "expo-router";
-import { Alert, FlatList, Modal, Pressable, Text, TextInput, View } from "react-native";
+import { Alert, FlatList, Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
 import { useState } from "react";
+import * as ImagePicker from "expo-image-picker";
 import { Screen } from "../../components/ui/Screen";
 import { Loading } from "../../components/Loading";
 import { EmptyState } from "../../components/EmptyState";
@@ -10,9 +11,11 @@ import {
   acceptOrder,
   cancelOrder,
   completeOrder,
+  createDispute,
   getOrders,
   reportNoShow,
   scheduleMeetup,
+  uploadConfirmationPhoto,
 } from "../../lib/api/orders";
 import { formatInr } from "../../lib/format";
 
@@ -104,6 +107,63 @@ export default function OrdersScreen() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
   });
 
+  const disputeM = useMutation({
+    mutationFn: (payload: { orderId: string; reason: string }) =>
+      createDispute(payload.orderId, { reason: payload.reason }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      Alert.alert("Dispute submitted", "Our team will review your dispute.");
+    },
+  });
+
+  const confirmPhotoM = useMutation({
+    mutationFn: (payload: { orderId: string; formData: FormData }) =>
+      uploadConfirmationPhoto(payload.orderId, payload.formData),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
+  });
+
+  const handleDispute = (orderId: string) => {
+    Alert.prompt(
+      "File a Dispute",
+      "Briefly describe the issue:",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Submit",
+          onPress: (reason) => {
+            if (!reason?.trim()) return;
+            disputeM.mutate({ orderId, reason: reason.trim() });
+          },
+        },
+      ],
+      "plain-text"
+    );
+  };
+
+  const handleConfirmPhoto = async (orderId: string) => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission", "Photo access is required.");
+      return;
+    }
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.8,
+    });
+    if (res.canceled || !res.assets?.length) return;
+    const asset = res.assets[0];
+    const mimeType = asset.mimeType || "image/jpeg";
+    const ext = mimeType.includes("png") ? "png" : "jpg";
+    const fd = new FormData();
+    if (Platform.OS === "web") {
+      const blob = await fetch(asset.uri).then((r) => r.blob());
+      fd.append("photo", blob, `confirm.${ext}`);
+    } else {
+      fd.append("photo", { uri: asset.uri, name: `confirm.${ext}`, type: mimeType } as unknown as Blob);
+    }
+    confirmPhotoM.mutate({ orderId, formData: fd });
+  };
+
   const getId = (v?: { _id?: string }) => String(v?._id || "");
   const currentId = user?.id || "";
 
@@ -168,6 +228,8 @@ export default function OrdersScreen() {
           const canSchedule = status === "accepted" && (isBuyer || isSeller);
           const canComplete = status === "meetup_scheduled" && isBuyer;
           const canNoShow = status === "meetup_scheduled" && (isBuyer || isSeller);
+          const canDispute = ["meetup_scheduled", "completed", "no_show"].includes(status) && (isBuyer || isSeller);
+          const canConfirmPhoto = status === "completed" && (isBuyer || isSeller);
 
           const tone = statusTone(status);
 
@@ -271,8 +333,27 @@ export default function OrdersScreen() {
                     <Text className="text-[13px] font-outfit-sb text-orange-700 dark:text-orange-200">No-Show</Text>
                   </Pressable>
                 ) : null}
-              </View>
-            </View>
+
+                {canConfirmPhoto ? (
+                  <Pressable
+                    onPress={() => handleConfirmPhoto(o._id)}
+                    disabled={confirmPhotoM.isPending}
+                    className="rounded-xl bg-blue-50 dark:bg-blue-900/30 px-3 py-2"
+                  >
+                    <Text className="text-[13px] font-outfit-sb text-blue-700 dark:text-blue-200">Add Photo</Text>
+                  </Pressable>
+                ) : null}
+
+                {canDispute ? (
+                  <Pressable
+                    onPress={() => handleDispute(o._id)}
+                    disabled={disputeM.isPending}
+                    className="rounded-xl bg-red-50 dark:bg-red-900/30 px-3 py-2"
+                  >
+                    <Text className="text-[13px] font-outfit-sb text-red-700 dark:text-red-200">Dispute</Text>
+                  </Pressable>
+                ) : null}
+              </View>            </View>
           );
         }}
       />

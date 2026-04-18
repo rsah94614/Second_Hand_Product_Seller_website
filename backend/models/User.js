@@ -145,6 +145,9 @@ const userSchema = new mongoose.Schema({
 
   // ---
   wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+
+  // Chat: Pinned conversations (Phase 3 - Task 3.1.3)
+  pinnedConversations: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   reviews: [sellerReviewSchema],
   averageRating: { type: Number, default: 0 },
   reviewCount: { type: Number, default: 0 },
@@ -170,7 +173,47 @@ const userSchema = new mongoose.Schema({
     requestedAt: { type: Date, default: null },
     attemptsLeft: { type: Number, default: 0 },
     lastVerifiedAt: { type: Date, default: null },
-  }
+  },
+  // Terms and Privacy Acceptance
+  termsAccepted: {
+    type: Boolean,
+    default: false,
+  },
+  termsAcceptedAt: {
+    type: Date,
+    default: null,
+  },
+  privacyAccepted: {
+    type: Boolean,
+    default: false,
+  },
+  privacyAcceptedAt: {
+    type: Date,
+    default: null,
+  },
+  // Seller Verification (Task 2.7.1)
+  sellerVerified: {
+    type: Boolean,
+    default: false,
+  },
+  sellerVerificationStatus: {
+    type: String,
+    enum: ['none', 'pending', 'verified', 'rejected'],
+    default: 'none',
+  },
+  sellerVerificationDate: {
+    type: Date,
+    default: null,
+  },
+  sellerVerificationReason: {
+    type: String,
+    trim: true,
+    default: '',
+  },
+  sellerVerificationRequestedAt: {
+    type: Date,
+    default: null,
+  },
 }, {
   timestamps: true
 });
@@ -221,5 +264,12 @@ userSchema.pre('save', async function (next) {
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
+
+// ─── Indexes (Phase 4 - DB Index Audit) ──────────────────────────────────────
+// Email is already unique (implicit index). Add compound indexes for common queries.
+userSchema.index({ role: 1, isActive: 1 });                    // admin user list
+userSchema.index({ isSuspended: 1 });                          // suspended user queries
+userSchema.index({ sellerVerificationStatus: 1 });             // verification queue
+userSchema.index({ createdAt: -1 });                           // recent users
 
 module.exports = mongoose.model('User', userSchema);

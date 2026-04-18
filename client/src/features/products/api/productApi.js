@@ -15,16 +15,12 @@ export const getUserProducts = (userId) =>
 
 export const createProduct = (formData) =>
   axios.post(`${API_BASE_URL}/api/products`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+    headers: { 'Content-Type': 'multipart/form-data' },
   }).then((res) => res.data);
 
 export const updateProduct = (productId, formData) =>
   axios.put(`${API_BASE_URL}/api/products/${productId}`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+    headers: { 'Content-Type': 'multipart/form-data' },
   }).then((res) => res.data);
 
 export const patchProduct = (productId, payload) =>
@@ -35,3 +31,26 @@ export const deleteProduct = (productId) =>
 
 export const getProductCategories = () =>
   axios.get(`${API_BASE_URL}/api/categories`).then((res) => res.data);
+
+// ── Phase 2: Relist ───────────────────────────────────────────────────────────
+export const relistProduct = (productId) =>
+  axios.post(`${API_BASE_URL}/api/products/${productId}/relist`).then((res) => res.data);
+
+// ── Phase 3: Product Analytics ────────────────────────────────────────────────
+export const getProductAnalytics = (productId) =>
+  axios.get(`${API_BASE_URL}/api/products/${productId}/analytics`).then((res) => res.data);
+
+export const getSellerAnalyticsSummary = () =>
+  axios.get(`${API_BASE_URL}/api/products/analytics/summary`).then((res) => res.data);
+
+// ── Phase 2: Order Confirmation Photo ─────────────────────────────────────────
+export const uploadConfirmationPhoto = (orderId, formData) =>
+  axios.post(`${API_BASE_URL}/api/orders/${orderId}/confirm-photo`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }).then((res) => res.data);
+
+// ── Phase 2: Disputes ─────────────────────────────────────────────────────────
+export const createDispute = (orderId, formData) =>
+  axios.post(`${API_BASE_URL}/api/orders/${orderId}/dispute`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }).then((res) => res.data);

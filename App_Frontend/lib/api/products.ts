@@ -28,3 +28,14 @@ export const getProductCategories = () => api.get(`/api/categories`).then((r) =>
 
 export const reportProduct = (productId: string, payload: Record<string, unknown>) =>
   api.post(`/api/products/${productId}/report`, payload).then((r) => r.data);
+
+// ── Phase 2: Relist ───────────────────────────────────────────────────────────
+export const relistProduct = (productId: string) =>
+  api.post(`/api/products/${productId}/relist`).then((r) => r.data);
+
+// ── Phase 3: Product Analytics ────────────────────────────────────────────────
+export const getProductAnalytics = (productId: string) =>
+  api.get(`/api/products/${productId}/analytics`).then((r) => r.data);
+
+export const getSellerAnalyticsSummary = () =>
+  api.get(`/api/products/analytics/summary`).then((r) => r.data);

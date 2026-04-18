@@ -55,6 +55,17 @@ const notificationSchema = new mongoose.Schema(
       default: false,
       index: true,
     },
+    // Snooze functionality (Task 2.4.2)
+    snoozedUntil: {
+      type: Date,
+      default: null,
+    },
+    // Grouping key (Phase 3 - Task 3.4.2) - groups similar notifications
+    groupKey: {
+      type: String,
+      default: null,
+      index: true,
+    },
     metadata: {
       type: mongoose.Schema.Types.Mixed,
       default: {},
@@ -66,5 +77,7 @@ const notificationSchema = new mongoose.Schema(
 );
 
 notificationSchema.index({ user: 1, createdAt: -1 });
+// TTL index: auto-delete notifications after 30 days (Phase 3 - Task 3.4.1)
+notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 });
 
 module.exports = mongoose.model('Notification', notificationSchema);

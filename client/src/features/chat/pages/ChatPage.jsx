@@ -2,13 +2,13 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Send, MessageSquare, ArrowLeft, Edit2, Trash2, Check, CheckCheck, X, Ban, ShieldAlert } from 'lucide-react';
+import { Send, MessageSquare, ArrowLeft, Edit2, Trash2, Check, CheckCheck, X, Ban, ShieldAlert, Pin, PinOff, Search, Image } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { useSocket } from '../../../context/SocketContext';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import Header from '../../../components/Header';
-import { getConversationMessages, getConversations, reportChatUser } from '../api/chatApi';
+import { getConversationMessages, getConversations, reportChatUser, pinConversation, unpinConversation, searchMessages, uploadChatImage } from '../api/chatApi';
 import { blockUser } from '../../users/api/userApi';
 
 const QUICK_TEMPLATES = [
@@ -48,6 +48,8 @@ function ChatPage() {
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState({});
   const [typingUsers, setTypingUsers] = useState({});
+  const [messageSearch, setMessageSearch] = useState('');
+  const [searchResults, setSearchResults] = useState(null);
 
   const scrollRef = useRef();
   const typingTimeoutRef = useRef(null);
@@ -62,6 +64,21 @@ function ChatPage() {
     onError: (error) => {
       toast.error(error.response?.data?.message || 'Failed to block user');
     }
+  });
+
+  const pinMutation = useMutation({
+    mutationFn: ({ userId, isPinned }) => isPinned ? unpinConversation(userId) : pinConversation(userId),
+    onSuccess: (_, { isPinned }) => {
+      toast.success(isPinned ? 'Conversation unpinned' : 'Conversation pinned');
+      fetchConversations();
+    },
+    onError: (error) => toast.error(error.response?.data?.message || 'Failed to update pin'),
+  });
+
+  const imageMutation = useMutation({
+    mutationFn: (formData) => uploadChatImage(formData),
+    onSuccess: () => toast.success('Image sent'),
+    onError: (error) => toast.error(error.response?.data?.message || 'Failed to send image'),
   });
 
   const reportMutation = useMutation({
@@ -79,6 +96,31 @@ function ChatPage() {
     if (window.confirm('Are you sure you want to block this user? You will no longer receive messages from them.')) {
       blockMutation.mutate(currentChat._id);
     }
+  };
+
+  const handleTogglePin = () => {
+    if (!currentChat) return;
+    pinMutation.mutate({ userId: currentChat._id, isPinned: currentChat.isPinned });
+  };
+
+  const handleImageSend = (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !currentChat) return;
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('receiverId', currentChat._id);
+    imageMutation.mutate(formData);
+    e.target.value = '';
+  };
+
+  const handleMessageSearch = async (e) => {
+    const q = e.target.value;
+    setMessageSearch(q);
+    if (q.trim().length < 2) { setSearchResults(null); return; }
+    try {
+      const data = await searchMessages(q, currentChat?._id);
+      setSearchResults(data.messages || []);
+    } catch { setSearchResults([]); }
   };
 
   const handleReport = () => {
@@ -407,7 +449,8 @@ function ChatPage() {
                   </div>
                   <div className="overflow-hidden flex-1">
                     <div className="flex justify-between items-center">
-                      <p className={`font-semibold truncate ${currentChat?._id === conversation._id ? 'text-primary-900' : 'text-gray-700'}`}>
+                      <p className={`font-semibold truncate flex items-center gap-1 ${currentChat?._id === conversation._id ? 'text-primary-900' : 'text-gray-700'}`}>
+                        {conversation.isPinned && <Pin className="w-3 h-3 text-primary-400 shrink-0" />}
                         {conversation.name}
                       </p>
                       <div className="flex flex-col items-end">
@@ -486,6 +529,17 @@ function ChatPage() {
                     </div>
                   </div>
                   
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleTogglePin}
+                    disabled={pinMutation.isPending}
+                    className={`border-transparent ${currentChat.isPinned ? 'text-primary-600 hover:bg-primary-50' : 'text-gray-500 hover:bg-gray-50'}`}
+                    title={currentChat.isPinned ? 'Unpin conversation' : 'Pin conversation'}
+                  >
+                    {currentChat.isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+                  </Button>
+
                   <Button
                     variant="outline"
                     size="sm"
@@ -581,6 +635,32 @@ function ChatPage() {
 
                 {/* Input Area */}
                 <div className="p-3 md:p-4 border-t border-gray-100 bg-white flex-none">
+                  {/* Message search */}
+                  <div className="mb-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={messageSearch}
+                        onChange={handleMessageSearch}
+                        placeholder="Search messages…"
+                        className="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-primary-300"
+                      />
+                    </div>
+                    {searchResults !== null && (
+                      <div className="mt-1 max-h-32 overflow-y-auto bg-white border border-gray-100 rounded-xl shadow-sm text-xs">
+                        {searchResults.length === 0 ? (
+                          <p className="p-2 text-gray-400 text-center">No messages found</p>
+                        ) : searchResults.map((m) => (
+                          <div key={m._id} className="px-3 py-2 border-b border-gray-50 last:border-0">
+                            <span className="text-gray-500">{new Date(m.timestamp).toLocaleDateString()}: </span>
+                            <span className="text-gray-700">{m.content}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   {editingMessageId && (
                     <div className="flex items-center justify-between bg-primary-50 text-primary-700 text-xs px-4 py-2 mb-2 rounded-xl border border-primary-100">
                       <span className="flex items-center gap-2 font-medium"><Edit2 className="w-3.5 h-3.5" /> Editing message… <span className="text-primary-400">(Esc to cancel)</span></span>
@@ -602,6 +682,11 @@ function ChatPage() {
                     </div>
                   )}
                   <form onSubmit={sendMessage} className="flex gap-2 md:gap-3 items-end max-w-4xl mx-auto">
+                    {/* Image upload */}
+                    <label className="shrink-0 cursor-pointer p-2 rounded-xl hover:bg-gray-100 transition-colors" title="Send image">
+                      <Image className="w-5 h-5 text-gray-400" />
+                      <input type="file" accept="image/*" className="hidden" onChange={handleImageSend} />
+                    </label>
                     <Input
                       ref={inputRef}
                       value={newMessage}

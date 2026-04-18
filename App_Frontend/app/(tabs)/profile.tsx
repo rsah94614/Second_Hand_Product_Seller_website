@@ -1,6 +1,6 @@
 import { Link, router } from "expo-router";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Alert, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useColorScheme } from "nativewind";
 import { Image } from "expo-image";
@@ -9,7 +9,7 @@ import { Screen } from "../../components/ui/Screen";
 import { Button } from "../../components/ui/Button";
 import { useAuth } from "../../context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
-import { getUserProfile, uploadUserAvatar } from "../../lib/api/users";
+import { getUserProfile, uploadUserAvatar, getMyReputation, getMySellerVerification, requestSellerVerification } from "../../lib/api/users";
 
 type TrustLabel = { key: string; label: string; color: string };
 type TrustSignals = {
@@ -118,6 +118,31 @@ export default function ProfileScreen() {
   });
 
   const trustSignals = profileData?.trustSignals as TrustSignals | undefined;
+
+  const { data: reputationData } = useQuery({
+    queryKey: ["my-reputation"],
+    queryFn: getMyReputation,
+    enabled: !!user?.id && user.role === "user",
+  });
+
+  const { data: verificationData, refetch: refetchVerification } = useQuery({
+    queryKey: ["my-seller-verification"],
+    queryFn: getMySellerVerification,
+    enabled: !!user?.id && user.role === "user",
+  });
+
+  const queryClient = useQueryClient();
+  const verificationMutation = useMutation({
+    mutationFn: requestSellerVerification,
+    onSuccess: () => {
+      Alert.alert("Submitted", "Your seller verification request has been submitted.");
+      refetchVerification();
+    },
+    onError: (e: unknown) => {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      Alert.alert("Error", msg || "Could not submit verification request.");
+    },
+  });
 
   const saveProfile = async () => {
     if (!editName.trim()) {
@@ -597,7 +622,84 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* ── Preferences ── */}
+        {/* ── Reputation & Seller Verification (user only) ── */}
+        {!editMode && user.role === "user" && (
+          <>
+            {reputationData && (
+              <View className="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm shadow-slate-200/50 dark:shadow-none mb-4">
+                <Text className="text-[13px] font-outfit-sb text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Reputation</Text>
+                <View className="flex-row flex-wrap gap-3 mb-3">
+                  {[
+                    { label: "Score", value: `${reputationData.score}/100` },
+                    { label: "Completion", value: `${reputationData.completionRate}%` },
+                    { label: "Rating", value: `${reputationData.averageRating} ★` },
+                    { label: "Orders", value: String(reputationData.totalOrders) },
+                  ].map((m) => (
+                    <View key={m.label} className="flex-1 min-w-[40%] rounded-2xl bg-slate-50 dark:bg-slate-800/50 p-3">
+                      <Text className="text-[20px] font-outfit-bl text-slate-900 dark:text-white">{m.value}</Text>
+                      <Text className="text-[11px] font-outfit-m text-slate-500 dark:text-slate-400">{m.label}</Text>
+                    </View>
+                  ))}
+                </View>
+                {(reputationData.trustLabels || []).length > 0 && (
+                  <View className="flex-row flex-wrap gap-2">
+                    {(reputationData.trustLabels as string[]).map((label) => (
+                      <View key={label} className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-900/40">
+                        <Text className="text-[11px] font-outfit-sb text-emerald-700 dark:text-emerald-300">{label}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
+
+            <View className="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm shadow-slate-200/50 dark:shadow-none mb-4">
+              <View className="flex-row items-center justify-between mb-3">
+                <Text className="text-[13px] font-outfit-sb text-slate-500 dark:text-slate-400 uppercase tracking-widest">Seller Verification</Text>
+                {verificationData?.sellerVerificationStatus === "verified" && (
+                  <View className="bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full">
+                    <Text className="text-[11px] font-outfit-b text-emerald-600 dark:text-emerald-400">✓ Verified</Text>
+                  </View>
+                )}
+                {verificationData?.sellerVerificationStatus === "pending" && (
+                  <View className="bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full">
+                    <Text className="text-[11px] font-outfit-b text-amber-600 dark:text-amber-400">Pending</Text>
+                  </View>
+                )}
+              </View>
+              {(!verificationData?.sellerVerificationStatus || verificationData?.sellerVerificationStatus === "none" || verificationData?.sellerVerificationStatus === "rejected") && (
+                <>
+                  <Text className="text-[13px] font-outfit text-slate-500 dark:text-slate-400 mb-3">
+                    Get a verified badge to build buyer trust. Requires 5+ orders, 4.0+ rating, and 80%+ completion rate.
+                  </Text>
+                  {verificationData?.sellerVerificationStatus === "rejected" && (
+                    <Text className="text-[12px] font-outfit-m text-red-500 mb-2">
+                      Rejected: {verificationData?.sellerVerificationReason || "See admin for details"}
+                    </Text>
+                  )}
+                  <Button
+                    title={verificationMutation.isPending ? "Submitting..." : "Request Verification"}
+                    onPress={() => verificationMutation.mutate()}
+                    loading={verificationMutation.isPending}
+                    variant="outline"
+                  />
+                </>
+              )}
+              {verificationData?.sellerVerificationStatus === "verified" && (
+                <Text className="text-[13px] font-outfit text-emerald-600 dark:text-emerald-400">
+                  Your seller account is verified. Buyers can trust your listings.
+                </Text>
+              )}
+              {verificationData?.sellerVerificationStatus === "pending" && (
+                <Text className="text-[13px] font-outfit text-slate-500 dark:text-slate-400">
+                  Your request is under review. We'll notify you once it's processed.
+                </Text>
+              )}
+            </View>
+          </>
+        )}
+
+        {/* ── Account ── */}
         <Text className="text-[13px] font-outfit-sb text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2 ml-1">Preferences</Text>
         <SectionCard>
           <SettingRow

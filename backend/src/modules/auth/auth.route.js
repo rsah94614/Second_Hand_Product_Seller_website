@@ -19,4 +19,10 @@ router.post('/logout', authController.logout);
 router.post('/verify-email', authController.verifyEmail);
 router.post('/resend-verification', auth, authController.resendVerificationEmail);
 
+// Device management routes
+router.get('/devices', auth, authController.getDevices);
+router.delete('/devices/:deviceId', auth, authController.removeDevice);
+router.post('/devices/:deviceId/logout', auth, authController.logoutFromDevice);
+router.post('/devices/:deviceId/trust', auth, authController.trustDevice);
+
 module.exports = router;

@@ -13,7 +13,21 @@ const messageSchema = new mongoose.Schema({
   },
   content: {
     type: String,
-    required: true
+    required: function() {
+      // Content is required only if there's no image
+      return !this.image;
+    }
+  },
+  // Image Sharing (Phase 3)
+  image: {
+    type: String,
+    default: null,
+  },
+  imageMetadata: {
+    width: { type: Number, default: null },
+    height: { type: Number, default: null },
+    size: { type: Number, default: null }, // in bytes
+    format: { type: String, default: null },
   },
   timestamp: {
     type: Date,

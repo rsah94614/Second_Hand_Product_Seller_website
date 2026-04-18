@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useMutation, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { ShieldCheck, Search, UserCog, Loader2 } from 'lucide-react';
+import { ShieldCheck, Search, UserCog, Loader2, CheckSquare, Square } from 'lucide-react';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import { Badge } from '../../../components/ui/Badge';
@@ -23,7 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from '../../../components/ui/Table';
-import { getAdminUsers, updateAdminUser, getAdminSuspiciousUsers, suspendUser } from '../api/adminApi';
+import { getAdminUsers, updateAdminUser, getAdminSuspiciousUsers, suspendUser, bulkSuspendUsers } from '../api/adminApi';
 
 const AdminUsersPage = () => {
   const queryClient = useQueryClient();
@@ -33,6 +33,7 @@ const AdminUsersPage = () => {
     status: '',
     viewMode: 'all',
   });
+  const [selectedIds, setSelectedIds] = useState([]);
 
   const fetchUsers = async ({ pageParam = null }) => {
     const params = new URLSearchParams();
@@ -83,6 +84,26 @@ const AdminUsersPage = () => {
       toast.error(error.response?.data?.message || error.message || 'Failed to suspend user');
     },
   });
+
+  const bulkSuspendMutation = useMutation({
+    mutationFn: (payload) => bulkSuspendUsers(payload),
+    onSuccess: (response) => {
+      toast.success(response.message || 'Bulk action completed');
+      setSelectedIds([]);
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
+    onError: (error) => toast.error(error.response?.data?.message || 'Bulk action failed'),
+  });
+
+  const handleBulkSuspend = (suspended) => {
+    if (selectedIds.length === 0) return;
+    const reason = suspended ? window.prompt('Reason for suspension (optional):') || '' : '';
+    bulkSuspendMutation.mutate({ userIds: selectedIds, suspended, reason });
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  };
 
   const users = useMemo(() => {
     return data?.pages.flatMap((page) => page.users) || [];
@@ -203,9 +224,23 @@ const AdminUsersPage = () => {
             </div>
           ) : users.length ? (
             <>
+              {/* Bulk action bar */}
+              {selectedIds.length > 0 && (
+                <div className="flex items-center gap-3 px-6 py-3 bg-primary-50 border-b border-primary-100">
+                  <span className="text-sm font-semibold text-primary-700">{selectedIds.length} selected</span>
+                  <Button size="sm" variant="outline" onClick={() => handleBulkSuspend(true)} disabled={bulkSuspendMutation.isPending} className="text-red-600 border-red-200 hover:bg-red-50">
+                    Suspend All
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => handleBulkSuspend(false)} disabled={bulkSuspendMutation.isPending}>
+                    Unsuspend All
+                  </Button>
+                  <button onClick={() => setSelectedIds([])} className="ml-auto text-xs text-gray-500 hover:text-gray-700">Clear</button>
+                </div>
+              )}
               <Table className="min-w-full">
                 <TableHeader className="bg-gray-50">
                   <TableRow>
+                    <TableHead className="px-4 py-4 w-10" />
                     <TableHead className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-gray-500">User</TableHead>
                     <TableHead className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-gray-500">Role</TableHead>
                     <TableHead className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-gray-500">Status</TableHead>
@@ -219,7 +254,12 @@ const AdminUsersPage = () => {
                       const isActive = user.isActive !== false;
 
                       return (
-                        <TableRow key={user._id} className="hover:bg-gray-50/80">
+                        <TableRow key={user._id} className={`hover:bg-gray-50/80 ${selectedIds.includes(user._id) ? 'bg-primary-50/30' : ''}`}>
+                          <TableCell className="px-4 py-4">
+                            <button onClick={() => toggleSelect(user._id)} className="text-gray-400 hover:text-primary-600">
+                              {selectedIds.includes(user._id) ? <CheckSquare className="w-4 h-4 text-primary-600" /> : <Square className="w-4 h-4" />}
+                            </button>
+                          </TableCell>
                           <TableCell className="px-6 py-4">
                             <p className="font-semibold text-gray-900">{user.name}</p>
                             <p className="text-sm text-gray-500">{user.email}</p>

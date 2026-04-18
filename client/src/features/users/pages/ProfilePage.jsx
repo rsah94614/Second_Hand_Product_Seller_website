@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, MapPin, Edit, Save, X, ShieldCheck, LogOut, GraduationCap, Building2, CheckCircle2, BadgeCheck, AlertCircle } from 'lucide-react';
+import { User, Mail, MapPin, Edit, Save, X, ShieldCheck, LogOut, GraduationCap, Building2, CheckCircle2, BadgeCheck, AlertCircle, Star, Award, Smartphone, Trash2, Shield } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PageShell } from '../../../components/layout/PageShell';
 import { Avatar } from '../../../components/ui/Avatar';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
-import { updateUserProfile, getUserProfile } from '../api/userApi';
+import { updateUserProfile, getUserProfile, getMyReputation, getMySellerVerification, requestSellerVerification, getMyDevices, removeDevice, trustDevice } from '../api/userApi';
 
 const getTrustLabelColor = (colorStr) => {
   const map = {
@@ -25,6 +25,7 @@ const getTrustLabelColor = (colorStr) => {
 
 const ProfilePage = () => {
   const { user: authUser, logout } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data: profileData, isLoading, refetch } = useQuery({
     queryKey: ['profile', authUser?.id],
@@ -32,9 +33,54 @@ const ProfilePage = () => {
     enabled: !!authUser?.id,
   });
 
+  const { data: reputationData } = useQuery({
+    queryKey: ['my-reputation'],
+    queryFn: getMyReputation,
+    enabled: !!authUser?.id,
+  });
+
+  const { data: verificationData } = useQuery({
+    queryKey: ['my-seller-verification'],
+    queryFn: getMySellerVerification,
+    enabled: !!authUser?.id,
+  });
+
+  const { data: devicesData } = useQuery({
+    queryKey: ['my-devices'],
+    queryFn: getMyDevices,
+    enabled: !!authUser?.id,
+  });
+
+  const verificationMutation = useMutation({
+    mutationFn: requestSellerVerification,
+    onSuccess: () => {
+      toast.success('Verification request submitted');
+      queryClient.invalidateQueries({ queryKey: ['my-seller-verification'] });
+    },
+    onError: (err) => toast.error(err.response?.data?.message || 'Failed to submit request'),
+  });
+
+  const removeDeviceMutation = useMutation({
+    mutationFn: removeDevice,
+    onSuccess: () => {
+      toast.success('Device removed');
+      queryClient.invalidateQueries({ queryKey: ['my-devices'] });
+    },
+    onError: () => toast.error('Failed to remove device'),
+  });
+
+  const trustDeviceMutation = useMutation({
+    mutationFn: trustDevice,
+    onSuccess: () => {
+      toast.success('Device marked as trusted');
+      queryClient.invalidateQueries({ queryKey: ['my-devices'] });
+    },
+  });
+
   const profile = profileData?.user || authUser;
   const trustSignals = profileData?.trustSignals;
 
+  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -442,6 +488,133 @@ const ProfilePage = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Reputation Card */}
+        {reputationData && (
+          <Card className="rounded-4xl border border-gray-100 shadow-sm animate-fade-in mt-6">
+            <CardContent className="p-5 md:p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
+                  <Star className="w-5 h-5 text-amber-500" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-gray-900 tracking-tight">Reputation</h2>
+                  <p className="text-gray-500 text-sm">Your seller performance metrics</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+                {[
+                  { label: 'Score', value: `${reputationData.score}/100` },
+                  { label: 'Completion Rate', value: `${reputationData.completionRate}%` },
+                  { label: 'Avg Rating', value: `${reputationData.averageRating} ★` },
+                  { label: 'Total Orders', value: reputationData.totalOrders },
+                ].map((m) => (
+                  <div key={m.label} className="bg-gray-50 rounded-2xl p-4 text-center">
+                    <p className="text-2xl font-black text-gray-900">{m.value}</p>
+                    <p className="text-xs text-gray-500 mt-1">{m.label}</p>
+                  </div>
+                ))}
+              </div>
+              {reputationData.trustLabels?.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {reputationData.trustLabels.map((label) => (
+                    <span key={label} className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200">
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Seller Verification Card */}
+        <Card className="rounded-4xl border border-gray-100 shadow-sm animate-fade-in mt-6">
+          <CardContent className="p-5 md:p-8">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                  <Award className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-gray-900 tracking-tight">Seller Verification</h2>
+                  <p className="text-gray-500 text-sm">Get a verified badge to build buyer trust</p>
+                </div>
+              </div>
+              {verificationData?.sellerVerificationStatus === 'verified' && (
+                <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">Verified ✓</Badge>
+              )}
+              {verificationData?.sellerVerificationStatus === 'pending' && (
+                <Badge className="bg-amber-100 text-amber-700 border-amber-200">Pending Review</Badge>
+              )}
+              {verificationData?.sellerVerificationStatus === 'rejected' && (
+                <Badge className="bg-red-100 text-red-700 border-red-200">Rejected</Badge>
+              )}
+            </div>
+            {(!verificationData?.sellerVerificationStatus || verificationData?.sellerVerificationStatus === 'none' || verificationData?.sellerVerificationStatus === 'rejected') && (
+              <div>
+                <p className="text-sm text-gray-600 mb-4">
+                  Requirements: email verified, 5+ completed orders, 4.0+ rating, 80%+ completion rate.
+                </p>
+                {verificationData?.sellerVerificationStatus === 'rejected' && verificationData?.sellerVerificationReason && (
+                  <p className="text-sm text-red-600 mb-3">Rejection reason: {verificationData.sellerVerificationReason}</p>
+                )}
+                <Button
+                  onClick={() => verificationMutation.mutate()}
+                  disabled={verificationMutation.isPending}
+                  className="rounded-full gap-2"
+                >
+                  <Shield className="w-4 h-4" />
+                  Request Verification
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Devices Card */}
+        {devicesData?.devices?.length > 0 && (
+          <Card className="rounded-4xl border border-gray-100 shadow-sm animate-fade-in mt-6">
+            <CardContent className="p-5 md:p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
+                  <Smartphone className="w-5 h-5 text-gray-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-gray-900 tracking-tight">Active Devices</h2>
+                  <p className="text-gray-500 text-sm">Devices currently logged into your account</p>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {devicesData.devices.map((device) => (
+                  <div key={device._id} className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-gray-50 border border-gray-100">
+                    <div className="flex items-center gap-3">
+                      <Smartphone className="w-4 h-4 text-gray-500 shrink-0" />
+                      <div>
+                        <p className="font-semibold text-sm text-gray-900">{device.deviceName}</p>
+                        <p className="text-xs text-gray-500">{device.browser} · {device.os} · {device.lastIpAddress}</p>
+                        <p className="text-xs text-gray-400">Last used: {new Date(device.lastUsedAt).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {device.isTrusted && (
+                        <span className="text-xs text-emerald-600 font-semibold">Trusted</span>
+                      )}
+                      {!device.isTrusted && (
+                        <Button size="sm" variant="outline" onClick={() => trustDeviceMutation.mutate(device._id)} className="text-xs rounded-xl">
+                          Trust
+                        </Button>
+                      )}
+                      <Button size="sm" variant="outline" onClick={() => removeDeviceMutation.mutate(device._id)} className="text-red-500 border-red-200 hover:bg-red-50 rounded-xl">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
       </div>
     </PageShell>
