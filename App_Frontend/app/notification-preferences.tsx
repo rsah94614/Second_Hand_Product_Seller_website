@@ -71,13 +71,13 @@ export default function NotificationPreferencesScreen() {
   if (!user) return <Redirect href="/(auth)/login" />;
 
   if (isLoading) {
-    return <Screen><Loading /></Screen>;
+    return <Screen safeAreaTop={false}><Loading /></Screen>;
   }
 
   const p = prefs as Record<string, boolean> | undefined;
 
   return (
-    <Screen className="bg-slate-50 dark:bg-slate-950">
+    <Screen safeAreaTop={false} className="bg-slate-50 dark:bg-slate-950">
       <ScrollView className="flex-1 px-4 pt-4 pb-10" showsVerticalScrollIndicator={false}>
         <Text className="text-[13px] font-outfit-m text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">Settings</Text>
         <Text className="text-[24px] font-outfit-bl text-slate-900 dark:text-white mb-6">Notification Preferences</Text>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { Link, router } from "expo-router";
 import { Screen } from "../../components/ui/Screen";
 import { Button } from "../../components/ui/Button";
@@ -10,16 +10,21 @@ export default function ForgotPasswordScreen() {
   const { forgotPassword } = useAuth();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [isError, setIsError] = useState(false);
 
   const onSubmit = async () => {
+    if (!email.trim()) { setIsError(true); setMessage("Email address is required."); return; }
     setLoading(true);
+    setMessage("");
     const res = await forgotPassword(email.trim());
     setLoading(false);
     if (res.success) {
-      Alert.alert("Check your email", res.message || "Reset link sent.");
-      router.push("/login");
+      setIsError(false);
+      setMessage(res.message || "Reset link sent. Check your email.");
     } else {
-      Alert.alert("Error", res.message || "Could not send email.");
+      setIsError(true);
+      setMessage(res.message || "Could not send reset email.");
     }
   };
 
@@ -39,10 +44,15 @@ export default function ForgotPasswordScreen() {
         </View>
 
         <View className="mb-8">
+          {message ? (
+            <View className={`mb-4 rounded-2xl border px-4 py-3 ${isError ? "border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-950/20" : "border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/20"}`}>
+              <Text className={`text-[14px] font-outfit-m ${isError ? "text-red-600 dark:text-red-400" : "text-emerald-700 dark:text-emerald-400"}`}>{message}</Text>
+            </View>
+          ) : null}
           <Input 
             label="Email Address" 
             value={email} 
-            onChangeText={setEmail} 
+            onChangeText={(t) => { setEmail(t); setMessage(""); }} 
             keyboardType="email-address" 
             placeholder="Enter your email address"
           />

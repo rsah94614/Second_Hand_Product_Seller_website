@@ -79,8 +79,6 @@ export default function ProfileScreen() {
     loading,
     logout,
     updateProfile,
-    sendPhoneVerificationOtp,
-    confirmPhoneVerificationOtp,
     refreshUser: refreshAuthUser,
   } = useAuth();
   const { colorScheme, toggleColorScheme } = useColorScheme();
@@ -101,10 +99,6 @@ export default function ProfileScreen() {
   });
   const [saving, setSaving] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
-
-  const [otpCode, setOtpCode] = useState("");
-  const [otpSending, setOtpSending] = useState(false);
-  const [otpVerifying, setOtpVerifying] = useState(false);
 
   const {
     data: profileData,
@@ -183,46 +177,6 @@ export default function ProfileScreen() {
         return { bg: "bg-slate-100 dark:bg-slate-800", text: "text-slate-700 dark:text-slate-300" };
       default:
         return { bg: "bg-slate-100 dark:bg-slate-800", text: "text-slate-700 dark:text-slate-300" };
-    }
-  };
-
-  const sendOtp = async () => {
-    if (otpSending) return;
-    setOtpSending(true);
-    try {
-      const res = await sendPhoneVerificationOtp();
-      if (!res.success) {
-        Alert.alert("OTP failed", res.message || "Could not send OTP.");
-        return;
-      }
-      Alert.alert("OTP sent", "Please check your phone for the verification code.");
-    } catch {
-      Alert.alert("OTP failed", "Could not send OTP.");
-    } finally {
-      setOtpSending(false);
-    }
-  };
-
-  const verifyOtp = async () => {
-    if (otpVerifying) return;
-    if (!otpCode.trim()) {
-      Alert.alert("OTP required", "Enter the code you received.");
-      return;
-    }
-    setOtpVerifying(true);
-    try {
-      const res = await confirmPhoneVerificationOtp(otpCode.trim());
-      if (!res.success) {
-        Alert.alert("Verification failed", res.message || "Could not verify OTP.");
-        return;
-      }
-      setOtpCode("");
-      await refetchTrust();
-      Alert.alert("Verified", "Phone number verified successfully.");
-    } catch {
-      Alert.alert("Verification failed", "Could not verify OTP.");
-    } finally {
-      setOtpVerifying(false);
     }
   };
 
@@ -542,56 +496,6 @@ export default function ProfileScreen() {
                     <Text className="text-[12px] font-outfit text-slate-500 dark:text-slate-400">No trust labels yet.</Text>
                   ) : null}
                 </View>
-
-                {!trustSignals?.phoneVerified ? (
-                  <View>
-                    <Text className="text-[13px] font-outfit-sb text-slate-800 dark:text-slate-200 mb-2">
-                      Phone verification required
-                    </Text>
-
-                    <View className="mb-3">
-                      <Text className="text-[12px] font-outfit-m text-slate-500 dark:text-slate-400 mb-1">OTP</Text>
-                      <TextInput
-                        value={otpCode}
-                        onChangeText={setOtpCode}
-                        keyboardType="numeric"
-                        placeholder="Enter code"
-                        placeholderTextColor="#94a3b8"
-                        className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white"
-                      />
-                    </View>
-
-                    <View className="flex-row gap-3 mb-1">
-                      <View className="flex-1">
-                        <Button
-                          title={otpSending ? "Sending..." : "Send OTP"}
-                          onPress={sendOtp}
-                          loading={otpSending}
-                          variant="outline"
-                        />
-                      </View>
-                      <View className="flex-1">
-                        <Button
-                          title={otpVerifying ? "Verifying..." : "Verify Phone"}
-                          onPress={verifyOtp}
-                          loading={otpVerifying}
-                          disabled={!otpCode.trim()}
-                        />
-                      </View>
-                    </View>
-
-                    <Text className="text-[12px] font-outfit text-slate-500 dark:text-slate-400">
-                      OTP is required to unlock trust-based actions.
-                    </Text>
-                  </View>
-                ) : (
-                  <View>
-                    <Text className="text-[13px] font-outfit-sb text-emerald-700 dark:text-emerald-200">Phone verified</Text>
-                    <Text className="text-[12px] font-outfit text-slate-500 dark:text-slate-400 mt-1">
-                      Your phone number is verified.
-                    </Text>
-                  </View>
-                )}
               </>
             )}
           </View>
@@ -721,6 +625,7 @@ export default function ProfileScreen() {
         <Text className="text-[13px] font-outfit-sb text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-5 mb-2 ml-1">Account</Text>
         <SectionCard>
           <SettingRow href="/wishlist" title="My Wishlist" icon="heart-outline" iconColor="#e11d48" iconBg="bg-red-50 dark:bg-red-950/30" />
+          <SettingRow href="/(tabs)/orders" title="My Orders" icon="receipt-outline" iconColor="#6366f1" iconBg="bg-indigo-50 dark:bg-indigo-950/30" />
           <SettingRow href="/notifications" title="Notifications" icon="notifications-outline" iconColor="#6366f1" iconBg="bg-indigo-50 dark:bg-indigo-950/30" />
           <SettingRow href="/notification-preferences" title="Notification Preferences" icon="options-outline" iconColor="#0891b2" iconBg="bg-cyan-50 dark:bg-cyan-950/30" />
           <SettingRow href="/devices" title="Active Devices" icon="phone-portrait-outline" iconColor="#7c3aed" iconBg="bg-violet-50 dark:bg-violet-950/30" />

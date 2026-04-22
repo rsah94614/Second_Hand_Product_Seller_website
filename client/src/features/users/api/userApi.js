@@ -48,3 +48,9 @@ export const removeDevice = (deviceId) =>
 
 export const trustDevice = (deviceId) =>
   axios.post(`${API_BASE_URL}/api/auth/devices/${deviceId}/trust`).then((res) => res.data);
+
+// ── Avatar Upload ─────────────────────────────────────────────────────────────
+export const uploadUserAvatar = (userId, formData) =>
+  axios.post(`${API_BASE_URL}/api/users/${userId}/avatar`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }).then((res) => res.data);

@@ -314,7 +314,7 @@ const ProductDetailPage = () => {
     );
   }
 
-  const isOwner = user && user.id === product.seller?._id;
+  const isOwner = user && product.seller && user.id === (product.seller?._id ?? product.seller);
   const relatedProducts = (relatedResponse?.products || []).filter((item) => item._id !== product._id);
 
   return (

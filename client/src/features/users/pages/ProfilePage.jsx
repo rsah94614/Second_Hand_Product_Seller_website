@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { User, Mail, MapPin, Edit, Save, X, ShieldCheck, LogOut, GraduationCap, Building2, CheckCircle2, BadgeCheck, AlertCircle, Star, Award, Smartphone, Trash2, Shield } from 'lucide-react';
+import React, { useRef, useState, useEffect } from 'react';
+import { User, Mail, MapPin, Edit, Save, X, ShieldCheck, LogOut, GraduationCap, Building2, CheckCircle2, BadgeCheck, AlertCircle, Star, Award, Smartphone, Trash2, Shield, Camera, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -9,7 +9,7 @@ import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
-import { updateUserProfile, getUserProfile, getMyReputation, getMySellerVerification, requestSellerVerification, getMyDevices, removeDevice, trustDevice } from '../api/userApi';
+import { updateUserProfile, getUserProfile, getMyReputation, getMySellerVerification, requestSellerVerification, getMyDevices, removeDevice, trustDevice, uploadUserAvatar } from '../api/userApi';
 
 const getTrustLabelColor = (colorStr) => {
   const map = {
@@ -26,6 +26,8 @@ const getTrustLabelColor = (colorStr) => {
 const ProfilePage = () => {
   const { user: authUser, logout } = useAuth();
   const queryClient = useQueryClient();
+  const avatarInputRef = useRef(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   const { data: profileData, isLoading, refetch } = useQuery({
     queryKey: ['profile', authUser?.id],
@@ -79,6 +81,28 @@ const ProfilePage = () => {
 
   const profile = profileData?.user || authUser;
   const trustSignals = profileData?.trustSignals;
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast.error('Please select an image file'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return; }
+
+    setAvatarUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('avatar', file);
+      await uploadUserAvatar(profile.id || profile._id, fd);
+      toast.success('Profile photo updated!');
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to upload photo');
+    } finally {
+      setAvatarUploading(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+    }
+  };
 
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -196,12 +220,38 @@ const ProfilePage = () => {
           <div className="absolute inset-0 bg-linear-to-br from-primary-900 via-indigo-900 to-blue-950 opacity-90" />
           <div className="absolute top-0 right-0 w-60 h-60 rounded-full bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] from-cyan-400/20 via-transparent to-transparent blur-3xl" />
           <div className="relative z-10 p-5 md:p-8 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 md:gap-6">
-            <Avatar
-              src={profile.avatar}
-              fallback={profile.name}
-              size="2xl"
-              className="border-4 border-white/20 shadow-xl"
-            />
+            {/* Clickable avatar with upload overlay */}
+            <div className="relative group shrink-0">
+              <Avatar
+                src={profile.avatar}
+                fallback={profile.name}
+                size="2xl"
+                className="border-4 border-white/20 shadow-xl"
+              />
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={avatarUploading}
+                className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                title="Change profile photo"
+              >
+                {avatarUploading
+                  ? <Loader2 className="w-6 h-6 text-white animate-spin" />
+                  : <Camera className="w-6 h-6 text-white" />
+                }
+              </button>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
+              {/* Camera badge */}
+              <div className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-white flex items-center justify-center shadow-md border border-gray-100 pointer-events-none">
+                <Camera className="w-3.5 h-3.5 text-primary-600" />
+              </div>
+            </div>
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <Badge
@@ -313,14 +363,6 @@ const ProfilePage = () => {
                   value: formData.email,
                   display: profile.email,
                   type: 'email',
-                },
-                {
-                  icon: User,
-                  label: 'Profile Image URL',
-                  name: 'avatar',
-                  value: formData.avatar,
-                  display: formData.avatar ? 'Image URL provided' : 'No image',
-                  type: 'text',
                 },
                 {
                   icon: MapPin,

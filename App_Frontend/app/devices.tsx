@@ -51,17 +51,16 @@ export default function DevicesScreen() {
   if (!user) return <Redirect href="/(auth)/login" />;
 
   if (isLoading) {
-    return <Screen><Loading /></Screen>;
+    return <Screen safeAreaTop={false}><Loading /></Screen>;
   }
 
   const devices: Device[] = data?.devices || [];
 
   return (
-    <Screen className="bg-slate-50 dark:bg-slate-950">
-      <View className="px-5 pt-4 pb-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
-        <Text className="text-[13px] font-outfit-m text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-0.5">Security</Text>
-        <Text className="text-[24px] font-outfit-bl text-slate-900 dark:text-white">Active Devices</Text>
-        <Text className="text-[13px] font-outfit text-slate-500 dark:text-slate-400 mt-1">
+    <Screen safeAreaTop={false} className="bg-slate-50 dark:bg-slate-950">
+      {/* Description banner */}
+      <View className="px-5 pt-4 pb-3 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
+        <Text className="text-[13px] font-outfit text-slate-500 dark:text-slate-400">
           Devices currently logged into your account. Remove any you don't recognise.
         </Text>
       </View>

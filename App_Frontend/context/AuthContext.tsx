@@ -29,6 +29,7 @@ type AuthContextValue = {
   resetPassword: (token: string, newPassword: string) => Promise<{ success: boolean; message?: string }>;
   refreshUser: () => Promise<void>;
   updateProfile: (payload: Record<string, unknown>) => Promise<void>;
+  sendSignupOtp: (email: string) => Promise<{ success: boolean; message?: string; code?: string }>;
   sendPhoneVerificationOtp: () => Promise<{ success: boolean; message?: string }>;
   confirmPhoneVerificationOtp: (otp: string) => Promise<{ success: boolean; message?: string }>;
   isUser: boolean;
@@ -152,6 +153,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await fetchUser();
   }, [user, fetchUser]);
 
+  const sendSignupOtp = useCallback(async (email: string) => {
+    try {
+      const res = await api.post<{ message: string; code?: string }>(`/api/auth/otp/request-signup`, { email });
+      return { success: true, message: res.data.message, code: res.data.code };
+    } catch (e: unknown) {
+      const msg = getApiErrorMessage(e, "Failed to send OTP");
+      return { success: false, message: msg };
+    }
+  }, []);
+
   const sendPhoneVerificationOtp = useCallback(async () => {
     try {
       const res = await api.post<{ message: string }>(`/api/auth/otp/request-verification`);
@@ -187,6 +198,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       resetPassword,
       refreshUser: fetchUser,
       updateProfile,
+      sendSignupOtp,
       sendPhoneVerificationOtp,
       confirmPhoneVerificationOtp,
       isUser: user?.role === "user",
@@ -202,6 +214,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       resetPassword,
       fetchUser,
       updateProfile,
+      sendSignupOtp,
       sendPhoneVerificationOtp,
       confirmPhoneVerificationOtp,
     ]

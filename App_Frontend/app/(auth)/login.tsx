@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { Link, router, useLocalSearchParams } from "expo-router";
 import { Screen } from "../../components/ui/Screen";
 import { Button } from "../../components/ui/Button";
@@ -23,13 +23,11 @@ export default function LoginScreen() {
   const onSubmit = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setErrorMessage("");
-      Alert.alert("Invalid email", "Please enter a valid email address.");
+      setErrorMessage("Please enter a valid email address.");
       return;
     }
     if (!password) {
-      setErrorMessage("");
-      Alert.alert("Required", "Password is required.");
+      setErrorMessage("Password is required.");
       return;
     }
     setLoading(true);
@@ -39,8 +37,7 @@ export default function LoginScreen() {
     if (res.success) {
       router.replace("/" as never);
     } else {
-      setErrorMessage(res.message || "Sign in failed");
-      Alert.alert("Sign in failed", res.message || "Try again.");
+      setErrorMessage(res.message || "Sign in failed. Please try again.");
     }
   };
 

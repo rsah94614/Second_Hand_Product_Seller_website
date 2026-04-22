@@ -25,7 +25,6 @@ export default function ProductsBrowseScreen() {
     category?: string;
     minPrice?: string;
     maxPrice?: string;
-    location?: string;
     sortBy?: string;
     sortOrder?: string;
   }>();
@@ -36,7 +35,6 @@ export default function ProductsBrowseScreen() {
   const [category, setCategory] = useState(typeof params.category === "string" ? params.category : "");
   const [minPrice, setMinPrice] = useState(typeof params.minPrice === "string" ? params.minPrice : "");
   const [maxPrice, setMaxPrice] = useState(typeof params.maxPrice === "string" ? params.maxPrice : "");
-  const [location, setLocation] = useState(typeof params.location === "string" ? params.location : "");
   const [sortBy, setSortBy] = useState(typeof params.sortBy === "string" ? params.sortBy : "createdAt");
   const [sortOrder, setSortOrder] = useState(typeof params.sortOrder === "string" ? params.sortOrder : "desc");
   const [showFilters, setShowFilters] = useState(
@@ -44,7 +42,6 @@ export default function ProductsBrowseScreen() {
       params.category ||
         params.minPrice ||
         params.maxPrice ||
-        params.location ||
         (typeof params.sortBy === "string" && params.sortBy !== "createdAt") ||
         (typeof params.sortOrder === "string" && params.sortOrder !== "desc")
     )
@@ -55,7 +52,6 @@ export default function ProductsBrowseScreen() {
     if (typeof params.category === "string") setCategory(params.category);
     if (typeof params.minPrice === "string") setMinPrice(params.minPrice);
     if (typeof params.maxPrice === "string") setMaxPrice(params.maxPrice);
-    if (typeof params.location === "string") setLocation(params.location);
     if (typeof params.sortBy === "string") setSortBy(params.sortBy);
     if (typeof params.sortOrder === "string") setSortOrder(params.sortOrder);
 
@@ -63,7 +59,6 @@ export default function ProductsBrowseScreen() {
       params.category ||
       params.minPrice ||
       params.maxPrice ||
-      params.location ||
       (typeof params.sortBy === "string" && params.sortBy !== "createdAt") ||
       (typeof params.sortOrder === "string" && params.sortOrder !== "desc")
     ) {
@@ -74,7 +69,6 @@ export default function ProductsBrowseScreen() {
     params.category,
     params.minPrice,
     params.maxPrice,
-    params.location,
     params.sortBy,
     params.sortOrder,
   ]);
@@ -104,11 +98,10 @@ export default function ProductsBrowseScreen() {
       category: category.trim(),
       minPrice: minPrice.trim(),
       maxPrice: maxPrice.trim(),
-      location: location.trim(),
       sortBy,
       sortOrder,
     }),
-    [search, category, minPrice, maxPrice, location, sortBy, sortOrder]
+    [search, category, minPrice, maxPrice, sortBy, sortOrder]
   );
 
   type Page = { products?: ProductListItem[]; nextCursor?: string | null };
@@ -229,14 +222,6 @@ export default function ProductsBrowseScreen() {
                 keyboardType="numeric"
                 placeholderTextColor="#94a3b8"
                 className="flex-1 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-4 py-2 text-[14px] font-outfit text-slate-900 dark:text-white"
-              />
-              <TextInput
-                value={location}
-                onChangeText={setLocation}
-                placeholder="Location"
-                placeholderTextColor="#94a3b8"
-                style={{ flex: 1.5 }}
-                className="rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-4 py-2 text-[14px] font-outfit text-slate-900 dark:text-white"
               />
             </View>
 
