@@ -33,3 +33,7 @@ export const snoozeNotification = (notificationId: string, duration: "1h" | "1d"
 
 export const unsnoozeNotification = (notificationId: string) =>
   api.post(`/api/notifications/${notificationId}/unsnooze`).then((r) => r.data);
+
+// ── Phase 3: Grouped Notifications ───────────────────────────────────────────
+export const getGroupedNotifications = () =>
+  api.get(`/api/notifications/grouped`).then((r) => r.data);

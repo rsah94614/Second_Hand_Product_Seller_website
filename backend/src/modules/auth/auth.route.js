@@ -1,13 +1,15 @@
 const express = require('express');
 const auth = require('../../shared/middleware/auth.middleware');
+const validate = require('../../shared/middleware/validate.middleware');
+const { loginSchema, registerSchema } = require('../../shared/middleware/auth.schema');
 const authController = require('./auth.controller');
 
 const { loginLimiter, otpLimiter, registerLimiter } = require('../../shared/middleware/rateLimiter.middleware');
 
 const router = express.Router();
 
-router.post('/register', registerLimiter, authController.register);
-router.post('/login', loginLimiter, authController.login);
+router.post('/register', registerLimiter, validate(registerSchema), authController.register);
+router.post('/login', loginLimiter, validate(loginSchema), authController.login);
 router.post('/otp/request-signup', otpLimiter, authController.requestSignupOtp);
 router.get('/me', auth, authController.getMe);
 router.post('/forgot-password', loginLimiter, authController.forgotPassword);

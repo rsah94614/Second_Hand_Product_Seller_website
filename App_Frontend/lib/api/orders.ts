@@ -39,8 +39,8 @@ export const reportNoShow = (orderId: string, payload: NoShowPayload) =>
 
 // ── Phase 2: Confirmation Photo ───────────────────────────────────────────────
 export const uploadConfirmationPhoto = (orderId: string, formData: FormData) =>
-  api.post(`/api/orders/${orderId}/confirm-photo`, formData).then((r) => r.data);
+  api.post(`/api/orders/${orderId}/confirmation-photo`, formData).then((r) => r.data);
 
 // ── Phase 2: Disputes ─────────────────────────────────────────────────────────
-export const createDispute = (orderId: string, payload: { reason: string; description?: string }) =>
-  api.post(`/api/orders/${orderId}/dispute`, payload).then((r) => r.data);
+export const createDispute = (orderId: string, formData: FormData) =>
+  api.post(`/api/orders/${orderId}/dispute`, formData).then((r) => r.data);

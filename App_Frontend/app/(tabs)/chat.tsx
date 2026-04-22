@@ -77,12 +77,16 @@ export default function ChatTabScreen() {
     socket.on("user_online", onOnline);
     socket.on("user_offline", onOffline);
 
+    const onReceiveMessage = () => load();
+    socket.on("receive_message", onReceiveMessage);
+
     return () => {
       socket.off("presence_batch", onPresenceBatch);
       socket.off("user_online", onOnline);
       socket.off("user_offline", onOffline);
+      socket.off("receive_message", onReceiveMessage);
     };
-  }, [socket, user]);
+  }, [socket, user, load]);
 
   useEffect(() => {
     if (!socket || !user) return;
@@ -113,27 +117,27 @@ export default function ChatTabScreen() {
         onRefresh={load}
         ListEmptyComponent={
           <View className="py-16">
-             <EmptyState
-               title="No conversations yet"
-               message="Start chatting from a product page when you want to contact a seller."
-             />
+            <EmptyState
+              title="No conversations yet"
+              message="Start chatting from a product page when you want to contact a seller."
+            />
           </View>
         }
         renderItem={({ item }) => (
-          <Link href={`/chat/${item._id}` as never} asChild>
+          <Link href={`/chat/${item._id}?name=${encodeURIComponent(item.name || "")}` as never} asChild>
             <Pressable
               onLongPress={() => togglePin(item)}
               className="flex-row items-center bg-white dark:bg-slate-900 px-5 py-4 border-b border-slate-100 dark:border-slate-800/80 active:bg-slate-50 dark:active:bg-slate-800/50"
             >
               <View className="h-14 w-14 rounded-full bg-primary-100 dark:bg-primary-900/60 items-center justify-center">
-                 <Text className="text-xl font-outfit-sb text-primary-700 dark:text-primary-400">
-                    {(item.name || "U")[0].toUpperCase()}
-                 </Text>
-                 {online[item._id] ? (
-                   <View className="absolute bottom-0 right-0 h-4 w-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900" />
-                 ) : null}
+                <Text className="text-xl font-outfit-sb text-primary-700 dark:text-primary-400">
+                  {(item.name || "U")[0].toUpperCase()}
+                </Text>
+                {online[item._id] ? (
+                  <View className="absolute bottom-0 right-0 h-4 w-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900" />
+                ) : null}
               </View>
-              
+
               <View className="ml-4 flex-1 justify-center">
                 <View className="flex-row items-center gap-1.5">
                   {item.isPinned ? (
@@ -149,7 +153,7 @@ export default function ChatTabScreen() {
                   </Text>
                 ) : null}
               </View>
-              
+
               {(item.unreadCount || 0) > 0 ? (
                 <View className="ml-3 h-6 min-w-[24px] rounded-full bg-primary-600 dark:bg-primary-500 items-center justify-center px-1.5 shadow-sm shadow-primary-500/30">
                   <Text className="text-[11px] font-outfit-b text-white">{item.unreadCount}</Text>

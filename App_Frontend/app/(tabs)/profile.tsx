@@ -1,6 +1,6 @@
 import { Link, router } from "expo-router";
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Alert, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useColorScheme } from "nativewind";
 import { Image } from "expo-image";
@@ -124,8 +124,6 @@ export default function ProfileScreen() {
     queryFn: getMySellerVerification,
     enabled: !!user?.id && user.role === "user",
   });
-
-  const queryClient = useQueryClient();
   const verificationMutation = useMutation({
     mutationFn: requestSellerVerification,
     onSuccess: () => {
@@ -596,7 +594,7 @@ export default function ProfileScreen() {
               )}
               {verificationData?.sellerVerificationStatus === "pending" && (
                 <Text className="text-[13px] font-outfit text-slate-500 dark:text-slate-400">
-                  Your request is under review. We'll notify you once it's processed.
+                  Your request is under review. We&apos;ll notify you once it&apos;s processed.
                 </Text>
               )}
             </View>

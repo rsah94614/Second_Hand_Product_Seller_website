@@ -4,11 +4,11 @@ import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { Send, MessageSquare, ArrowLeft, Edit2, Trash2, Check, CheckCheck, X, Ban, ShieldAlert, Pin, PinOff, Search, Image } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
-import { useSocket } from '../../../context/SocketContext';
+import { useSocket, useSocketStatus } from '../../../context/SocketContext';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import Header from '../../../components/Header';
-import { getConversationMessages, getConversations, reportChatUser, pinConversation, unpinConversation, searchMessages, uploadChatImage } from '../api/chatApi';
+import { getConversationMessages, getConversations, reportChatUser, pinConversation, unpinConversation, searchMessages, uploadChatImage, markConversationAsRead } from '../api/chatApi';
 import { blockUser } from '../../users/api/userApi';
 
 const QUICK_TEMPLATES = [
@@ -38,6 +38,7 @@ const formatDateLabel = (dateStr) => {
 function ChatPage() {
   const { user } = useAuth();
   const socket = useSocket();
+  const isConnected = useSocketStatus();
   const location = useLocation();
 
   const [conversations, setConversations] = useState([]);
@@ -282,7 +283,7 @@ function ChatPage() {
   // ───── fetch messages when chat is selected ─────
   useEffect(() => {
     const fetchMessages = async () => {
-      if (!currentChat) return;
+      if (!currentChat || !isConnected) return;
       try {
         if (!localStorage.getItem('token')) return;
         const response = await getConversationMessages(currentChat._id);
@@ -293,16 +294,17 @@ function ChatPage() {
           (conv._id === currentChat._id && conv.unreadCount !== 0) ? { ...conv, unreadCount: 0 } : conv
         ));
 
-        // Mark as read via socket only
+        // Mark as read via socket only (and persistent HTTP fallback)
         if (socket) {
           socket.emit('mark_seen', { receiverId: currentChat._id });
         }
+        markConversationAsRead(currentChat._id).catch(() => { });
       } catch (error) {
         console.error('Error fetching messages:', error);
       }
     };
     fetchMessages();
-  }, [currentChat, socket]);
+  }, [currentChat, socket, isConnected]);
 
   // auto-scroll
   useEffect(() => {
@@ -429,18 +431,16 @@ function ChatPage() {
                 <div
                   key={conversation._id}
                   onClick={() => handleChatSelect(conversation)}
-                  className={`p-3 cursor-pointer flex items-center gap-3 transition-all duration-200 group relative border-l-4 ${
-                    currentChat?._id === conversation._id
-                      ? 'bg-primary-50/50 border-primary-600'
-                      : 'hover:bg-gray-50 border-transparent'
-                  }`}
+                  className={`p-3 cursor-pointer flex items-center gap-3 transition-all duration-200 group relative border-l-4 ${currentChat?._id === conversation._id
+                    ? 'bg-primary-50/50 border-primary-600'
+                    : 'hover:bg-gray-50 border-transparent'
+                    }`}
                 >
                   <div className="relative inline-flex items-center justify-center shrink-0 w-12 h-12">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.1)] transition-colors ${
-                      currentChat?._id === conversation._id
-                        ? 'bg-linear-to-br from-primary-500 to-indigo-600 text-white'
-                        : 'bg-white text-primary-600 border border-primary-100 group-hover:border-primary-200'
-                    }`}>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.1)] transition-colors ${currentChat?._id === conversation._id
+                      ? 'bg-linear-to-br from-primary-500 to-indigo-600 text-white'
+                      : 'bg-white text-primary-600 border border-primary-100 group-hover:border-primary-200'
+                      }`}>
                       {conversation.name ? conversation.name[0].toUpperCase() : '?'}
                     </div>
                     {onlineUsers[conversation._id] && (
@@ -528,7 +528,7 @@ function ChatPage() {
                       )}
                     </div>
                   </div>
-                  
+
                   <Button
                     variant="outline"
                     size="sm"
@@ -601,13 +601,12 @@ function ChatPage() {
                               </div>
                             )}
 
-                            <div className={`px-3 py-2 text-sm leading-relaxed relative flex flex-col min-w-[80px] ${
-                              message.isDeleted
-                                ? 'bg-gray-100 text-gray-400 italic rounded-2xl shadow-sm border border-gray-200'
-                                : isMe
-                                  ? 'bg-linear-to-br from-primary-500 to-indigo-600 text-white shadow-md shadow-primary-500/20 rounded-2xl rounded-tr-sm'
-                                  : 'bg-white text-gray-800 shadow-sm shadow-gray-200/50 rounded-2xl rounded-tl-sm border border-gray-100/50'
-                            }`}>
+                            <div className={`px-3 py-2 text-sm leading-relaxed relative flex flex-col min-w-[80px] ${message.isDeleted
+                              ? 'bg-gray-100 text-gray-400 italic rounded-2xl shadow-sm border border-gray-200'
+                              : isMe
+                                ? 'bg-linear-to-br from-primary-500 to-indigo-600 text-white shadow-md shadow-primary-500/20 rounded-2xl rounded-tr-sm'
+                                : 'bg-white text-gray-800 shadow-sm shadow-gray-200/50 rounded-2xl rounded-tl-sm border border-gray-100/50'
+                              }`}>
                               {message.isDeleted ? (
                                 <span className="flex items-center gap-1">🚫 This message was deleted.</span>
                               ) : (

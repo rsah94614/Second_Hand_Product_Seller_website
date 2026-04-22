@@ -13,7 +13,7 @@ const ADMIN_LINKS = [
   { href: "/admin/orders", title: "Orders", icon: "receipt-outline" as const, color: "#d97706", bg: "bg-amber-50 dark:bg-amber-950/40" },
   { href: "/admin/reports", title: "Reports", icon: "flag-outline" as const, color: "#e11d48", bg: "bg-red-50 dark:bg-red-950/40" },
   { href: "/admin/moderation-queue", title: "Mod Queue", icon: "shield-checkmark-outline" as const, color: "#7c3aed", bg: "bg-violet-50 dark:bg-violet-950/40" },
-  { href: "/admin/seller-verifications", title: "Verifications", icon: "badge-outline" as const, color: "#059669", bg: "bg-emerald-50 dark:bg-emerald-950/40" },
+  { href: "/admin/seller-verifications", title: "Verifications", icon: "id-card-outline" as const, color: "#059669", bg: "bg-emerald-50 dark:bg-emerald-950/40" },
   { href: "/admin/bulk-actions", title: "Bulk Actions", icon: "layers-outline" as const, color: "#d97706", bg: "bg-amber-50 dark:bg-amber-950/40" },
   { href: "/admin/activity", title: "Activity", icon: "time-outline" as const, color: "#6366f1", bg: "bg-indigo-50 dark:bg-indigo-950/40" },
   { href: "/admin/audit", title: "Audit Logs", icon: "list-outline" as const, color: "#64748b", bg: "bg-slate-100 dark:bg-slate-800" },

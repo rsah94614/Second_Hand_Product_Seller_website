@@ -13,32 +13,33 @@ const Toggle = ({ checked, onChange, disabled }) => (
     role="switch"
     aria-checked={checked}
     onClick={() => !disabled && onChange(!checked)}
-    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
-      checked ? 'bg-primary-600' : 'bg-gray-200'
-    } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${checked ? 'bg-primary-600' : 'bg-gray-200'
+      } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
   >
     <span
-      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
-        checked ? 'translate-x-5' : 'translate-x-0'
-      }`}
+      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${checked ? 'translate-x-5' : 'translate-x-0'
+        }`}
     />
   </button>
 );
 
-const PreferenceRow = ({ icon: Icon, label, description, value, onChange, disabled }) => (
-  <div className="flex items-center justify-between gap-4 py-4 border-b border-gray-100 last:border-0">
-    <div className="flex items-center gap-3">
-      <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
-        <Icon className="w-4 h-4 text-primary-600" />
+const PreferenceRow = ({ icon, label, description, value, onChange, disabled }) => {
+  const IconCmp = icon;
+  return (
+    <div className="flex items-center justify-between gap-4 py-4 border-b border-gray-100 last:border-0">
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
+          <IconCmp className="w-4 h-4 text-primary-600" />
+        </div>
+        <div>
+          <p className="font-semibold text-gray-900 text-sm">{label}</p>
+          {description && <p className="text-xs text-gray-500 mt-0.5">{description}</p>}
+        </div>
       </div>
-      <div>
-        <p className="font-semibold text-gray-900 text-sm">{label}</p>
-        {description && <p className="text-xs text-gray-500 mt-0.5">{description}</p>}
-      </div>
+      <Toggle checked={!!value} onChange={onChange} disabled={disabled} />
     </div>
-    <Toggle checked={!!value} onChange={onChange} disabled={disabled} />
-  </div>
-);
+  );
+};
 
 const NotificationPreferencesPage = () => {
   const queryClient = useQueryClient();

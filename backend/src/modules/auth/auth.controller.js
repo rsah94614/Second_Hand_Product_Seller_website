@@ -48,7 +48,6 @@ const getRefreshCookieClearOptions = () => {
 
 const OTP_TTL_MS = 10 * 60 * 1000;
 const OTP_COOLDOWN_MS = 60 * 1000;
-const OTP_MAX_ATTEMPTS = 5;
 
 const issueSession = async (req, res, user, message) => {
   const accessToken = signAccessToken(user._id);

@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -36,7 +36,7 @@ const statusStyles = {
 const OrderHistoryPage = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const photoInputRef = useRef({});
+
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['orders'],
@@ -224,19 +224,19 @@ const OrderHistoryPage = () => {
           {orders.length === 0 ? (
             <Card className="rounded-2xl border-gray-100 shadow-sm text-center animate-fade-in">
               <CardContent className="p-10">
-              <ShoppingBag className="w-16 h-16 text-primary-600 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                No orders yet
-              </h2>
-              <p className="text-gray-600 mb-6">
-                Once you place an order, it will appear here for easy tracking.
-              </p>
-              <Link
-                to="/products"
-                className="inline-flex items-center justify-center"
-              >
-                <Button>Browse Products</Button>
-              </Link>
+                <ShoppingBag className="w-16 h-16 text-primary-600 mx-auto mb-4" />
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                  No orders yet
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  Once you place an order, it will appear here for easy tracking.
+                </p>
+                <Link
+                  to="/products"
+                  className="inline-flex items-center justify-center"
+                >
+                  <Button>Browse Products</Button>
+                </Link>
               </CardContent>
             </Card>
           ) : (
@@ -246,153 +246,153 @@ const OrderHistoryPage = () => {
                   const shippingAddress = formatCampusAddress(order.shippingDetails);
 
                   return (
-                <Card
-                  key={order._id}
-                  className="space-y-4 rounded-2xl border-gray-100 shadow-sm animate-fade-in"
-                >
-                  <CardContent className="p-6">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <p className="text-sm text-gray-500">Order ID</p>
-                      <p className="text-lg font-semibold text-gray-800">
-                        #{order._id.slice(-6).toUpperCase()}
-                      </p>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Placed on {formatDate(order.createdAt || order.placedAt)}
-                      </p>
-                    </div>
-                    <div className="mt-3 md:mt-0 flex items-center gap-3">
-                      <Badge className={`px-3 py-1 text-sm ${statusStyles[order.status] || statusStyles.requested}`}>
-                        {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
-                      </Badge>
-                      <div className="flex items-center text-gray-700 font-semibold">
-                        <IndianRupee className="w-4 h-4" />
-                        {formatPrice(order.total)}
-                      </div>
-                      {order.status === 'requested' || order.status === 'accepted' ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleCancelOrder(order._id)}
-                          disabled={cancelOrderMutation.isPending}
-                          className="text-red-600 hover:bg-red-50 hover:border-red-200"
-                        >
-                          <X className="w-4 h-4 mr-1" />
-                          Cancel
-                        </Button>
-                      ) : null}
-                      
-                      {order.status === 'meetup_scheduled' && (
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleCompleteOrder(order._id)}
-                            disabled={completeOrderMutation.isPending}
-                            className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                          >
-                            <CheckCircle className="w-4 h-4 mr-1" />
-                            Complete
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleNoShow(order._id)}
-                            disabled={noShowMutation.isPending}
-                            className="text-orange-600 hover:bg-orange-50 hover:border-orange-200"
-                          >
-                            <AlertTriangle className="w-4 h-4 mr-1" />
-                            No-Show
-                          </Button>
-                        </div>
-                      )}
+                    <Card
+                      key={order._id}
+                      className="space-y-4 rounded-2xl border-gray-100 shadow-sm animate-fade-in"
+                    >
+                      <CardContent className="p-6">
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <p className="text-sm text-gray-500">Order ID</p>
+                            <p className="text-lg font-semibold text-gray-800">
+                              #{order._id.slice(-6).toUpperCase()}
+                            </p>
+                            <p className="text-sm text-gray-500 mt-1">
+                              Placed on {formatDate(order.createdAt || order.placedAt)}
+                            </p>
+                          </div>
+                          <div className="mt-3 md:mt-0 flex items-center gap-3">
+                            <Badge className={`px-3 py-1 text-sm ${statusStyles[order.status] || statusStyles.requested}`}>
+                              {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
+                            </Badge>
+                            <div className="flex items-center text-gray-700 font-semibold">
+                              <IndianRupee className="w-4 h-4" />
+                              {formatPrice(order.total)}
+                            </div>
+                            {order.status === 'requested' || order.status === 'accepted' ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleCancelOrder(order._id)}
+                                disabled={cancelOrderMutation.isPending}
+                                className="text-red-600 hover:bg-red-50 hover:border-red-200"
+                              >
+                                <X className="w-4 h-4 mr-1" />
+                                Cancel
+                              </Button>
+                            ) : null}
 
-                      {/* Confirmation photo for completed orders */}
-                      {order.status === 'completed' && !order.confirmationPhoto?.url && (
-                        <label className="cursor-pointer">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-blue-600 border-blue-200 hover:bg-blue-50 pointer-events-none"
-                            asChild
-                          >
-                            <span>
-                              <Camera className="w-4 h-4 mr-1" />
-                              Add Photo
-                            </span>
-                          </Button>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => handlePhotoUpload(order._id, e.target.files?.[0])}
-                          />
-                        </label>
-                      )}
-
-                      {/* Dispute button for completed/no-show orders */}
-                      {['completed', 'no_show', 'meetup_scheduled'].includes(order.status) && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDispute(order._id)}
-                          disabled={disputeMutation.isPending}
-                          className="text-red-600 border-red-200 hover:bg-red-50"
-                        >
-                          <Flag className="w-4 h-4 mr-1" />
-                          Dispute
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 border-t border-gray-100 pt-4">
-                    {order.items?.map((item, index) => (
-                      <div key={`${order._id}-${index}`} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                        <img
-                          src={item.image || PRODUCT_FALLBACK_IMAGE}
-                          alt={item.title}
-                          className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-xl shrink-0"
-                          onError={setFallbackImage}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-base sm:text-lg font-semibold text-gray-800 truncate">
-                            {item.title}
-                            {item.quantity > 1 && (
-                              <span className="ml-2 text-sm font-normal text-gray-500">
-                                x{item.quantity}
-                              </span>
+                            {order.status === 'meetup_scheduled' && (
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleCompleteOrder(order._id)}
+                                  disabled={completeOrderMutation.isPending}
+                                  className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                                >
+                                  <CheckCircle className="w-4 h-4 mr-1" />
+                                  Complete
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleNoShow(order._id)}
+                                  disabled={noShowMutation.isPending}
+                                  className="text-orange-600 hover:bg-orange-50 hover:border-orange-200"
+                                >
+                                  <AlertTriangle className="w-4 h-4 mr-1" />
+                                  No-Show
+                                </Button>
+                              </div>
                             )}
-                          </h3>
-                          <div className="flex flex-wrap items-center text-sm text-gray-600 gap-x-4 gap-y-1 mt-1">
-                            <span className="flex items-center">
-                              <Clock className="w-4 h-4 mr-1" />
-                              {formatDate(order.updatedAt || order.createdAt)}
-                            </span>
+
+                            {/* Confirmation photo for completed orders */}
+                            {order.status === 'completed' && !order.confirmationPhoto?.url && (
+                              <label className="cursor-pointer">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-blue-600 border-blue-200 hover:bg-blue-50 pointer-events-none"
+                                  asChild
+                                >
+                                  <span>
+                                    <Camera className="w-4 h-4 mr-1" />
+                                    Add Photo
+                                  </span>
+                                </Button>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => handlePhotoUpload(order._id, e.target.files?.[0])}
+                                />
+                              </label>
+                            )}
+
+                            {/* Dispute button for completed/no-show orders */}
+                            {['completed', 'no_show', 'meetup_scheduled'].includes(order.status) && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDispute(order._id)}
+                                disabled={disputeMutation.isPending}
+                                className="text-red-600 border-red-200 hover:bg-red-50"
+                              >
+                                <Flag className="w-4 h-4 mr-1" />
+                                Dispute
+                              </Button>
+                            )}
                           </div>
                         </div>
-                        <div className="text-left sm:text-right shrink-0">
-                          <p className="text-xs text-gray-500">Price</p>
-                          <p className="text-lg sm:text-xl font-semibold text-gray-800">
-                            {formatPrice(item.price * item.quantity)}
-                          </p>
+
+                        <div className="space-y-4 border-t border-gray-100 pt-4">
+                          {order.items?.map((item, index) => (
+                            <div key={`${order._id}-${index}`} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                              <img
+                                src={item.image || PRODUCT_FALLBACK_IMAGE}
+                                alt={item.title}
+                                className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-xl shrink-0"
+                                onError={setFallbackImage}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-base sm:text-lg font-semibold text-gray-800 truncate">
+                                  {item.title}
+                                  {item.quantity > 1 && (
+                                    <span className="ml-2 text-sm font-normal text-gray-500">
+                                      x{item.quantity}
+                                    </span>
+                                  )}
+                                </h3>
+                                <div className="flex flex-wrap items-center text-sm text-gray-600 gap-x-4 gap-y-1 mt-1">
+                                  <span className="flex items-center">
+                                    <Clock className="w-4 h-4 mr-1" />
+                                    {formatDate(order.updatedAt || order.createdAt)}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="text-left sm:text-right shrink-0">
+                                <p className="text-xs text-gray-500">Price</p>
+                                <p className="text-lg sm:text-xl font-semibold text-gray-800">
+                                  {formatPrice(item.price * item.quantity)}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                          {order.shippingDetails?.fullName && (
+                            <div className="bg-gray-50 border border-gray-100 p-4 rounded-xl text-sm text-gray-700">
+                              <p className="font-semibold text-gray-800 mb-1">
+                                Delivery / Meetup Details
+                              </p>
+                              <p>{order.shippingDetails.fullName}</p>
+                              <p className="text-gray-600">{shippingAddress.primaryLine}</p>
+                              <p className="text-gray-600">{shippingAddress.secondaryLine}</p>
+                              <p className="text-gray-600">{shippingAddress.country}</p>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
-                    {order.shippingDetails?.fullName && (
-                      <div className="bg-gray-50 border border-gray-100 p-4 rounded-xl text-sm text-gray-700">
-                        <p className="font-semibold text-gray-800 mb-1">
-                          Delivery / Meetup Details
-                        </p>
-                        <p>{order.shippingDetails.fullName}</p>
-                        <p className="text-gray-600">{shippingAddress.primaryLine}</p>
-                        <p className="text-gray-600">{shippingAddress.secondaryLine}</p>
-                        <p className="text-gray-600">{shippingAddress.country}</p>
-                      </div>
-                    )}
-                  </div>
-                  </CardContent>
-                </Card>
+                      </CardContent>
+                    </Card>
                   );
                 })()
               ))}

@@ -189,9 +189,11 @@ const searchMessages = async (req, res) => {
       .limit(cap)
       .lean();
 
+    const total = await Message.countDocuments(query);
+
     return res.json({
       messages,
-      total: messages.length,
+      total,
       query: q.trim(),
     });
   } catch (error) {
@@ -252,7 +254,7 @@ const unpinConversation = async (req, res) => {
 
 const uploadChatImage = async (req, res) => {
   const tempPath = req.file?.path;
-  
+
   try {
     const { receiverId, content = '' } = req.body;
 
@@ -328,7 +330,8 @@ const uploadChatImage = async (req, res) => {
     // Emit socket event if socket.io is available
     const io = req.app.get('io');
     if (io) {
-      io.to(receiverId).emit('new_message', message);
+      io.to(receiverId).emit('receive_message', message);
+      io.to(req.user._id.toString()).emit('receive_message', message);
     }
 
     return res.status(201).json({

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Link, router } from "expo-router";
-import { useColorScheme } from "nativewind";
 import { Screen } from "../../components/ui/Screen";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
@@ -26,8 +25,6 @@ function ErrorBanner({ message }: { message: string }) {
 
 export default function RegisterScreen() {
   const { register, sendSignupOtp } = useAuth();
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
 
   const [error, setError] = useState("");
   const [form, setForm] = useState({
@@ -170,30 +167,27 @@ export default function RegisterScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               editable={!otpSent || timer === 0}
-              className={`flex-1 rounded-2xl border px-4 py-4 text-[16px] font-outfit text-slate-900 dark:text-white ${
-                otpSent && timer > 0
-                  ? "border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/50"
-                  : "border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900"
-              }`}
+              className={`flex-1 rounded-2xl border px-4 py-4 text-[16px] font-outfit text-slate-900 dark:text-white ${otpSent && timer > 0
+                ? "border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/50"
+                : "border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900"
+                }`}
             />
             {/* Send Code button — same height as input */}
             <Pressable
               onPress={handleSendOtp}
               disabled={otpSending || timer > 0}
-              className={`rounded-2xl px-4 items-center justify-center min-w-[90px] ${
-                timer > 0
-                  ? "bg-slate-200 dark:bg-slate-800"
-                  : otpSending
+              className={`rounded-2xl px-4 items-center justify-center min-w-[90px] ${timer > 0
+                ? "bg-slate-200 dark:bg-slate-800"
+                : otpSending
                   ? "bg-primary-400 dark:bg-primary-700"
                   : "bg-primary-600 dark:bg-primary-500"
-              }`}
+                }`}
             >
               <Text
-                className={`text-[13px] font-outfit-sb ${
-                  timer > 0
-                    ? "text-slate-500 dark:text-slate-400"
-                    : "text-white"
-                }`}
+                className={`text-[13px] font-outfit-sb ${timer > 0
+                  ? "text-slate-500 dark:text-slate-400"
+                  : "text-white"
+                  }`}
               >
                 {otpSending ? "Sending…" : timer > 0 ? `${timer}s` : otpSent ? "Resend" : "Send Code"}
               </Text>
@@ -251,18 +245,16 @@ export default function RegisterScreen() {
               <Pressable
                 key={r.id}
                 onPress={() => set("profileRole", r.id)}
-                className={`flex-1 py-3 rounded-2xl border items-center ${
-                  form.profileRole === r.id
-                    ? "bg-primary-600 dark:bg-primary-500 border-primary-600 dark:border-primary-500"
-                    : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
-                }`}
+                className={`flex-1 py-3 rounded-2xl border items-center ${form.profileRole === r.id
+                  ? "bg-primary-600 dark:bg-primary-500 border-primary-600 dark:border-primary-500"
+                  : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                  }`}
               >
                 <Text
-                  className={`text-[13px] font-outfit-sb ${
-                    form.profileRole === r.id
-                      ? "text-white"
-                      : "text-slate-700 dark:text-slate-300"
-                  }`}
+                  className={`text-[13px] font-outfit-sb ${form.profileRole === r.id
+                    ? "text-white"
+                    : "text-slate-700 dark:text-slate-300"
+                    }`}
                 >
                   {r.label}
                 </Text>
@@ -292,16 +284,14 @@ export default function RegisterScreen() {
               <Pressable
                 key={year}
                 onPress={() => setC("year", campus.year === year ? "" : year)}
-                className={`px-4 py-2 rounded-xl border ${
-                  campus.year === year
-                    ? "bg-primary-600 dark:bg-primary-500 border-primary-600 dark:border-primary-500"
-                    : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
-                }`}
+                className={`px-4 py-2 rounded-xl border ${campus.year === year
+                  ? "bg-primary-600 dark:bg-primary-500 border-primary-600 dark:border-primary-500"
+                  : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                  }`}
               >
                 <Text
-                  className={`text-[13px] font-outfit-sb ${
-                    campus.year === year ? "text-white" : "text-slate-700 dark:text-slate-300"
-                  }`}
+                  className={`text-[13px] font-outfit-sb ${campus.year === year ? "text-white" : "text-slate-700 dark:text-slate-300"
+                    }`}
                 >
                   {year}
                 </Text>
@@ -323,11 +313,10 @@ export default function RegisterScreen() {
           className="flex-row items-start gap-3 mb-6 mt-2"
         >
           <View
-            className={`mt-0.5 h-5 w-5 rounded border-2 items-center justify-center shrink-0 ${
-              termsAccepted
-                ? "bg-primary-600 dark:bg-primary-500 border-primary-600 dark:border-primary-500"
-                : "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
-            }`}
+            className={`mt-0.5 h-5 w-5 rounded border-2 items-center justify-center shrink-0 ${termsAccepted
+              ? "bg-primary-600 dark:bg-primary-500 border-primary-600 dark:border-primary-500"
+              : "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
+              }`}
           >
             {termsAccepted && (
               <Text className="text-white text-[11px] font-outfit-b">✓</Text>

@@ -61,7 +61,7 @@ export default function DevicesScreen() {
       {/* Description banner */}
       <View className="px-5 pt-4 pb-3 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
         <Text className="text-[13px] font-outfit text-slate-500 dark:text-slate-400">
-          Devices currently logged into your account. Remove any you don't recognise.
+          Devices currently logged into your account. Remove any you don&apos;t recognise.
         </Text>
       </View>
 

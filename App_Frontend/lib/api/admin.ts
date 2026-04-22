@@ -11,6 +11,9 @@ export const updateAdminUser = (userId: string, payload: Record<string, unknown>
 export const suspendUser = (userId: string, payload: Record<string, unknown>) =>
   api.patch(`/api/admin/users/${userId}/suspend`, payload).then((r) => r.data);
 
+export const getAdminSuspiciousUsers = (queryString = "") =>
+  api.get(`/api/admin/users/suspicious?${queryString}`).then((r) => r.data);
+
 export const getAdminProducts = (queryString = "") =>
   api.get(`/api/admin/products?${queryString}`).then((r) => r.data);
 
@@ -19,6 +22,9 @@ export const updateAdminProduct = (productId: string, payload: Record<string, un
 
 export const deleteAdminProduct = (productId: string) =>
   api.delete(`/api/admin/products/${productId}`).then((r) => r.data);
+
+export const getAdminSuspiciousProducts = (queryString = "") =>
+  api.get(`/api/admin/products/suspicious?${queryString}`).then((r) => r.data);
 
 export const getAdminCategories = () =>
   api.get(`/api/categories/admin/all`).then((r) => r.data);
@@ -51,8 +57,33 @@ export const getAdminAuditLogs = (params?: Record<string, string>) =>
 export const getModerationQueue = (queryString = "") =>
   api.get(`/api/admin/moderation-queue${queryString ? `?${queryString}` : ""}`).then((r) => r.data);
 
+export const addToModerationQueue = (payload: Record<string, unknown>) =>
+  api.post(`/api/admin/moderation-queue`, payload).then((r) => r.data);
+
+export const assignModerationItem = (itemId: string, payload: Record<string, unknown>) =>
+  api.patch(`/api/admin/moderation-queue/${itemId}/assign`, payload).then((r) => r.data);
+
 export const resolveModerationItem = (itemId: string, payload: { resolution: string }) =>
   api.patch(`/api/admin/moderation-queue/${itemId}/resolve`, payload).then((r) => r.data);
+
+export const getModerationStats = () =>
+  api.get(`/api/admin/moderation-queue/stats`).then((r) => r.data);
+
+// ── Phase 2: Moderation Rules ─────────────────────────────────────────────────
+export const getModerationRules = () =>
+  api.get(`/api/admin/rules`).then((r) => r.data);
+
+export const createModerationRule = (payload: Record<string, unknown>) =>
+  api.post(`/api/admin/rules`, payload).then((r) => r.data);
+
+export const updateModerationRule = (ruleId: string, payload: Record<string, unknown>) =>
+  api.put(`/api/admin/rules/${ruleId}`, payload).then((r) => r.data);
+
+export const deleteModerationRule = (ruleId: string) =>
+  api.delete(`/api/admin/rules/${ruleId}`).then((r) => r.data);
+
+export const toggleModerationRule = (ruleId: string) =>
+  api.patch(`/api/admin/rules/${ruleId}/toggle`).then((r) => r.data);
 
 // ── Phase 2: Seller Verifications ─────────────────────────────────────────────
 export const getSellerVerifications = (status = "pending") =>
@@ -71,6 +102,13 @@ export const bulkSuspendUsers = (payload: { userIds: string[]; suspended: boolea
 export const bulkDeleteProducts = (payload: { productIds: string[] }) =>
   api.post(`/api/admin/bulk/products/delete`, payload).then((r) => r.data);
 
+export const bulkUpdateProducts = (payload: Record<string, unknown>) =>
+  api.post(`/api/admin/bulk/products/update`, payload).then((r) => r.data);
+
 // ── Phase 3: Activity Timeline ────────────────────────────────────────────────
 export const getAdminActivityTimeline = (queryString = "") =>
   api.get(`/api/admin/activity${queryString ? `?${queryString}` : ""}`).then((r) => r.data);
+
+// ── Phase 3: Category Analytics ───────────────────────────────────────────────
+export const getCategoryAnalytics = () =>
+  api.get(`/api/categories/analytics`).then((r) => r.data);

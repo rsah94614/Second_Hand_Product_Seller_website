@@ -30,8 +30,6 @@ type AuthContextValue = {
   refreshUser: () => Promise<void>;
   updateProfile: (payload: Record<string, unknown>) => Promise<void>;
   sendSignupOtp: (email: string) => Promise<{ success: boolean; message?: string; code?: string }>;
-  sendPhoneVerificationOtp: () => Promise<{ success: boolean; message?: string }>;
-  confirmPhoneVerificationOtp: (otp: string) => Promise<{ success: boolean; message?: string }>;
   isUser: boolean;
   isAdmin: boolean;
 };
@@ -106,7 +104,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = useCallback(async (payload: Record<string, unknown>) => {
     try {
-      const data = await registerUser(payload);
+      const data = await registerUser(payload) as any;
+      if (data.token && data.user) {
+        await storage.setTokens(data.token, data.refreshToken || "");
+        setUser(data.user);
+      }
       return { success: true, message: data.message || "Registration successful" };
     } catch (e: unknown) {
       const msg = getApiErrorMessage(e, "Registration failed");
@@ -163,30 +165,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const sendPhoneVerificationOtp = useCallback(async () => {
-    try {
-      const res = await api.post<{ message: string }>(`/api/auth/otp/request-verification`);
-      return { success: true, message: res.data.message };
-    } catch (e: unknown) {
-      const msg = getApiErrorMessage(e, "Failed to send OTP");
-      return { success: false, message: msg };
-    }
-  }, []);
-
-  const confirmPhoneVerificationOtp = useCallback(
-    async (otp: string) => {
-      try {
-        const res = await api.post<{ message: string }>("/api/auth/otp/verify-phone", { otp });
-        await fetchUser();
-        return { success: true, message: res.data.message };
-      } catch (e: unknown) {
-        const msg = getApiErrorMessage(e, "Failed to verify phone OTP");
-        return { success: false, message: msg };
-      }
-    },
-    [fetchUser]
-  );
-
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -199,8 +177,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshUser: fetchUser,
       updateProfile,
       sendSignupOtp,
-      sendPhoneVerificationOtp,
-      confirmPhoneVerificationOtp,
       isUser: user?.role === "user",
       isAdmin: user?.role === "admin",
     }),
@@ -215,8 +191,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       fetchUser,
       updateProfile,
       sendSignupOtp,
-      sendPhoneVerificationOtp,
-      confirmPhoneVerificationOtp,
     ]
   );
 

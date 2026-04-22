@@ -1,9 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, router } from "expo-router";
-import { ScrollView, Text, View, Pressable, TextInput } from "react-native";
+import { ScrollView, Text, View, Pressable, TextInput, RefreshControl } from "react-native";
 import { Screen } from "../../components/ui/Screen";
 import { ProductCard, type ProductListItem } from "../../components/ProductCard";
-import { Loading } from "../../components/Loading";
 import { getProducts, getProductCategories } from "../../lib/api/products";
 import { getRecentlyViewed } from "../../lib/api/users";
 import { Ionicons } from "@expo/vector-icons";
@@ -190,8 +189,7 @@ export default function HomeScreen() {
         className="flex-1"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 32 }}
-        refreshing={isRefetching}
-        onScrollEndDrag={() => {}}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetchLatest} />}
       >
         {/* ── Hero Banner ── */}
         <View className="mx-4 mt-4 mb-5 rounded-3xl overflow-hidden bg-slate-900" style={{ minHeight: 170 }}>

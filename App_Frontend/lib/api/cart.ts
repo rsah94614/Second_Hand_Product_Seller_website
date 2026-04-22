@@ -13,7 +13,6 @@ export const updateCartItem = (productId: string, quantity: number) =>
 
 export type ShippingDetails = {
   fullName: string;
-  phone: string;
   addressLine1: string;
   landmark: string;
   city: string;

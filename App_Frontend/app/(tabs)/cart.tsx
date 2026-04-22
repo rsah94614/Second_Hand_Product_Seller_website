@@ -37,7 +37,6 @@ export default function CartScreen() {
   const [modalOpen, setModalOpen] = useState(false);
   const [shipping, setShipping] = useState<ShippingDetails>({
     fullName: "",
-    phone: "",
     addressLine1: "",
     landmark: "",
     city: "",
@@ -56,7 +55,6 @@ export default function CartScreen() {
       setShipping((s) => ({
         ...s,
         fullName: s.fullName || user.name || "",
-        phone: s.phone || user.phone || "",
       }));
     }
   }, [user]);
@@ -116,7 +114,6 @@ export default function CartScreen() {
   const validateShipping = () => {
     const required: (keyof ShippingDetails)[] = [
       "fullName",
-      "phone",
       "addressLine1",
       "city",
       "state",
@@ -154,32 +151,32 @@ export default function CartScreen() {
                 <Image source={{ uri }} style={{ width: 100, height: 100, borderRadius: 16 }} transition={300} />
                 <View className="p-3 flex-1 justify-between">
                   <View>
-                     <Text className="text-[16px] font-outfit-sb text-slate-900 dark:text-white" numberOfLines={2}>
-                       {row.product.title}
-                     </Text>
-                     <Text className="mt-1 text-lg font-outfit-b text-primary-600 dark:text-primary-400">{formatInr(row.product.price)}</Text>
+                    <Text className="text-[16px] font-outfit-sb text-slate-900 dark:text-white" numberOfLines={2}>
+                      {row.product.title}
+                    </Text>
+                    <Text className="mt-1 text-lg font-outfit-b text-primary-600 dark:text-primary-400">{formatInr(row.product.price)}</Text>
                   </View>
                   <View className="flex-row justify-between items-center mt-2">
-                     <Text className="text-[13px] font-outfit-m text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg">Qty: {row.quantity}</Text>
-                     <Pressable
-                       onPress={() => removeM.mutate(row.product._id)}
-                       className="p-1 px-2 rounded-lg bg-red-50 dark:bg-red-950/30"
-                     >
-                       <Text className="text-[13px] font-outfit-sb text-red-600 dark:text-red-400">Remove</Text>
-                     </Pressable>
+                    <Text className="text-[13px] font-outfit-m text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg">Qty: {row.quantity}</Text>
+                    <Pressable
+                      onPress={() => removeM.mutate(row.product._id)}
+                      className="p-1 px-2 rounded-lg bg-red-50 dark:bg-red-950/30"
+                    >
+                      <Text className="text-[13px] font-outfit-sb text-red-600 dark:text-red-400">Remove</Text>
+                    </Pressable>
                   </View>
                 </View>
               </View>
             );
           })}
-          
+
           <View className="mt-4 mb-4 rounded-3xl bg-white dark:bg-slate-900 p-5 shadow-sm shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800">
-             <View className="flex-row justify-between items-center">
-                <Text className="text-lg font-outfit-m text-slate-600 dark:text-slate-400">Total Amount</Text>
-                <Text className="text-2xl font-outfit-bl text-slate-900 dark:text-white">{formatInr(total)}</Text>
-             </View>
+            <View className="flex-row justify-between items-center">
+              <Text className="text-lg font-outfit-m text-slate-600 dark:text-slate-400">Total Amount</Text>
+              <Text className="text-2xl font-outfit-bl text-slate-900 dark:text-white">{formatInr(total)}</Text>
+            </View>
           </View>
-          
+
           <Button title="Proceed to Checkout" onPress={() => setModalOpen(true)} className="mb-10" />
         </ScrollView>
       )}
@@ -193,13 +190,12 @@ export default function CartScreen() {
             <Text className="text-2xl font-outfit-bl text-slate-900 dark:text-white mb-6">Shipping Details</Text>
             <ScrollView className="" keyboardShouldPersistTaps="handled">
               <Input label="Full Name" value={shipping.fullName} onChangeText={(t) => setShip("fullName", t)} />
-              <Input label="Phone Number" keyboardType="phone-pad" value={shipping.phone} onChangeText={(t) => setShip("phone", t)} />
               <Input label="Address Line 1" value={shipping.addressLine1} onChangeText={(t) => setShip("addressLine1", t)} />
               <Input label="Landmark (Optional)" value={shipping.landmark} onChangeText={(t) => setShip("landmark", t)} />
-              
+
               <View className="flex-row gap-4">
-                 <View className="flex-1"><Input label="City" value={shipping.city} onChangeText={(t) => setShip("city", t)} /></View>
-                 <View className="flex-1"><Input label="State" value={shipping.state} onChangeText={(t) => setShip("state", t)} /></View>
+                <View className="flex-1"><Input label="City" value={shipping.city} onChangeText={(t) => setShip("city", t)} /></View>
+                <View className="flex-1"><Input label="State" value={shipping.state} onChangeText={(t) => setShip("state", t)} /></View>
               </View>
               <Input label="Postal Code" keyboardType="numeric" value={shipping.postalCode} onChangeText={(t) => setShip("postalCode", t)} />
               <View className="h-24" />

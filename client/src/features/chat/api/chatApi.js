@@ -26,6 +26,4 @@ export const unpinConversation = (userId) =>
 
 // ── Phase 3: Image Sharing ────────────────────────────────────────────────────
 export const uploadChatImage = (formData) =>
-  axios.post(`${API_BASE_URL}/api/chat/upload-image`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  }).then((res) => res.data);
+  axios.post(`${API_BASE_URL}/api/chat/upload-image`, formData).then((res) => res.data);

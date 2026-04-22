@@ -5,7 +5,7 @@ import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { Screen } from "../../components/ui/Screen";
 import { useAuth } from "../../context/AuthContext";
-import { useSocket } from "../../context/SocketContext";
+import { useSocket, useSocketStatus } from "../../context/SocketContext";
 import { getConversationMessages, markConversationAsRead, reportChatUser, uploadChatImage } from "../../lib/api/chat";
 import { Ionicons } from "@expo/vector-icons";
 import { blockUser } from "../../lib/api/users";
@@ -30,6 +30,7 @@ export default function ChatThreadScreen() {
   const { userId, name } = useLocalSearchParams<{ userId: string; name?: string }>();
   const { user } = useAuth();
   const socket = useSocket();
+  const isConnected = useSocketStatus();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
@@ -91,7 +92,7 @@ export default function ChatThreadScreen() {
   };
 
   const load = useCallback(async () => {
-    if (!partnerId || !user) return;
+    if (!partnerId || !user || !isConnected) return;
     setLoading(true);
     try {
       const data = await getConversationMessages(partnerId);
@@ -103,7 +104,7 @@ export default function ChatThreadScreen() {
     } finally {
       setLoading(false);
     }
-  }, [partnerId, user, socket]);
+  }, [partnerId, user, socket, isConnected]);
 
   useEffect(() => {
     load();
@@ -277,11 +278,10 @@ export default function ChatThreadScreen() {
                 return (
                   <View className={`mb-2.5 max-w-[80%] ${mine ? "self-end" : "self-start"}`}>
                     <View
-                      className={`rounded-2xl px-4 py-2.5 ${
-                        mine
+                      className={`rounded-2xl px-4 py-2.5 ${mine
                           ? "bg-primary-600 dark:bg-primary-500 rounded-br-sm"
                           : "bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-bl-sm"
-                      }`}
+                        }`}
                     >
                       {m.isDeleted ? (
                         <Text className={`text-[15px] font-outfit leading-relaxed italic ${mine ? "text-white/70" : "text-slate-400"}`}>
@@ -296,9 +296,8 @@ export default function ChatThreadScreen() {
                       )}
                     </View>
                     <Text
-                      className={`text-[10px] font-outfit-m text-slate-400 dark:text-slate-500 mt-1 ${
-                        mine ? "text-right mr-1" : "ml-1"
-                      }`}
+                      className={`text-[10px] font-outfit-m text-slate-400 dark:text-slate-500 mt-1 ${mine ? "text-right mr-1" : "ml-1"
+                        }`}
                     >
                       {formatTime(m)}
                       {mine && m.read ? " · Read" : ""}
@@ -339,11 +338,10 @@ export default function ChatThreadScreen() {
           <Pressable
             onPress={send}
             disabled={!text.trim()}
-            className={`h-11 w-11 rounded-full items-center justify-center ${
-              text.trim()
+            className={`h-11 w-11 rounded-full items-center justify-center ${text.trim()
                 ? "bg-primary-600 dark:bg-primary-500 active:bg-primary-700"
                 : "bg-slate-200 dark:bg-slate-700"
-            }`}
+              }`}
           >
             <Ionicons name="send" size={18} color={text.trim() ? "#fff" : "#94a3b8"} />
           </Pressable>

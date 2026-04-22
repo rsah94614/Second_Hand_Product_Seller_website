@@ -9,7 +9,6 @@ const { buildWishlistPayload } = require('./user.service');
 const { createNotification } = require('../../shared/utils/notification.utils');
 const { computeProfileScore, canTradeOnCampus } = require('../../shared/utils/profileCompletion.utils');
 const { calculateReputation, getReputationHistory, checkVerificationEligibility } = require('../../services/reputation.service');
-const { logAuditAction } = require('../../shared/utils/audit.utils');
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

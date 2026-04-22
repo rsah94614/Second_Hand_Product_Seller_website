@@ -64,7 +64,7 @@ const authorizeRoles = (...roles) => (req, res, next) => {
 };
 
 const adminAuth = [auth, authorizeRoles('admin')];
-const userAuth = [auth, authorizeRoles('user')];
+const userAuth = [auth, authorizeRoles('user', 'admin')];
 
 module.exports = auth;
 module.exports.auth = auth;

@@ -25,6 +25,9 @@ export const submitSellerReview = (userId, payload) =>
 export const blockUser = (userId) =>
   axios.post(`${API_BASE_URL}/api/users/block/${userId}`).then((res) => res.data);
 
+export const unblockUser = (userId) =>
+  axios.delete(`${API_BASE_URL}/api/users/block/${userId}`).then((res) => res.data);
+
 // ── Phase 2: Seller Verification ─────────────────────────────────────────────
 export const requestSellerVerification = () =>
   axios.post(`${API_BASE_URL}/api/users/me/seller-verification`).then((res) => res.data);
@@ -51,6 +54,4 @@ export const trustDevice = (deviceId) =>
 
 // ── Avatar Upload ─────────────────────────────────────────────────────────────
 export const uploadUserAvatar = (userId, formData) =>
-  axios.post(`${API_BASE_URL}/api/users/${userId}/avatar`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  }).then((res) => res.data);
+  axios.post(`${API_BASE_URL}/api/users/${userId}/avatar`, formData).then((res) => res.data);

@@ -335,7 +335,7 @@ const getProducts = async (req, res) => {
       .populate('seller', 'name email')
       .sort({ _id: -1 })
       .limit(numericLimit);
-      
+
     const total = await Product.countDocuments(query);
     const nextCursor = products.length === numericLimit ? products[products.length - 1]._id.toString() : null;
 
@@ -666,7 +666,7 @@ const getReports = async (req, res) => {
     const total = await Report.countDocuments(query);
     const nextCursor = reports.length === numericLimit ? reports[reports.length - 1]._id.toString() : null;
 
-    return res.json({ 
+    return res.json({
       reports,
       nextCursor,
       total
@@ -784,7 +784,7 @@ const getAuditLogs = async (req, res) => {
       .populate('actor', 'name email')
       .sort({ _id: -1 })
       .limit(numericLimit);
-      
+
     const total = await AuditLog.countDocuments(query);
     const nextCursor = logs.length === numericLimit ? logs[logs.length - 1]._id.toString() : null;
 
@@ -1428,9 +1428,8 @@ const bulkSuspendUsers = async (req, res) => {
 
     // Prevent suspending admins or self
     const targets = await User.find({
-      _id: { $in: userIds },
+      _id: { $in: userIds, $ne: req.user._id },
       role: { $ne: 'admin' },
-      _id: { $ne: req.user._id },
     }).select('_id name');
 
     const safeIds = targets.map((u) => u._id);

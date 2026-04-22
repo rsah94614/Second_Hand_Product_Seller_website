@@ -108,8 +108,11 @@ export default function OrdersScreen() {
   });
 
   const disputeM = useMutation({
-    mutationFn: (payload: { orderId: string; reason: string }) =>
-      createDispute(payload.orderId, { reason: payload.reason }),
+    mutationFn: (payload: { orderId: string; reason: string }) => {
+      const fd = new FormData();
+      fd.append("reason", payload.reason);
+      return createDispute(payload.orderId, fd);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       Alert.alert("Dispute submitted", "Our team will review your dispute.");
@@ -130,7 +133,7 @@ export default function OrdersScreen() {
         { text: "Cancel", style: "cancel" },
         {
           text: "Submit",
-          onPress: (reason) => {
+          onPress: (reason?: string) => {
             if (!reason?.trim()) return;
             disputeM.mutate({ orderId, reason: reason.trim() });
           },
@@ -236,18 +239,18 @@ export default function OrdersScreen() {
           return (
             <View className="mb-4 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm shadow-slate-200/50 dark:shadow-none">
               <View className="flex-row justify-between items-start mb-3">
-                 <View className="flex-1 pr-4">
-                    <Text className="text-[17px] font-outfit-sb text-slate-900 dark:text-white leading-tight">
-                       {first?.title || "Order"}
-                    </Text>
-                 </View>
-                 <Text className="text-lg font-outfit-b text-primary-600 dark:text-primary-400">{formatInr(o.total || 0)}</Text>
+                <View className="flex-1 pr-4">
+                  <Text className="text-[17px] font-outfit-sb text-slate-900 dark:text-white leading-tight">
+                    {first?.title || "Order"}
+                  </Text>
+                </View>
+                <Text className="text-lg font-outfit-b text-primary-600 dark:text-primary-400">{formatInr(o.total || 0)}</Text>
               </View>
-              
+
               <View className="flex-row justify-between items-center mt-2 border-t border-slate-100 dark:border-slate-800 pt-3">
-                 <View className={`px-2.5 py-1 rounded-lg ${tone.bg}`}>
-                    <Text className={`text-[12px] font-outfit-sb uppercase tracking-wider ${tone.text}`}>{status}</Text>
-                 </View>
+                <View className={`px-2.5 py-1 rounded-lg ${tone.bg}`}>
+                  <Text className={`text-[12px] font-outfit-sb uppercase tracking-wider ${tone.text}`}>{status}</Text>
+                </View>
               </View>
 
               {status === "meetup_scheduled" ? (
