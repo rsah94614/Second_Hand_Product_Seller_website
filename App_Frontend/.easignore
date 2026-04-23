@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native folders (EAS will recreate these if needed)
+ios/
+android/
+
+# Assets / Build artifacts
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+*.tsbuildinfo
+
+# Debug / Logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.metro-health-check*
+
+# Environment files
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+
+# Misc
+app-example/
+.vscode/
+.idea/
