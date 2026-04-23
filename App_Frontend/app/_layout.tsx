@@ -5,6 +5,10 @@ import { useMemo, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as SplashScreen from "expo-splash-screen";
 import {
+  configureReanimatedLogger,
+  ReanimatedLogLevel,
+} from "react-native-reanimated";
+import {
   useFonts,
   Outfit_400Regular,
   Outfit_500Medium,
@@ -20,6 +24,10 @@ import { useColorScheme } from "nativewind";
 import { ThemeProvider, DefaultTheme, DarkTheme } from "@react-navigation/native";
 
 SplashScreen.preventAutoHideAsync();
+configureReanimatedLogger({
+  level: ReanimatedLogLevel.error,
+  strict: false,
+});
 
 export default function RootLayout() {
   const queryClient = useMemo(() => new QueryClient(), []);

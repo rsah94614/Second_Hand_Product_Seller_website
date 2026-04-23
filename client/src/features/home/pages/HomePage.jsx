@@ -50,7 +50,7 @@ const SectionShell = ({ title, description, icon, accent = 'text-primary-600', v
           <p className="mt-2 max-w-xl text-gray-500 text-sm leading-relaxed">{description}</p>
         </div>
         <Link to={viewAllTo} className="hidden md:inline-flex shrink-0">
-          <Button variant="outline" className="gap-2 rounded-full border-gray-200 px-5 hover:border-primary-300">
+          <Button variant="outline" className="gap-2 rounded-full border-gray-200 px-5 hover:border-primary-300 hover:cursor-pointer">
             View All
             <ArrowRight className="h-4 w-4" />
           </Button>
@@ -164,12 +164,12 @@ const HomePage = () => {
 
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link to="/products">
-                  <Button variant="outline" className="h-12 px-7 rounded-full border-white/25 hover:text-primary-700 text-white bg-white/10">
+                  <Button variant="outline" className="h-12 px-7 rounded-full border-white/25 hover:text-primary-700 text-white bg-white/10 hover:cursor-pointer">
                     Browse All Products <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
                 <Link to={user ? '/create-product' : '/register'}>
-                  <Button variant="outline" className="h-12 px-7 rounded-full border-white/25 hover:text-primary-700 text-white bg-white/10">
+                  <Button variant="outline" className="h-12 px-7 rounded-full border-white/25 hover:text-primary-700 text-white bg-white/10 hover:cursor-pointer">
                     {user ? 'List an Item' : 'Start Selling'}
                   </Button>
                 </Link>
@@ -210,7 +210,7 @@ const HomePage = () => {
               <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-gray-900">Browse by Category</h2>
             </div>
             <Link to="/products" className="hidden md:block">
-              <Button variant="outline" className="gap-2 rounded-full text-sm">
+              <Button variant="outline" className="gap-2 rounded-full text-sm hover:cursor-pointer hover:border-primary-300 border-gray-200 px-5">
                 All Products <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
@@ -223,7 +223,7 @@ const HomePage = () => {
                 <button
                   key={category}
                   onClick={() => handleCategoryClick(category)}
-                  className="group rounded-2xl border border-gray-100 bg-white p-5 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-gray-200"
+                  className="group rounded-2xl border border-gray-100 bg-white p-5 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-gray-200 hover:cursor-pointer"
                 >
                   <div className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br ${color} shadow-md transition-transform group-hover:scale-110`}>
                     <CatIcon className="h-6 w-6 text-white" />

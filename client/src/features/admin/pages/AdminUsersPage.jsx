@@ -228,13 +228,13 @@ const AdminUsersPage = () => {
               {selectedIds.length > 0 && (
                 <div className="flex items-center gap-3 px-6 py-3 bg-primary-50 border-b border-primary-100">
                   <span className="text-sm font-semibold text-primary-700">{selectedIds.length} selected</span>
-                  <Button size="sm" variant="outline" onClick={() => handleBulkSuspend(true)} disabled={bulkSuspendMutation.isPending} className="text-red-600 border-red-200 hover:bg-red-50">
+                  <Button size="sm" variant="outline" onClick={() => handleBulkSuspend(true)} disabled={bulkSuspendMutation.isPending} className="text-red-600 border-red-200 hover:bg-red-50 hover:cursor-pointer">
                     Suspend All
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => handleBulkSuspend(false)} disabled={bulkSuspendMutation.isPending}>
+                  <Button size="sm" variant="outline" onClick={() => handleBulkSuspend(false)} disabled={bulkSuspendMutation.isPending} className="hover:cursor-pointer">
                     Unsuspend All
                   </Button>
-                  <button onClick={() => setSelectedIds([])} className="ml-auto text-xs text-gray-500 hover:text-gray-700">Clear</button>
+                  <button onClick={() => setSelectedIds([])} className="ml-auto text-xs text-gray-500 hover:text-gray-700 hover:cursor-pointer">Clear</button>
                 </div>
               )}
               <Table className="min-w-full">
@@ -256,7 +256,7 @@ const AdminUsersPage = () => {
                       return (
                         <TableRow key={user._id} className={`hover:bg-gray-50/80 ${selectedIds.includes(user._id) ? 'bg-primary-50/30' : ''}`}>
                           <TableCell className="px-4 py-4">
-                            <button onClick={() => toggleSelect(user._id)} className="text-gray-400 hover:text-primary-600">
+                            <button onClick={() => toggleSelect(user._id)} className="text-gray-400 hover:cursor-pointer">
                               {selectedIds.includes(user._id) ? <CheckSquare className="w-4 h-4 text-primary-600" /> : <Square className="w-4 h-4" />}
                             </button>
                           </TableCell>
@@ -270,7 +270,7 @@ const AdminUsersPage = () => {
                           </TableCell>
                           <TableCell className="px-6 py-4">
                             <Select value={user.role} onValueChange={(value) => handleRoleChange(user._id, value)}>
-                              <SelectTrigger className="w-[140px]">
+                              <SelectTrigger className="w-[140px] hover:cursor-pointer">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -313,7 +313,7 @@ const AdminUsersPage = () => {
                                 size="sm"
                                 onClick={() => handleSuspend(user)}
                                 disabled={suspendUserMutation.isPending || user.isSuspended}
-                                className="text-red-600 hover:bg-red-50 hover:border-red-200"
+                                className="text-red-600 hover:bg-red-50 hover:border-red-200 hover:cursor-pointer"
                               >
                                 {user.isSuspended ? 'Suspended' : 'Suspend'}
                               </Button>
