@@ -62,6 +62,7 @@ export default function TabLayout() {
         name="cart"
         options={{
           title: "Cart",
+          headerShown: false,
           tabBarIcon: ({ color, size }) => <Ionicons name="cart" size={size} color={color} />,
         }}
       />
@@ -93,6 +94,7 @@ export default function TabLayout() {
         name="orders"
         options={{
           title: "My Orders",
+          headerShown: false,
           href: null, // removes from tab bar
           tabBarIcon: ({ color, size }) => <Ionicons name="receipt" size={size} color={color} />,
         }}

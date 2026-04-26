@@ -244,7 +244,7 @@ export default function HomeScreen() {
               <Pressable
                 key={cat}
                 onPress={() => router.push(`/products?category=${encodeURIComponent(cat)}` as never)}
-                className={`items-center rounded-2xl px-4 py-3 min-w-[80px] active:opacity-80 ${color.bg}`}
+                className={`self-start items-center rounded-2xl px-4 py-3 min-w-[80px] active:opacity-80 ${color.bg}`}
               >
                 <Text className="text-2xl mb-1">{emoji}</Text>
                 <Text className={`text-[11px] font-outfit-sb text-center leading-tight ${color.text}`} numberOfLines={2}>{cat}</Text>

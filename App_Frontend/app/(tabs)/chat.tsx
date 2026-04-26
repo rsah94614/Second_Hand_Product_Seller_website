@@ -2,11 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, Redirect } from "expo-router";
 import { FlatList, Pressable, Text, View } from "react-native";
 import { Screen } from "../../components/ui/Screen";
+import { PageHeader } from "../../components/ui/PageHeader";
 import { Loading } from "../../components/Loading";
 import { EmptyState } from "../../components/EmptyState";
 import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
 import { getConversations, pinConversation, unpinConversation } from "../../lib/api/chat";
+import { useColorScheme } from "nativewind";
 
 type Conv = {
   _id: string;
@@ -23,6 +25,8 @@ export default function ChatTabScreen() {
   const [loading, setLoading] = useState(true);
   const [online, setOnline] = useState<Record<string, boolean>>({});
   const [pinning, setPinning] = useState<string | null>(null);
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -109,6 +113,8 @@ export default function ChatTabScreen() {
 
   return (
     <Screen className="bg-white dark:bg-slate-900">
+      <PageHeader title="Messages" subtitle="Your active conversations" />
+
       <FlatList
         data={list}
         keyExtractor={(c) => c._id}

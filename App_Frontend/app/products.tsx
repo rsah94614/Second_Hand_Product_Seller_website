@@ -13,9 +13,11 @@ import {
 import { Screen } from "../components/ui/Screen";
 import { ProductCard, type ProductListItem } from "../components/ProductCard";
 import { Loading } from "../components/Loading";
+import { PageHeader } from "../components/ui/PageHeader";
 import { getProducts, getProductCategories } from "../lib/api/products";
 import { getSearchSuggestions } from "../lib/api/search";
 import { Ionicons } from "@expo/vector-icons";
+import { useColorScheme } from "nativewind";
 
 const PAGE_SIZE = 12;
 
@@ -46,6 +48,9 @@ export default function ProductsBrowseScreen() {
         (typeof params.sortOrder === "string" && params.sortOrder !== "desc")
     )
   );
+  
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   useEffect(() => {
     if (typeof params.search === "string") setSearch(params.search);
@@ -132,6 +137,9 @@ export default function ProductsBrowseScreen() {
 
   return (
     <Screen className="bg-slate-50 dark:bg-slate-950">
+      {/* ── Page Header ── */}
+      <PageHeader title="Browse Products" subtitle="Find exactly what you need" />
+
       <View className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 z-10 shadow-sm shadow-slate-200/50 dark:shadow-none w-full relative">
         <View className="px-4 py-3 flex-row gap-2 w-full">
            <View className="relative flex-1 shrink">
@@ -258,9 +266,9 @@ export default function ProductsBrowseScreen() {
             <View className="py-8"><Loading message="Loading more..." /></View>
           ) : null
         }
-        renderItem={({ item }) => (
+        renderItem={({ item, index }) => (
           <View className="flex-1 max-w-[50%]">
-            <ProductCard product={item} />
+            <ProductCard product={item} index={index} />
           </View>
         )}
         ListEmptyComponent={

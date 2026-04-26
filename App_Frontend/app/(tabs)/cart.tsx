@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { Screen } from "../../components/ui/Screen";
+import { PageHeader } from "../../components/ui/PageHeader";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Loading } from "../../components/Loading";
@@ -131,6 +132,7 @@ export default function CartScreen() {
 
   return (
     <Screen>
+      <PageHeader title="My Cart" subtitle="Review your items before checkout" />
       {items.length === 0 ? (
         <EmptyState
           title="Your cart is empty"

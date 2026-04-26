@@ -32,8 +32,6 @@ export default function ProductDetailScreen() {
   const { user, refreshUser } = useAuth();
   const queryClient = useQueryClient();
   const [imgIdx, setImgIdx] = useState(0);
-  const [reportReason, setReportReason] = useState("");
-  const [reportDetails, setReportDetails] = useState("");
 
   const { data: product, isLoading, error } = useQuery({
     queryKey: ["product", id],
@@ -84,17 +82,16 @@ export default function ProductDetailScreen() {
     },
   });
 
+  // Fix B3: pass reason as a parameter so the mutation never reads stale state
   const reportM = useMutation({
-    mutationFn: () =>
+    mutationFn: (reason: string) =>
       reportProduct(String(id), {
         targetType: "product",
-        reason: reportReason.trim(),
-        details: reportDetails.trim(),
+        reason: reason.trim(),
+        details: "",
       }),
     onSuccess: () => {
-      setReportReason("");
-      setReportDetails("");
-      Alert.alert("Report sent", "Thank you.");
+      Alert.alert("Report sent", "Thank you for reporting this listing.");
     },
     onError: (e: { response?: { data?: { message?: string } } }) => {
       Alert.alert("Error", e.response?.data?.message || "Report failed.");
@@ -302,16 +299,17 @@ export default function ProductDetailScreen() {
 
           <View className="mt-6 mb-10 pt-4 border-t border-slate-100 dark:border-slate-800">
             <Text className="font-outfit-sb text-slate-900 dark:text-white mb-3 text-sm tracking-wider uppercase text-center">Report Issue</Text>
-            <Pressable
+              <Pressable
               onPress={() => {
                 Alert.alert(
                   "Report Listing",
                   "Why are you reporting this listing?",
                   [
                     { text: "Cancel", style: "cancel" },
-                    { text: "Spam", onPress: () => { setReportReason("Spam"); reportM.mutate(); } },
-                    { text: "Misleading", onPress: () => { setReportReason("Misleading"); reportM.mutate(); } },
-                    { text: "Inappropriate", onPress: () => { setReportReason("Inappropriate"); reportM.mutate(); } },
+                    // Fix B3: reason passed directly — no stale-state risk
+                    { text: "Spam", onPress: () => reportM.mutate("Spam") },
+                    { text: "Misleading", onPress: () => reportM.mutate("Misleading") },
+                    { text: "Inappropriate", onPress: () => reportM.mutate("Inappropriate") },
                   ]
                 );
               }}
