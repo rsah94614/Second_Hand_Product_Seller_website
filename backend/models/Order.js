@@ -65,6 +65,19 @@ const orderSchema = new mongoose.Schema(
       notes: { type: String, trim: true, maxlength: 500, default: '' },
     },
 
+    // Reminder tracking (Task 2.3.1)
+    reminders: {
+      oneDaySent: { type: Boolean, default: false },
+      oneHourSent: { type: Boolean, default: false },
+    },
+
+    // Confirmation photo (Task 2.3.2)
+    confirmationPhoto: {
+      url: { type: String, default: '' },
+      uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      uploadedAt: { type: Date },
+    },
+
     // Review gate (NEW)
     reviewUnlocked: {
       type: Boolean,

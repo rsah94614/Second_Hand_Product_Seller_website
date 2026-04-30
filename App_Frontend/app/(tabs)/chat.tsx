@@ -2,17 +2,20 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, Redirect } from "expo-router";
 import { FlatList, Pressable, Text, View } from "react-native";
 import { Screen } from "../../components/ui/Screen";
+import { PageHeader } from "../../components/ui/PageHeader";
 import { Loading } from "../../components/Loading";
 import { EmptyState } from "../../components/EmptyState";
 import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
-import { getConversations } from "../../lib/api/chat";
+import { getConversations, pinConversation, unpinConversation } from "../../lib/api/chat";
+import { useColorScheme } from "nativewind";
 
 type Conv = {
   _id: string;
   name?: string;
   lastMessage?: string;
   unreadCount?: number;
+  isPinned?: boolean;
 };
 
 export default function ChatTabScreen() {
@@ -21,6 +24,9 @@ export default function ChatTabScreen() {
   const [list, setList] = useState<Conv[]>([]);
   const [loading, setLoading] = useState(true);
   const [online, setOnline] = useState<Record<string, boolean>>({});
+  const [pinning, setPinning] = useState<string | null>(null);
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -33,6 +39,23 @@ export default function ChatTabScreen() {
       setLoading(false);
     }
   }, [user]);
+
+  const togglePin = async (conv: Conv) => {
+    if (pinning) return;
+    setPinning(conv._id);
+    try {
+      if (conv.isPinned) {
+        await unpinConversation(conv._id);
+      } else {
+        await pinConversation(conv._id);
+      }
+      await load();
+    } catch {
+      // ignore
+    } finally {
+      setPinning(null);
+    }
+  };
 
   useEffect(() => {
     load();
@@ -58,12 +81,16 @@ export default function ChatTabScreen() {
     socket.on("user_online", onOnline);
     socket.on("user_offline", onOffline);
 
+    const onReceiveMessage = () => load();
+    socket.on("receive_message", onReceiveMessage);
+
     return () => {
       socket.off("presence_batch", onPresenceBatch);
       socket.off("user_online", onOnline);
       socket.off("user_offline", onOffline);
+      socket.off("receive_message", onReceiveMessage);
     };
-  }, [socket, user]);
+  }, [socket, user, load]);
 
   useEffect(() => {
     if (!socket || !user) return;
@@ -86,6 +113,8 @@ export default function ChatTabScreen() {
 
   return (
     <Screen className="bg-white dark:bg-slate-900">
+      <PageHeader title="Messages" subtitle="Your active conversations" />
+
       <FlatList
         data={list}
         keyExtractor={(c) => c._id}
@@ -94,35 +123,43 @@ export default function ChatTabScreen() {
         onRefresh={load}
         ListEmptyComponent={
           <View className="py-16">
-             <EmptyState
-               title="No conversations yet"
-               message="Start chatting from a product page when you want to contact a seller."
-             />
+            <EmptyState
+              title="No conversations yet"
+              message="Start chatting from a product page when you want to contact a seller."
+            />
           </View>
         }
         renderItem={({ item }) => (
-          <Link href={`/chat/${item._id}` as never} asChild>
-            <Pressable className="flex-row items-center bg-white dark:bg-slate-900 px-5 py-4 border-b border-slate-100 dark:border-slate-800/80 active:bg-slate-50 dark:active:bg-slate-800/50">
+          <Link href={`/chat/${item._id}?name=${encodeURIComponent(item.name || "")}` as never} asChild>
+            <Pressable
+              onLongPress={() => togglePin(item)}
+              className="flex-row items-center bg-white dark:bg-slate-900 px-5 py-4 border-b border-slate-100 dark:border-slate-800/80 active:bg-slate-50 dark:active:bg-slate-800/50"
+            >
               <View className="h-14 w-14 rounded-full bg-primary-100 dark:bg-primary-900/60 items-center justify-center">
-                 <Text className="text-xl font-outfit-sb text-primary-700 dark:text-primary-400">
-                    {(item.name || "U")[0].toUpperCase()}
-                 </Text>
-                 {online[item._id] ? (
-                   <View className="absolute bottom-0 right-0 h-4 w-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900" />
-                 ) : null}
-              </View>
-              
-              <View className="ml-4 flex-1 justify-center">
-                <Text className="text-[17px] font-outfit-sb text-slate-900 dark:text-white mb-0.5">
-                  {item.name || "User"}
+                <Text className="text-xl font-outfit-sb text-primary-700 dark:text-primary-400">
+                  {(item.name || "U")[0].toUpperCase()}
                 </Text>
+                {online[item._id] ? (
+                  <View className="absolute bottom-0 right-0 h-4 w-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900" />
+                ) : null}
+              </View>
+
+              <View className="ml-4 flex-1 justify-center">
+                <View className="flex-row items-center gap-1.5">
+                  {item.isPinned ? (
+                    <Text className="text-[10px] text-primary-500">📌</Text>
+                  ) : null}
+                  <Text className="text-[17px] font-outfit-sb text-slate-900 dark:text-white mb-0.5">
+                    {item.name || "User"}
+                  </Text>
+                </View>
                 {item.lastMessage ? (
                   <Text className={`text-[14px] font-outfit ${item.unreadCount ? 'text-slate-900 dark:text-slate-100 font-outfit-m' : 'text-slate-500 dark:text-slate-400'}`} numberOfLines={1}>
                     {item.lastMessage}
                   </Text>
                 ) : null}
               </View>
-              
+
               {(item.unreadCount || 0) > 0 ? (
                 <View className="ml-3 h-6 min-w-[24px] rounded-full bg-primary-600 dark:bg-primary-500 items-center justify-center px-1.5 shadow-sm shadow-primary-500/30">
                   <Text className="text-[11px] font-outfit-b text-white">{item.unreadCount}</Text>

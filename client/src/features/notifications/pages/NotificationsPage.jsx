@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   Bell,
   CheckCheck,
   SlidersHorizontal,
+  Clock,
 } from 'lucide-react';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
@@ -16,6 +17,7 @@ import {
   getNotifications,
   markAllNotificationsRead,
   markNotificationRead,
+  snoozeNotification,
 } from '../api/notificationApi';
 import {
   formatNotificationTime,
@@ -25,44 +27,66 @@ import {
   notificationCategoryOptions,
 } from '../utils/notificationMeta';
 
-const NotificationRow = ({ notification, onOpen }) => {
+const NotificationRow = ({ notification, onOpen, onSnooze }) => {
   const visual = getNotificationVisual(notification.type);
   const Icon = visual.icon;
 
   return (
-    <button
-      type="button"
-      onClick={() => onOpen(notification)}
-      className={`w-full rounded-2xl border p-4 text-left transition-all hover:border-primary-200 hover:bg-primary-50/40 ${
-        notification.isRead ? 'border-gray-100 bg-white' : 'border-primary-100 bg-primary-50/30'
-      }`}
-    >
+    <div className={`w-full rounded-2xl border p-4 transition-all hover:border-primary-200 hover:bg-primary-50/40 ${
+      notification.isRead ? 'border-gray-100 bg-white' : 'border-primary-100 bg-primary-50/30'
+    }`}>
       <div className="flex items-start gap-4">
-        <div className={`mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${visual.iconTone}`}>
-          <Icon className="h-5 w-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="font-semibold text-gray-900">{notification.title}</p>
-            {!notification.isRead && <Badge variant="default">New</Badge>}
-            <Badge variant={visual.badge}>{notification.type.replace(/_/g, ' ')}</Badge>
+        <button type="button" onClick={() => onOpen(notification)} className="flex-1 text-left">
+          <div className="flex items-start gap-4">
+            <div className={`mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${visual.iconTone}`}>
+              <Icon className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-semibold text-gray-900">{notification.title}</p>
+                {!notification.isRead && <Badge variant="default">New</Badge>}
+                <Badge variant={visual.badge}>{notification.type.replace(/_/g, ' ')}</Badge>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-gray-600">{notification.message}</p>
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <span className="text-xs font-medium text-gray-400">
+                  {formatNotificationTime(notification.createdAt, true)}
+                </span>
+                {notification.link && (
+                  <span className="text-xs font-semibold text-primary-600">Open</span>
+                )}
+              </div>
+            </div>
           </div>
-            <p className="mt-2 text-sm leading-6 text-gray-600">{notification.message}</p>
-            <div className="mt-3 flex items-center justify-between gap-3">
-              <span className="text-xs font-medium text-gray-400">
-                {formatNotificationTime(notification.createdAt, true)}
-              </span>
-              {notification.link && (
-                <span className="text-xs font-semibold text-primary-600">Open</span>
-            )}
+        </button>
+        {/* Snooze button */}
+        <div className="relative group shrink-0">
+          <button
+            type="button"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 transition-colors"
+            title="Snooze"
+          >
+            <Clock className="h-4 w-4" />
+          </button>
+          <div className="absolute right-0 top-8 hidden group-hover:flex flex-col bg-white border border-gray-100 rounded-xl shadow-lg z-10 min-w-[120px]">
+            {['1h', '1d', '1w'].map((d) => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => onSnooze(notification._id, d)}
+                className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left first:rounded-t-xl last:rounded-b-xl"
+              >
+                {d === '1h' ? '1 hour' : d === '1d' ? '1 day' : '1 week'}
+              </button>
+            ))}
           </div>
         </div>
       </div>
-    </button>
+    </div>
   );
 };
 
-const NotificationGroup = ({ title, items, onOpen }) => (
+const NotificationGroup = ({ title, items, onOpen, onSnooze }) => (
   <section>
     <div className="mb-3 flex items-center gap-3">
       <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-gray-400">{title}</h3>
@@ -74,6 +98,7 @@ const NotificationGroup = ({ title, items, onOpen }) => (
           key={notification._id}
           notification={notification}
           onOpen={onOpen}
+          onSnooze={onSnooze}
         />
       ))}
     </div>
@@ -117,14 +142,22 @@ const NotificationsPage = () => {
     },
   });
 
+  const snoozeMutation = useMutation({
+    mutationFn: ({ id, duration }) => snoozeNotification(id, duration),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications-list'] });
+    },
+  });
+
   const handleOpenNotification = async (notification) => {
     if (!notification.isRead) {
       await markOneMutation.mutateAsync(notification._id);
     }
+    if (notification.link) navigate(notification.link);
+  };
 
-    if (notification.link) {
-      navigate(notification.link);
-    }
+  const handleSnooze = (id, duration) => {
+    snoozeMutation.mutate({ id, duration });
   };
 
   const notifications = data?.notifications || [];
@@ -182,6 +215,12 @@ const NotificationsPage = () => {
                 <CheckCheck className="h-4 w-4" />
                 Mark All Read
               </Button>
+              <Link to="/notifications/preferences">
+                <Button variant="outline" className="gap-2">
+                  <SlidersHorizontal className="h-4 w-4" />
+                  Preferences
+                </Button>
+              </Link>
             </div>
           </CardHeader>
           <CardContent className="pt-6">
@@ -238,6 +277,7 @@ const NotificationsPage = () => {
                         title={group.label}
                         items={group.items}
                         onOpen={handleOpenNotification}
+                        onSnooze={handleSnooze}
                       />
                     ))}
                   </div>
@@ -269,6 +309,7 @@ const NotificationsPage = () => {
                         title={group.label}
                         items={group.items}
                         onOpen={handleOpenNotification}
+                        onSnooze={handleSnooze}
                       />
                     ))}
                   </div>

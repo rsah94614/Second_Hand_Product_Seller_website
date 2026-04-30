@@ -21,3 +21,14 @@ export const completeOrder = (orderId) =>
 
 export const reportNoShow = (orderId, payload = { noShowBy: 'seller' }) =>
   axios.patch(`${API_BASE_URL}/api/orders/${orderId}/no-show`, payload).then((res) => res.data);
+
+// ── Phase 2: Confirmation Photo ───────────────────────────────────────────────
+export const uploadConfirmationPhoto = (orderId, formData) =>
+  axios.post(`${API_BASE_URL}/api/orders/${orderId}/confirmation-photo`, formData).then((res) => res.data);
+
+// ── Phase 2: Disputes ─────────────────────────────────────────────────────────
+export const createDispute = (orderId, formData) =>
+  axios.post(`${API_BASE_URL}/api/orders/${orderId}/dispute`, formData).then((res) => res.data);
+
+export const getDisputes = () =>
+  axios.get(`${API_BASE_URL}/api/orders/disputes/all`).then((res) => res.data);

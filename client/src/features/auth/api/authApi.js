@@ -26,6 +26,3 @@ export const verifyEmailApi = (token) =>
 export const resendVerificationEmailApi = () =>
   axios.post(`${API_BASE_URL}/api/auth/resend-verification`).then((res) => res.data);
 
-// CSRF token API
-export const getCsrfToken = () =>
-  axios.get(`${API_BASE_URL}/api/csrf-token`).then((res) => res.data);

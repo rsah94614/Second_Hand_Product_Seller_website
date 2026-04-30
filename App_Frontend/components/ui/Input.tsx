@@ -56,6 +56,7 @@ export function Input({
               : "border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900"
           } px-4 py-4 ${secureTextEntry ? "pr-12" : ""} text-[16px] font-outfit text-slate-900 dark:text-white transition-colors duration-200 ${inputClassName}`}
           placeholderTextColor="#94a3b8"
+          style={{}}
         />
         {secureTextEntry ? (
           <Pressable 

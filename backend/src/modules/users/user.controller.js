@@ -8,6 +8,7 @@ const fs = require('fs');
 const { buildWishlistPayload } = require('./user.service');
 const { createNotification } = require('../../shared/utils/notification.utils');
 const { computeProfileScore, canTradeOnCampus } = require('../../shared/utils/profileCompletion.utils');
+const { calculateReputation, getReputationHistory, checkVerificationEligibility } = require('../../services/reputation.service');
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -117,7 +118,7 @@ const getUserProfile = async (req, res) => {
       Order.countDocuments({ seller: req.params.id, status: 'cancelled' }),
     ]);
 
-    const profileCompletionScore = computeProfileScore(user);
+    const { score: profileCompletionScore, missing, canTrade } = canTradeOnCampus(user);
     const trustLabels = buildTrustLabels(user, { completedOrders: completedOrderCount, openReports: openReportCount });
 
     const ageDays = Math.floor(
@@ -142,6 +143,8 @@ const getUserProfile = async (req, res) => {
         reviewCount: user.reviewCount,
         averageRating: user.averageRating,
         isNewSeller: ageDays < 7,
+        missing,
+        canTrade,
       },
     });
   } catch (error) {
@@ -162,7 +165,7 @@ const updateUserProfile = async (req, res) => {
 
     if (req.body.campus) {
       const c = req.body.campus;
-      const campusFields = ['collegeName', 'department', 'course', 'year', 'semester', 'enrollmentId', 'hostel', 'residentType'];
+      const campusFields = ['department', 'course', 'year', 'semester', 'hostel', 'residentType'];
       campusFields.forEach((f) => {
         if (c[f] !== undefined) allowedUpdates[`campus.${f}`] = c[f];
       });
@@ -362,12 +365,120 @@ const getBlockedUsers = async (req, res) => {
 const getProfileCompletion = async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
-      .select('name avatar campus profileRole location');
+      .select('name avatar campus profileRole location emailVerified');
 
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const { score, missing, isComplete, canTrade } = canTradeOnCampus(user);
     return res.json({ score, missing, isComplete, canTrade });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// ─── Seller Verification (Task 2.7.1) ────────────────────────────────────────
+
+const requestSellerVerification = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Check if already verified
+    if (user.sellerVerified) {
+      return res.status(400).json({ message: 'You are already verified as a seller' });
+    }
+
+    // Check if already pending
+    if (user.sellerVerificationStatus === 'pending') {
+      return res.status(400).json({ message: 'Your verification request is already pending' });
+    }
+
+    // Check eligibility
+    const reputation = await calculateReputation(user._id);
+    const eligibility = checkVerificationEligibility(user, reputation);
+
+    if (!eligibility.eligible) {
+      return res.status(400).json({
+        message: eligibility.message,
+        criteria: eligibility.criteria,
+        reputation,
+      });
+    }
+
+    // Update user
+    user.sellerVerificationStatus = 'pending';
+    user.sellerVerificationRequestedAt = new Date();
+    await user.save();
+
+    // Notify admins
+    const admins = await User.find({ role: 'admin', isActive: true }).select('_id');
+    if (admins.length > 0) {
+      const { createNotifications } = require('../../shared/utils/notification.utils');
+      await createNotifications(admins.map(a => a._id), {
+        actorId: user._id,
+        type: 'seller_verification_request',
+        title: 'New seller verification request',
+        message: `${user.name} requested seller verification`,
+        link: '/admin/seller-verifications',
+        metadata: { userId: user._id, reputation },
+      });
+    }
+
+    return res.json({
+      message: 'Seller verification requested successfully',
+      status: user.sellerVerificationStatus,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const getSellerVerificationStatus = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id)
+      .select('sellerVerified sellerVerificationStatus sellerVerificationDate sellerVerificationReason sellerVerificationRequestedAt');
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Get reputation and eligibility
+    const reputation = await calculateReputation(user._id);
+    const eligibility = checkVerificationEligibility(user, reputation);
+
+    return res.json({
+      sellerVerified: user.sellerVerified,
+      status: user.sellerVerificationStatus,
+      verificationDate: user.sellerVerificationDate,
+      reason: user.sellerVerificationReason,
+      requestedAt: user.sellerVerificationRequestedAt,
+      eligibility,
+      reputation,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// ─── Reputation System (Task 2.7.2) ──────────────────────────────────────────
+
+const getUserReputation = async (req, res) => {
+  try {
+    const userId = req.params.id || req.user._id;
+    const reputation = await calculateReputation(userId);
+
+    return res.json({ reputation });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const getUserReputationHistory = async (req, res) => {
+  try {
+    const userId = req.params.id || req.user._id;
+    const days = parseInt(req.query.days) || 30;
+
+    const history = await getReputationHistory(userId, days);
+
+    return res.json({ history });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -385,4 +496,8 @@ module.exports = {
   unblockUser,
   getBlockedUsers,
   getProfileCompletion,
+  requestSellerVerification,
+  getSellerVerificationStatus,
+  getUserReputation,
+  getUserReputationHistory,
 };

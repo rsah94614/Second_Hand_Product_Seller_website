@@ -2,7 +2,10 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const User = require('../../../models/User');
 const RegistrationOtp = require('../../../models/RegistrationOtp');
+const Device = require('../../../models/Device');
 const { sendResetEmail, sendVerificationEmail, sendLockoutEmail, sendSignupOtpEmail } = require('../../shared/utils/emailService');
+const { getDeviceInfo } = require('../../shared/utils/deviceFingerprint');
+const { validatePasswordStrength, isCommonPassword } = require('../../shared/utils/passwordValidator');
 const {
   detectCollegeDomain,
   buildAuthUser,
@@ -45,7 +48,6 @@ const getRefreshCookieClearOptions = () => {
 
 const OTP_TTL_MS = 10 * 60 * 1000;
 const OTP_COOLDOWN_MS = 60 * 1000;
-const OTP_MAX_ATTEMPTS = 5;
 
 const issueSession = async (req, res, user, message) => {
   const accessToken = signAccessToken(user._id);
@@ -76,13 +78,37 @@ const buildOtpResponse = (basePayload, code) => ({
 
 const register = async (req, res) => {
   try {
-    const { name, email, password, location, campus, profileRole, otp } = req.body;
+    const { name, email, password, location, campus, profileRole, otp, termsAccepted, privacyAccepted } = req.body;
+
+    // ── Terms Acceptance Check ─────────────────────────────────────────────
+    if (!termsAccepted) {
+      return res.status(400).json({ message: 'You must accept the terms and conditions to register' });
+    }
+
+    if (!privacyAccepted) {
+      return res.status(400).json({ message: 'You must accept the privacy policy to register' });
+    }
 
     // ── Email uniqueness check ─────────────────────────────────────────────
     const normalizedEmail = email.toLowerCase().trim();
     const existingEmail = await User.findOne({ email: normalizedEmail });
     if (existingEmail) {
       return res.status(400).json({ message: 'An account with this email already exists' });
+    }
+
+    // ── Password Strength Validation ───────────────────────────────────────
+    const passwordValidation = validatePasswordStrength(password);
+    if (!passwordValidation.valid) {
+      return res.status(400).json({
+        message: 'Password does not meet security requirements',
+        errors: passwordValidation.errors,
+      });
+    }
+
+    if (isCommonPassword(password)) {
+      return res.status(400).json({
+        message: 'Password is too common. Please choose a stronger password.',
+      });
     }
 
     // ── OTP Verification ───────────────────────────────────────────────────
@@ -115,12 +141,10 @@ const register = async (req, res) => {
     const isVerified = !!collegeInfo?.verified;
 
     const campusData = {
-      collegeName: campus?.collegeName || collegeInfo?.collegeName || '',
       department: campus?.department || '',
       course: campus?.course || '',
       year: campus?.year || '',
       semester: campus?.semester || '',
-      enrollmentId: campus?.enrollmentId || '',
       hostel: campus?.hostel || '',
       residentType: campus?.residentType || '',
     };
@@ -130,6 +154,10 @@ const register = async (req, res) => {
       email: normalizedEmail,
       password,
       location,
+      termsAccepted: true,
+      termsAcceptedAt: new Date(),
+      privacyAccepted: true,
+      privacyAcceptedAt: new Date(),
       campus: campusData,
       profileRole: profileRole || 'student',
       isVerified,
@@ -170,7 +198,7 @@ const requestSignupOtp = async (req, res) => {
     }
 
     const now = Date.now();
-    
+
     // Check cooldown
     const existingOtp = await RegistrationOtp.findOne({ email: normalizedEmail });
     if (existingOtp && now - new Date(existingOtp.requestedAt).getTime() < OTP_COOLDOWN_MS) {
@@ -179,7 +207,7 @@ const requestSignupOtp = async (req, res) => {
     }
 
     const code = generateOtpCode();
-    
+
     await RegistrationOtp.findOneAndUpdate(
       { email: normalizedEmail },
       {
@@ -196,7 +224,7 @@ const requestSignupOtp = async (req, res) => {
       await sendSignupOtpEmail(normalizedEmail, code);
     } catch (error) {
       console.error('Failed to send signup OTP Email:', error);
-      
+
       // Development Fallback: Log to terminal so developer can see the code
       if (process.env.NODE_ENV !== 'production') {
         console.log(`\n[DEV ONLY] SIGNUP OTP FOR ${normalizedEmail}: ${code}\n`);
@@ -282,6 +310,27 @@ const login = async (req, res) => {
     user.lockUntil = undefined;
     await user.save();
 
+    // ── Device Tracking ────────────────────────────────────────────────────
+    const deviceInfo = getDeviceInfo(req);
+
+    // Check if device already exists
+    let device = await Device.findOne({ fingerprint: deviceInfo.fingerprint });
+
+    if (device) {
+      // Update existing device
+      device.lastUsedAt = new Date();
+      device.lastIpAddress = deviceInfo.ipAddress;
+      device.isActive = true;
+      await device.save();
+    } else {
+      // Create new device
+      device = new Device({
+        userId: user._id,
+        ...deviceInfo,
+      });
+      await device.save();
+    }
+
     const body = await issueSession(req, res, user, 'Login successful');
     return res.json(body);
   } catch (error) {
@@ -332,6 +381,21 @@ const resetPassword = async (req, res) => {
   try {
     const { token, newPassword } = req.body;
 
+    // ── Password Strength Validation ───────────────────────────────────────
+    const passwordValidation = validatePasswordStrength(newPassword);
+    if (!passwordValidation.valid) {
+      return res.status(400).json({
+        message: 'Password does not meet security requirements',
+        errors: passwordValidation.errors,
+      });
+    }
+
+    if (isCommonPassword(newPassword)) {
+      return res.status(400).json({
+        message: 'Password is too common. Please choose a stronger password.',
+      });
+    }
+
     const user = await User.findOne({
       resetPasswordToken: token,
       resetPasswordExpires: { $gt: Date.now() },
@@ -377,8 +441,35 @@ const refreshToken = async (req, res) => {
       });
     }
 
+    // ── Token Rotation: Generate new refresh token ─────────────────────────
     const newAccessToken = signAccessToken(user._id);
-    return res.json({ token: newAccessToken });
+    const newRefreshToken = signRefreshToken(user._id);
+
+    // Remove old token and add new one
+    user.refreshTokens = user.refreshTokens.filter(t => t !== token);
+    user.refreshTokens.push(newRefreshToken);
+
+    // Limit tokens per user (max 5 active tokens)
+    if (user.refreshTokens.length > 5) {
+      user.refreshTokens.shift(); // Remove oldest token
+    }
+
+    await user.save();
+
+    // Set new refresh token in cookie
+    res.cookie('refreshToken', newRefreshToken, getRefreshCookieOptions());
+
+    const body = {
+      message: 'Token refreshed successfully',
+      token: newAccessToken,
+    };
+
+    // For mobile clients, include refresh token in response
+    if (isMobileClient(req)) {
+      body.refreshToken = newRefreshToken;
+    }
+
+    return res.json(body);
   } catch (error) {
     return res.status(500).json({ message: 'Could not refresh token' });
   }
@@ -474,6 +565,102 @@ const resendVerificationEmail = async (req, res) => {
   }
 };
 
+/**
+ * Get list of devices
+ */
+const getDevices = async (req, res) => {
+  try {
+    const devices = await Device.find({ userId: req.user._id, isActive: true })
+      .select('-__v')
+      .sort({ lastUsedAt: -1 });
+
+    return res.json({
+      message: 'Devices retrieved successfully',
+      devices,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * Remove device
+ */
+const removeDevice = async (req, res) => {
+  try {
+    const { deviceId } = req.params;
+
+    const device = await Device.findOne({
+      _id: deviceId,
+      userId: req.user._id,
+    });
+
+    if (!device) {
+      return res.status(404).json({ message: 'Device not found' });
+    }
+
+    device.isActive = false;
+    await device.save();
+
+    return res.json({ message: 'Device removed successfully' });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * Logout from device
+ */
+const logoutFromDevice = async (req, res) => {
+  try {
+    const { deviceId } = req.params;
+
+    const device = await Device.findOne({
+      _id: deviceId,
+      userId: req.user._id,
+    });
+
+    if (!device) {
+      return res.status(404).json({ message: 'Device not found' });
+    }
+
+    device.isActive = false;
+    await device.save();
+
+    return res.json({ message: 'Logged out from device successfully' });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * Trust device
+ */
+const trustDevice = async (req, res) => {
+  try {
+    const { deviceId } = req.params;
+
+    const device = await Device.findOne({
+      _id: deviceId,
+      userId: req.user._id,
+    });
+
+    if (!device) {
+      return res.status(404).json({ message: 'Device not found' });
+    }
+
+    device.isTrusted = true;
+    await device.save();
+
+    return res.json({
+      message: 'Device marked as trusted',
+      device,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -485,4 +672,8 @@ module.exports = {
   logout,
   verifyEmail,
   resendVerificationEmail,
+  getDevices,
+  removeDevice,
+  logoutFromDevice,
+  trustDevice,
 };

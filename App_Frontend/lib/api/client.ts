@@ -5,6 +5,7 @@ import * as storage from "../auth-storage";
 export const api = axios.create({
   baseURL: API_BASE_URL,
   headers: { "Content-Type": "application/json" },
+  timeout: 15000, // 15s timeout — prevents infinite loading on poor networks
 });
 
 api.interceptors.request.use(async (config) => {
@@ -17,6 +18,11 @@ api.interceptors.request.use(async (config) => {
   }
   return config;
 });
+
+// ── Refresh mutex ──────────────────────────────────────────────────────────────
+// Ensures that if multiple 401s fire concurrently, only ONE refresh call is made.
+// All other retries wait for the same promise.
+let refreshingPromise: Promise<string> | null = null;
 
 api.interceptors.response.use(
   (response) => response,
@@ -32,21 +38,36 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
     originalRequest._retry = true;
+
     const refreshToken = await storage.getRefreshToken();
     if (!refreshToken) {
       await storage.clearTokens();
       return Promise.reject(error);
     }
+
     try {
-      const { data } = await axios.post<{ token: string }>(
-        `${API_BASE_URL}/api/auth/refresh`,
-        { refreshToken },
-        { headers: { "Content-Type": "application/json" } }
-      );
-      await storage.setAccessToken(data.token);
-      originalRequest.headers.Authorization = `Bearer ${data.token}`;
+      // If a refresh is already in flight, wait for it instead of making a new one
+      if (!refreshingPromise) {
+        refreshingPromise = axios
+          .post<{ token: string }>(
+            `${API_BASE_URL}/api/auth/refresh`,
+            { refreshToken },
+            { headers: { "Content-Type": "application/json" } }
+          )
+          .then(async ({ data }) => {
+            await storage.setAccessToken(data.token);
+            return data.token;
+          })
+          .finally(() => {
+            refreshingPromise = null;
+          });
+      }
+
+      const newToken = await refreshingPromise;
+      originalRequest.headers.Authorization = `Bearer ${newToken}`;
       return api(originalRequest);
     } catch (refreshError: any) {
+      refreshingPromise = null;
       const status = refreshError?.response?.status;
       if (status === 401 || status === 403) {
         await storage.clearTokens();

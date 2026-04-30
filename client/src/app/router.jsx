@@ -11,6 +11,7 @@ import ProductDetailPage from '../features/products/pages/ProductDetailPage';
 import ProfilePage from '../features/users/pages/ProfilePage';
 import WishlistPage from '../features/users/pages/WishlistPage';
 import NotificationsPage from '../features/notifications/pages/NotificationsPage';
+import NotificationPreferencesPage from '../features/notifications/pages/NotificationPreferencesPage';
 import CreateProductPage from '../features/products/pages/CreateProductPage';
 import EditProductPage from '../features/products/pages/EditProductPage';
 import MyProductsPage from '../features/products/pages/MyProductsPage';
@@ -27,6 +28,8 @@ import AdminCategoriesPage from '../features/admin/pages/AdminCategoriesPage';
 import AdminOrdersPage from '../features/admin/pages/AdminOrdersPage';
 import AdminReportsPage from '../features/admin/pages/AdminReportsPage';
 import AdminAuditLogsPage from '../features/admin/pages/AdminAuditLogsPage';
+import AdminModerationQueuePage from '../features/admin/pages/AdminModerationQueuePage';
+import AdminSellerVerificationsPage from '../features/admin/pages/AdminSellerVerificationsPage';
 
 const AppRouter = () => (
   <Routes>
@@ -41,6 +44,7 @@ const AppRouter = () => (
     <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
     <Route path="/wishlist" element={<ProtectedRoute><WishlistPage /></ProtectedRoute>} />
     <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+    <Route path="/notifications/preferences" element={<ProtectedRoute><NotificationPreferencesPage /></ProtectedRoute>} />
     <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['user']}><DashboardPage /></ProtectedRoute>} />
     <Route path="/seller-dashboard" element={<Navigate to="/dashboard" replace />} />
     <Route path="/admin-dashboard" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboardPage /></ProtectedRoute>} />
@@ -50,6 +54,8 @@ const AppRouter = () => (
     <Route path="/admin/orders" element={<ProtectedRoute allowedRoles={['admin']}><AdminOrdersPage /></ProtectedRoute>} />
     <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={['admin']}><AdminReportsPage /></ProtectedRoute>} />
     <Route path="/admin/audit-logs" element={<ProtectedRoute allowedRoles={['admin']}><AdminAuditLogsPage /></ProtectedRoute>} />
+    <Route path="/admin/moderation-queue" element={<ProtectedRoute allowedRoles={['admin']}><AdminModerationQueuePage /></ProtectedRoute>} />
+    <Route path="/admin/seller-verifications" element={<ProtectedRoute allowedRoles={['admin']}><AdminSellerVerificationsPage /></ProtectedRoute>} />
     <Route path="/create-product" element={<ProtectedRoute allowedRoles={['user']}><CreateProductPage /></ProtectedRoute>} />
     <Route path="/edit-product/:id" element={<ProtectedRoute allowedRoles={['user']}><EditProductPage /></ProtectedRoute>} />
     <Route path="/my-products" element={<ProtectedRoute allowedRoles={['user']}><MyProductsPage /></ProtectedRoute>} />

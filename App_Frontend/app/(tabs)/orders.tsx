@@ -1,8 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Redirect, router } from "expo-router";
-import { Alert, FlatList, Modal, Pressable, Text, TextInput, View } from "react-native";
+import {
+  Alert,
+  FlatList,
+  Modal,
+  Platform,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+  ActivityIndicator,
+} from "react-native";
 import { useState } from "react";
+import * as ImagePicker from "expo-image-picker";
 import { Screen } from "../../components/ui/Screen";
+import { PageHeader } from "../../components/ui/PageHeader";
 import { Loading } from "../../components/Loading";
 import { EmptyState } from "../../components/EmptyState";
 import { useAuth } from "../../context/AuthContext";
@@ -10,11 +22,14 @@ import {
   acceptOrder,
   cancelOrder,
   completeOrder,
+  createDispute,
   getOrders,
   reportNoShow,
   scheduleMeetup,
+  uploadConfirmationPhoto,
 } from "../../lib/api/orders";
 import { formatInr } from "../../lib/format";
+import { useColorScheme } from "nativewind";
 
 type OrderRow = {
   _id: string;
@@ -30,8 +45,39 @@ type OrderRow = {
   seller?: { _id?: string };
 };
 
+// ── Action button ─────────────────────────────────────────────────────────────
+function ActionBtn({
+  label,
+  onPress,
+  color,
+  loading = false,
+  disabled = false,
+}: {
+  label: string;
+  onPress: () => void;
+  color: string;
+  loading?: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={loading || disabled}
+      className={`rounded-xl px-3 py-2 ${color} ${loading || disabled ? "opacity-60" : ""}`}
+    >
+      {loading ? (
+        <ActivityIndicator size="small" color="#6366f1" />
+      ) : (
+        <Text className="text-[13px] font-outfit-sb text-slate-700 dark:text-slate-200">{label}</Text>
+      )}
+    </Pressable>
+  );
+}
+
 export default function OrdersScreen() {
   const { user } = useAuth();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const queryClient = useQueryClient();
   const { data, isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ["orders"],
@@ -41,11 +87,17 @@ export default function OrdersScreen() {
 
   const orders: OrderRow[] = Array.isArray(data) ? data : data?.orders || [];
 
+  // ── Schedule modal ──────────────────────────────────────────────────────────
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [scheduleOrderId, setScheduleOrderId] = useState<string>("");
   const [scheduleLocation, setScheduleLocation] = useState("");
   const [scheduleScheduledAt, setScheduleScheduledAt] = useState("");
   const [scheduleNotes, setScheduleNotes] = useState("");
+
+  // Fix B1: Dispute modal replaces Alert.prompt (iOS-only) ─────────────────────
+  const [disputeModalOpen, setDisputeModalOpen] = useState(false);
+  const [disputeOrderId, setDisputeOrderId] = useState<string>("");
+  const [disputeReason, setDisputeReason] = useState("");
 
   const openSchedule = (orderId: string) => {
     setScheduleOrderId(orderId);
@@ -53,6 +105,12 @@ export default function OrdersScreen() {
     setScheduleScheduledAt("");
     setScheduleNotes("");
     setScheduleModalOpen(true);
+  };
+
+  const openDispute = (orderId: string) => {
+    setDisputeOrderId(orderId);
+    setDisputeReason("");
+    setDisputeModalOpen(true);
   };
 
   const cancelM = useMutation({
@@ -72,7 +130,10 @@ export default function OrdersScreen() {
         scheduledAt: payload.scheduledAt || undefined,
         notes: payload.notes || undefined,
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      setScheduleModalOpen(false);
+    },
   });
 
   const completeM = useMutation({
@@ -87,7 +148,10 @@ export default function OrdersScreen() {
       if (sellerId && orderId) {
         Alert.alert("Completed", "Deal marked as completed.", [
           { text: "OK" },
-          { text: "Rate seller", onPress: () => router.push((`/review/${sellerId}?orderId=${orderId}` as never)) },
+          {
+            text: "Rate seller",
+            onPress: () => router.push((`/review/${sellerId}?orderId=${orderId}` as never)),
+          },
         ]);
       } else {
         Alert.alert("Completed", "Deal marked as completed.");
@@ -103,6 +167,50 @@ export default function OrdersScreen() {
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
   });
+
+  const disputeM = useMutation({
+    mutationFn: (payload: { orderId: string; reason: string }) => {
+      const fd = new FormData();
+      fd.append("reason", payload.reason);
+      return createDispute(payload.orderId, fd);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      setDisputeModalOpen(false);
+      setDisputeReason("");
+      Alert.alert("Dispute submitted", "Our team will review your dispute.");
+    },
+  });
+
+  const confirmPhotoM = useMutation({
+    mutationFn: (payload: { orderId: string; formData: FormData }) =>
+      uploadConfirmationPhoto(payload.orderId, payload.formData),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
+  });
+
+  const handleConfirmPhoto = async (orderId: string) => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission", "Photo access is required.");
+      return;
+    }
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.8,
+    });
+    if (res.canceled || !res.assets?.length) return;
+    const asset = res.assets[0];
+    const mimeType = asset.mimeType || "image/jpeg";
+    const ext = mimeType.includes("png") ? "png" : "jpg";
+    const fd = new FormData();
+    if (Platform.OS === "web") {
+      const blob = await fetch(asset.uri).then((r) => r.blob());
+      fd.append("photo", blob, `confirm.${ext}`);
+    } else {
+      fd.append("photo", { uri: asset.uri, name: `confirm.${ext}`, type: mimeType } as unknown as Blob);
+    }
+    confirmPhotoM.mutate({ orderId, formData: fd });
+  };
 
   const getId = (v?: { _id?: string }) => String(v?._id || "");
   const currentId = user?.id || "";
@@ -143,6 +251,8 @@ export default function OrdersScreen() {
 
   return (
     <Screen>
+      <PageHeader title="My Orders" subtitle="Manage your purchases and sales" />
+
       <FlatList
         data={orders}
         keyExtractor={(o) => o._id}
@@ -168,30 +278,46 @@ export default function OrdersScreen() {
           const canSchedule = status === "accepted" && (isBuyer || isSeller);
           const canComplete = status === "meetup_scheduled" && isBuyer;
           const canNoShow = status === "meetup_scheduled" && (isBuyer || isSeller);
+          const canDispute = ["meetup_scheduled", "completed", "no_show"].includes(status) && (isBuyer || isSeller);
+          const canConfirmPhoto = status === "completed" && (isBuyer || isSeller);
 
           const tone = statusTone(status);
 
           return (
             <View className="mb-4 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm shadow-slate-200/50 dark:shadow-none">
               <View className="flex-row justify-between items-start mb-3">
-                 <View className="flex-1 pr-4">
-                    <Text className="text-[17px] font-outfit-sb text-slate-900 dark:text-white leading-tight">
-                       {first?.title || "Order"}
-                    </Text>
-                 </View>
-                 <Text className="text-lg font-outfit-b text-primary-600 dark:text-primary-400">{formatInr(o.total || 0)}</Text>
+                <View className="flex-1 pr-4">
+                  <Text className="text-[17px] font-outfit-sb text-slate-900 dark:text-white leading-tight">
+                    {first?.title || "Order"}
+                  </Text>
+                  {/* Role badge */}
+                  {(isBuyer || isSeller) && (
+                    <View className="mt-1 self-start px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800">
+                      <Text className="text-[10px] font-outfit-m text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        {isBuyer ? "You're buying" : "You're selling"}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <Text className="text-lg font-outfit-b text-primary-600 dark:text-primary-400">
+                  {formatInr(o.total || 0)}
+                </Text>
               </View>
-              
+
               <View className="flex-row justify-between items-center mt-2 border-t border-slate-100 dark:border-slate-800 pt-3">
-                 <View className={`px-2.5 py-1 rounded-lg ${tone.bg}`}>
-                    <Text className={`text-[12px] font-outfit-sb uppercase tracking-wider ${tone.text}`}>{status}</Text>
-                 </View>
+                <View className={`px-2.5 py-1 rounded-lg ${tone.bg}`}>
+                  <Text className={`text-[12px] font-outfit-sb uppercase tracking-wider ${tone.text}`}>
+                    {status.replace(/_/g, " ")}
+                  </Text>
+                </View>
               </View>
 
               {status === "meetup_scheduled" ? (
-                <View className="mt-3">
-                  <Text className="text-[12px] font-outfit-m text-slate-500 dark:text-slate-400">Meetup</Text>
-                  <Text className="mt-1 text-[14px] font-outfit-sb text-slate-900 dark:text-white">
+                <View className="mt-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50">
+                  <Text className="text-[12px] font-outfit-m text-slate-500 dark:text-slate-400 mb-1">
+                    Meetup Location
+                  </Text>
+                  <Text className="text-[14px] font-outfit-sb text-slate-900 dark:text-white">
                     {o.meetupDetails?.location || "Location TBD"}
                   </Text>
                   {o.meetupDetails?.scheduledAt ? (
@@ -200,14 +326,20 @@ export default function OrdersScreen() {
                     </Text>
                   ) : null}
                   {o.meetupDetails?.notes ? (
-                    <Text className="mt-1 text-[12px] text-slate-600 dark:text-slate-300">{o.meetupDetails.notes}</Text>
+                    <Text className="mt-1 text-[12px] text-slate-600 dark:text-slate-300 italic">
+                      {o.meetupDetails.notes}
+                    </Text>
                   ) : null}
                 </View>
               ) : null}
 
+              {/* Fix U3: All action buttons now show loading spinners ───────────── */}
               <View className="mt-4 flex-row flex-wrap gap-2">
-                {canCancel ? (
-                  <Pressable
+                {canCancel && (
+                  <ActionBtn
+                    label="Cancel"
+                    color="bg-red-50 dark:bg-red-950/30"
+                    loading={cancelM.isPending}
                     onPress={() => {
                       Alert.alert("Cancel order", "Are you sure you want to cancel?", [
                         { text: "No", style: "cancel" },
@@ -218,116 +350,151 @@ export default function OrdersScreen() {
                         },
                       ]);
                     }}
-                    className="rounded-xl bg-red-50 dark:bg-red-950/30 px-3 py-2"
-                  >
-                    <Text className="text-[13px] font-outfit-sb text-red-600 dark:text-red-300">Cancel</Text>
-                  </Pressable>
-                ) : null}
+                  />
+                )}
 
-                {canAccept ? (
-                  <Pressable
+                {canAccept && (
+                  <ActionBtn
+                    label="Accept"
+                    color="bg-indigo-50 dark:bg-indigo-900/30"
+                    loading={acceptM.isPending}
                     onPress={() => acceptM.mutate(o._id)}
-                    className="rounded-xl bg-indigo-50 dark:bg-indigo-900/30 px-3 py-2"
-                    disabled={acceptM.isPending}
-                  >
-                    <Text className="text-[13px] font-outfit-sb text-indigo-700 dark:text-indigo-200">Accept</Text>
-                  </Pressable>
-                ) : null}
+                  />
+                )}
 
-                {canSchedule ? (
-                  <Pressable
+                {canSchedule && (
+                  <ActionBtn
+                    label="Schedule Meetup"
+                    color="bg-indigo-50 dark:bg-indigo-900/30"
                     onPress={() => openSchedule(o._id)}
-                    className="rounded-xl bg-indigo-50 dark:bg-indigo-900/30 px-3 py-2"
-                  >
-                    <Text className="text-[13px] font-outfit-sb text-indigo-700 dark:text-indigo-200">Schedule</Text>
-                  </Pressable>
-                ) : null}
+                  />
+                )}
 
-                {canComplete ? (
-                  <Pressable
+                {canComplete && (
+                  <ActionBtn
+                    label="Mark Complete"
+                    color="bg-emerald-50 dark:bg-emerald-900/30"
+                    loading={completeM.isPending}
                     onPress={() =>
                       Alert.alert("Complete deal", "Mark this meetup as completed?", [
                         { text: "No", style: "cancel" },
                         { text: "Complete", onPress: () => completeM.mutate(o._id) },
                       ])
                     }
-                    className="rounded-xl bg-emerald-50 dark:bg-emerald-900/30 px-3 py-2"
-                  >
-                    <Text className="text-[13px] font-outfit-sb text-emerald-700 dark:text-emerald-200">Complete</Text>
-                  </Pressable>
-                ) : null}
+                  />
+                )}
 
-                {canNoShow ? (
-                  <Pressable
+                {/* Fix B8: isBuyer reports SELLER as no-show; isSeller reports BUYER ── */}
+                {canNoShow && (
+                  <ActionBtn
+                    label="Report No-Show"
+                    color="bg-orange-50 dark:bg-orange-900/30"
+                    loading={noShowM.isPending}
                     onPress={() => {
-                      const noShowBy: "buyer" | "seller" = isBuyer ? "buyer" : "seller";
-                      Alert.alert("Report no-show", "Report no-show for this meetup?", [
-                        { text: "No", style: "cancel" },
-                        { text: "Report", style: "destructive", onPress: () => noShowM.mutate({ orderId: o._id, noShowBy }) },
-                      ]);
+                      // If I am the buyer, the other party (seller) didn't show up.
+                      // If I am the seller, the other party (buyer) didn't show up.
+                      const noShowBy: "buyer" | "seller" = isBuyer ? "seller" : "buyer";
+                      Alert.alert(
+                        "Report no-show",
+                        `Report that the ${noShowBy} did not show up?`,
+                        [
+                          { text: "No", style: "cancel" },
+                          {
+                            text: "Report",
+                            style: "destructive",
+                            onPress: () => noShowM.mutate({ orderId: o._id, noShowBy }),
+                          },
+                        ]
+                      );
                     }}
-                    className="rounded-xl bg-orange-50 dark:bg-orange-900/30 px-3 py-2"
-                  >
-                    <Text className="text-[13px] font-outfit-sb text-orange-700 dark:text-orange-200">No-Show</Text>
-                  </Pressable>
-                ) : null}
+                  />
+                )}
+
+                {canConfirmPhoto && (
+                  <ActionBtn
+                    label="Add Photo"
+                    color="bg-blue-50 dark:bg-blue-900/30"
+                    loading={confirmPhotoM.isPending}
+                    onPress={() => handleConfirmPhoto(o._id)}
+                  />
+                )}
+
+                {/* Fix B1: opens cross-platform modal instead of Alert.prompt ───── */}
+                {canDispute && (
+                  <ActionBtn
+                    label="Dispute"
+                    color="bg-red-50 dark:bg-red-900/30"
+                    loading={disputeM.isPending}
+                    onPress={() => openDispute(o._id)}
+                  />
+                )}
               </View>
             </View>
           );
         }}
       />
 
+      {/* ── Schedule Meetup Modal ─────────────────────────────────────────────── */}
       <Modal visible={scheduleModalOpen} animationType="slide" transparent>
         <View className="flex-1 justify-end bg-black/60">
-          <View className="h-[90%] rounded-t-3xl bg-white dark:bg-slate-950 p-6 pt-4">
+          <View className="rounded-t-3xl bg-white dark:bg-slate-950 p-6 pt-4">
             <View className="items-center mb-4">
               <View className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
             </View>
-            <Text className="text-2xl font-outfit-bl text-slate-900 dark:text-white mb-4">Schedule meetup</Text>
+            <Text className="text-2xl font-outfit-bl text-slate-900 dark:text-white mb-4">
+              Schedule Meetup
+            </Text>
 
-            <View className="flex-1">
-              <View className="mb-3">
-                <Text className="text-sm font-outfit-m text-slate-600 dark:text-slate-300 mb-1">Location</Text>
-                <TextInput
-                  value={scheduleLocation}
-                  onChangeText={setScheduleLocation}
-                  placeholder="e.g. Main Gate"
-                  placeholderTextColor="#94a3b8"
-                  className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white"
-                />
-              </View>
-
-              <View className="mb-3">
-                <Text className="text-sm font-outfit-m text-slate-600 dark:text-slate-300 mb-1">Scheduled at (optional)</Text>
-                <TextInput
-                  value={scheduleScheduledAt}
-                  onChangeText={setScheduleScheduledAt}
-                  placeholder="YYYY-MM-DDTHH:mm"
-                  placeholderTextColor="#94a3b8"
-                  className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white"
-                />
-              </View>
-
-              <View className="mb-3">
-                <Text className="text-sm font-outfit-m text-slate-600 dark:text-slate-300 mb-1">Notes (optional)</Text>
-                <TextInput
-                  value={scheduleNotes}
-                  onChangeText={setScheduleNotes}
-                  placeholder="Extra details"
-                  placeholderTextColor="#94a3b8"
-                  className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white"
-                  multiline
-                />
-              </View>
+            <View className="mb-3">
+              <Text className="text-sm font-outfit-m text-slate-600 dark:text-slate-300 mb-1">
+                Location *
+              </Text>
+              <TextInput
+                value={scheduleLocation}
+                onChangeText={setScheduleLocation}
+                placeholder="e.g. Main Gate, Library"
+                placeholderTextColor="#94a3b8"
+                className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white"
+              />
             </View>
 
-            <View className="flex-row gap-3 pt-3">
+            <View className="mb-3">
+              <Text className="text-sm font-outfit-m text-slate-600 dark:text-slate-300 mb-1">
+                Date & Time (optional)
+              </Text>
+              <TextInput
+                value={scheduleScheduledAt}
+                onChangeText={setScheduleScheduledAt}
+                placeholder="YYYY-MM-DD HH:mm"
+                placeholderTextColor="#94a3b8"
+                className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white"
+              />
+            </View>
+
+            <View className="mb-4">
+              <Text className="text-sm font-outfit-m text-slate-600 dark:text-slate-300 mb-1">
+                Notes (optional)
+              </Text>
+              <TextInput
+                value={scheduleNotes}
+                onChangeText={setScheduleNotes}
+                placeholder="Any extra details"
+                placeholderTextColor="#94a3b8"
+                className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white"
+                multiline
+                numberOfLines={2}
+              />
+            </View>
+
+            <View className="flex-row gap-3">
               <View className="flex-1">
                 <Pressable
                   onPress={() => setScheduleModalOpen(false)}
                   className="rounded-xl border border-slate-300 dark:border-slate-700 px-4 py-3 items-center"
                 >
-                  <Text className="text-[15px] font-outfit-sb text-slate-700 dark:text-slate-200">Cancel</Text>
+                  <Text className="text-[15px] font-outfit-sb text-slate-700 dark:text-slate-200">
+                    Cancel
+                  </Text>
                 </Pressable>
               </View>
               <View className="flex-1">
@@ -335,23 +502,81 @@ export default function OrdersScreen() {
                   disabled={scheduleM.isPending || !scheduleLocation.trim()}
                   onPress={() => {
                     if (!scheduleLocation.trim()) return;
-                    scheduleM.mutate(
-                      {
-                        orderId: scheduleOrderId,
-                        location: scheduleLocation.trim(),
-                        scheduledAt: scheduleScheduledAt.trim() || undefined,
-                        notes: scheduleNotes.trim() || undefined,
-                      },
-                      {
-                        onSuccess: () => setScheduleModalOpen(false),
-                      }
-                    );
+                    scheduleM.mutate({
+                      orderId: scheduleOrderId,
+                      location: scheduleLocation.trim(),
+                      scheduledAt: scheduleScheduledAt.trim() || undefined,
+                      notes: scheduleNotes.trim() || undefined,
+                    });
                   }}
-                  className="rounded-xl bg-indigo-600 px-4 py-3 items-center"
+                  className={`rounded-xl bg-indigo-600 px-4 py-3 items-center ${
+                    scheduleM.isPending || !scheduleLocation.trim() ? "opacity-60" : ""
+                  }`}
                 >
-                  <Text className="text-[15px] font-outfit-sb text-white">
-                    {scheduleM.isPending ? "Scheduling..." : "Schedule"}
+                  {scheduleM.isPending ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text className="text-[15px] font-outfit-sb text-white">Confirm</Text>
+                  )}
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Fix B1: Cross-platform dispute modal (replaces Alert.prompt) ─────────── */}
+      <Modal visible={disputeModalOpen} animationType="slide" transparent onRequestClose={() => setDisputeModalOpen(false)}>
+        <View className="flex-1 justify-end bg-black/60">
+          <View className="rounded-t-3xl bg-white dark:bg-slate-950 p-6 pt-4">
+            <View className="items-center mb-4">
+              <View className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+            </View>
+            <Text className="text-2xl font-outfit-bl text-slate-900 dark:text-white mb-2">
+              File a Dispute
+            </Text>
+            <Text className="text-[13px] font-outfit text-slate-500 dark:text-slate-400 mb-4">
+              Briefly describe the issue. Our team will review it within 24 hours.
+            </Text>
+
+            <TextInput
+              value={disputeReason}
+              onChangeText={setDisputeReason}
+              placeholder="Describe the problem..."
+              placeholderTextColor="#94a3b8"
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+              className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white mb-4 min-h-[100px]"
+            />
+
+            <View className="flex-row gap-3">
+              <View className="flex-1">
+                <Pressable
+                  onPress={() => { setDisputeModalOpen(false); setDisputeReason(""); }}
+                  className="rounded-xl border border-slate-300 dark:border-slate-700 px-4 py-3 items-center"
+                >
+                  <Text className="text-[15px] font-outfit-sb text-slate-700 dark:text-slate-200">
+                    Cancel
                   </Text>
+                </Pressable>
+              </View>
+              <View className="flex-1">
+                <Pressable
+                  disabled={disputeM.isPending || !disputeReason.trim()}
+                  onPress={() => {
+                    if (!disputeReason.trim()) return;
+                    disputeM.mutate({ orderId: disputeOrderId, reason: disputeReason.trim() });
+                  }}
+                  className={`rounded-xl bg-red-600 px-4 py-3 items-center ${
+                    disputeM.isPending || !disputeReason.trim() ? "opacity-60" : ""
+                  }`}
+                >
+                  {disputeM.isPending ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text className="text-[15px] font-outfit-sb text-white">Submit</Text>
+                  )}
                 </Pressable>
               </View>
             </View>

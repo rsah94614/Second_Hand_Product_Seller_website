@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Plus, Edit, Trash2, Package, ToggleLeft, ToggleRight, MapPin, Eye, CheckCircle2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, ToggleLeft, ToggleRight, MapPin, Eye, CheckCircle2, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
@@ -10,7 +10,7 @@ import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
-import { deleteProduct, getUserProducts, patchProduct } from '../api/productApi';
+import { deleteProduct, getUserProducts, patchProduct, relistProduct } from '../api/productApi';
 
 const MyProductsPage = () => {
   const { user } = useAuth();
@@ -51,6 +51,16 @@ const MyProductsPage = () => {
       refetch();
     } catch {
       toast.error('Failed to mark as sold');
+    }
+  };
+
+  const handleRelist = async (productId) => {
+    try {
+      await relistProduct(productId);
+      toast.success('Listing relisted for another 60 days');
+      refetch();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to relist');
     }
   };
 
@@ -190,9 +200,17 @@ const MyProductsPage = () => {
                     </div>
                   </div>
                   {product.location && (
-                    <div className="flex items-center gap-1 text-xs text-gray-400 mb-4">
+                    <div className="flex items-center gap-1 text-xs text-gray-400 mb-2">
                       <MapPin className="w-3 h-3" />
                       <span className="truncate">{product.location}</span>
+                    </div>
+                  )}
+
+                  {/* Expiry info */}
+                  {product.daysRemaining !== null && product.daysRemaining !== undefined && !product.isSold && (
+                    <div className={`flex items-center gap-1 text-xs mb-3 ${product.isExpiringSoon ? 'text-amber-600 font-semibold' : 'text-gray-400'}`}>
+                      {product.isExpiringSoon && <AlertTriangle className="w-3 h-3" />}
+                      {product.daysRemaining > 0 ? `Expires in ${product.daysRemaining}d` : 'Expired'}
                     </div>
                   )}
 
@@ -238,6 +256,16 @@ const MyProductsPage = () => {
                       <><ToggleLeft className="w-4 h-4" /> Activate</>
                     )}
                   </button>
+
+                  {/* Relist button for expired/inactive listings */}
+                  {(product.isExpired || (!product.isActive && !product.isSold)) && (
+                    <button
+                      onClick={() => handleRelist(product._id)}
+                      className="mt-2 w-full flex items-center justify-center gap-2 rounded-xl py-2 text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition-all"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" /> Relist (60 days)
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

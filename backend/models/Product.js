@@ -168,13 +168,19 @@ const productSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for search functionality
+// Index for search functionality (text search)
 productSchema.index({ title: 'text', description: 'text', category: 'text' });
 // Index for expiry jobs
 productSchema.index({ expiresAt: 1, isExpired: 1, isActive: 1 });
 // Index for suspicious listing queue
 productSchema.index({ riskScore: -1 });
 productSchema.index({ flagged: 1 });
+// Index for seller's product listings (most common query pattern)
+productSchema.index({ seller: 1, isActive: 1, isSold: 1 });
+// Index for category browsing with active filter
+productSchema.index({ category: 1, isActive: 1, isSold: 1, createdAt: -1 });
+// Index for price-sorted browsing
+productSchema.index({ price: 1, isActive: 1, isSold: 1 });
 
 module.exports = mongoose.model('Product', productSchema);
 module.exports.CAMPUS_LOCATIONS = CAMPUS_LOCATIONS;

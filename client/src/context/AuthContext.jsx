@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../config/api';
 import {
   getCurrentUser,
   loginUser,
@@ -51,16 +52,16 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await loginUser(email, password);
       const { token, user } = response;
-      
+
       localStorage.setItem('token', token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setUser(user);
-      
+
       return { success: true };
     } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Login failed' 
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Login failed'
       };
     }
   };
@@ -70,21 +71,27 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await registerUser(userData);
       const { token, user } = response;
-      
+
       localStorage.setItem('token', token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setUser(user);
-      
+
       return { success: true };
     } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Registration failed' 
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Registration failed'
       };
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      // Call backend to invalidate token(s)
+      await axios.post(`${API_BASE_URL}/api/auth/logout`);
+    } catch {
+      // Ignore network or backend errors on logout; still clean up locally
+    }
     localStorage.removeItem('token');
     delete axios.defaults.headers.common['Authorization'];
     setUser(null);

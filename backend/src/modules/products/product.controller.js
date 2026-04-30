@@ -2,6 +2,7 @@ const Product = require('../../../models/Product');
 const User = require('../../../models/User');
 const Notification = require('../../../models/Notification');
 const Report = require('../../../models/Report');
+const ProductAnalytics = require('../../../models/ProductAnalytics');
 const jwt = require('jsonwebtoken');
 const {
   parseContactInfo,
@@ -14,6 +15,7 @@ const {
 } = require('./product.service');
 const { detectSuspiciousListing, HIGH_RISK_CATEGORIES } = require('../../shared/utils/riskDetection.utils');
 const { createNotifications } = require('../../shared/utils/notification.utils');
+const { checkAndApplyRules } = require('../../services/ruleEngine.service');
 
 const LISTING_EXPIRY_DAYS = 60;
 
@@ -66,7 +68,10 @@ const getProduct = async (req, res) => {
     const product = await Product.findById(req.params.id).populate({
       path: 'seller',
       select: 'name location email reviews averageRating reviewCount createdAt profileRole campus isSuspended',
-      populate: { path: 'reviews.user', select: 'name' },
+      populate: { 
+        path: 'reviews.user', 
+        select: 'name'
+      },
     });
 
     if (!product) return res.status(404).json({ message: 'Product not found' });
@@ -90,7 +95,22 @@ const getProduct = async (req, res) => {
       } catch (err) { /* ignore invalid token */ }
     }
 
-    return res.json(product);
+    // Task 2.2.1: Add seller reviews display (limit 5, sorted by date)
+    // Task 2.2.3: Add listing expiry information
+    const daysRemaining = product.expiresAt 
+      ? Math.ceil((new Date(product.expiresAt) - Date.now()) / (1000 * 60 * 60 * 24))
+      : null;
+    const isExpiringSoon = daysRemaining !== null && daysRemaining <= 7 && daysRemaining > 0;
+
+    // Task 2.2.2: Include relist count in response
+    const response = {
+      ...product.toObject(),
+      daysRemaining,
+      isExpiringSoon,
+      relistCount: product.relistCount || 0,
+    };
+
+    return res.json(response);
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -112,7 +132,14 @@ const reportProduct = async (req, res) => {
     const product = await Product.findById(req.params.id).populate('seller', '_id name');
     if (!product) return res.status(404).json({ message: 'Product not found' });
 
-    if (product.seller._id.toString() === req.user._id.toString()) {
+    if (!product.seller) {
+      if (targetType === 'user') {
+        return res.status(400).json({ message: 'Cannot report seller: Seller account no longer exists.' });
+      }
+      // For product reporting, we can still proceed but need to be careful with notifications
+    }
+
+    if (product.seller && product.seller._id.toString() === req.user._id.toString()) {
       return res.status(400).json({ message: 'You cannot report your own listing' });
     }
 
@@ -129,7 +156,7 @@ const reportProduct = async (req, res) => {
     const report = await Report.create({
       reporter: req.user._id,
       product: product._id,
-      reportedUser: product.seller._id,
+      reportedUser: product.seller?._id,
       targetType,
       reason: reason.trim(),
       details: details.trim(),
@@ -142,7 +169,7 @@ const reportProduct = async (req, res) => {
       reportId: report._id,
       type: 'new_report',
       title: 'New report submitted',
-      message: `${req.user.name} reported ${targetType === 'product' ? `"${product.title}"` : product.seller.name}.`,
+      message: `${req.user.name} reported ${targetType === 'product' ? `"${product.title}"` : (product.seller?.name || 'Unknown Seller')}.`,
       link: '/admin/reports',
       metadata: { targetType, reason: reason.trim() },
     });
@@ -221,6 +248,18 @@ const createProduct = async (req, res) => {
 
     const product = new Product(productData);
     await product.save();
+
+    // Task 2.5.2: Apply automated moderation rules
+    const ruleResults = await checkAndApplyRules(product, 'product');
+    if (ruleResults.length > 0) {
+      // Save any changes made by rules (flags, suspension, etc.)
+      await product.save();
+      
+      // Log rule applications
+      console.log(`Applied ${ruleResults.length} rule(s) to product ${product._id}:`, 
+        ruleResults.map(r => `${r.rule} (${r.action})`).join(', ')
+      );
+    }
 
     // Update new-user daily listing counter
     if (req.newUserListingMeta !== undefined) {
@@ -307,6 +346,17 @@ const updateProduct = async (req, res) => {
       { ...req.body, contactInfo, images: allImages, stock: req.body.stock !== undefined ? Number(req.body.stock) : product.stock },
       { new: true, runValidators: true }
     ).populate('seller', 'name location');
+
+    // Task 2.5.2: Apply automated moderation rules on update
+    const ruleResults = await checkAndApplyRules(updatedProduct, 'product');
+    if (ruleResults.length > 0) {
+      // Save any changes made by rules
+      await updatedProduct.save();
+      
+      console.log(`Applied ${ruleResults.length} rule(s) to updated product ${updatedProduct._id}:`, 
+        ruleResults.map(r => `${r.rule} (${r.action})`).join(', ')
+      );
+    }
 
     const nextPrice = Number(updatedProduct.price);
     if (Number.isFinite(nextPrice) && Number(previousPrice) !== nextPrice) {
@@ -403,6 +453,87 @@ const relistProduct = async (req, res) => {
   }
 };
 
+// ─── Analytics (Phase 3 - Task 3.2.2) ────────────────────────────────────────
+
+const getProductAnalytics = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id).select('seller title');
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    if (product.seller.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    let analytics = await ProductAnalytics.findOne({ product: req.params.id });
+    if (!analytics) {
+      // Return zeroed analytics if none recorded yet
+      return res.json({
+        product: req.params.id,
+        totalViews: product.views || 0,
+        uniqueViews: product.viewedBy?.length || 0,
+        totalInquiries: 0,
+        totalOrders: 0,
+        wishlistSaves: 0,
+        conversionRate: 0,
+        dailyStats: [],
+      });
+    }
+
+    const conversionRate =
+      analytics.totalViews > 0
+        ? ((analytics.totalOrders / analytics.totalViews) * 100).toFixed(1)
+        : 0;
+
+    return res.json({
+      ...analytics.toObject(),
+      conversionRate: parseFloat(conversionRate),
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const getSellerAnalyticsSummary = async (req, res) => {
+  try {
+    const analytics = await ProductAnalytics.find({ seller: req.user._id })
+      .populate('product', 'title images isActive isSold')
+      .lean();
+
+    const summary = {
+      totalViews: 0,
+      totalInquiries: 0,
+      totalOrders: 0,
+      totalWishlistSaves: 0,
+      topProducts: [],
+    };
+
+    analytics.forEach((a) => {
+      summary.totalViews += a.totalViews;
+      summary.totalInquiries += a.totalInquiries;
+      summary.totalOrders += a.totalOrders;
+      summary.totalWishlistSaves += a.wishlistSaves;
+    });
+
+    // Top 5 products by views
+    summary.topProducts = analytics
+      .sort((a, b) => b.totalViews - a.totalViews)
+      .slice(0, 5)
+      .map((a) => ({
+        product: a.product,
+        views: a.totalViews,
+        inquiries: a.totalInquiries,
+        orders: a.totalOrders,
+        conversionRate:
+          a.totalViews > 0
+            ? parseFloat(((a.totalOrders / a.totalViews) * 100).toFixed(1))
+            : 0,
+      }));
+
+    return res.json(summary);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 // ─── Status / Delete ──────────────────────────────────────────────────────────
 
 const updateProductStatus = async (req, res) => {
@@ -485,4 +616,6 @@ module.exports = {
   relistProduct,
   updateProductStatus,
   deleteProduct,
+  getProductAnalytics,
+  getSellerAnalyticsSummary,
 };

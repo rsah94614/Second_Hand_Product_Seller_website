@@ -1,15 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { User, Mail, MapPin, Edit, Save, X, ShieldCheck, LogOut, GraduationCap, Building2, CheckCircle2, BadgeCheck, AlertCircle } from 'lucide-react';
+import React, { useRef, useState, useEffect } from 'react';
+import { User, Mail, MapPin, Edit, Save, X, ShieldCheck, LogOut, GraduationCap, Building2, CheckCircle2, BadgeCheck, AlertCircle, Star, Award, Smartphone, Trash2, Shield, Camera, Loader2, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PageShell } from '../../../components/layout/PageShell';
 import { Avatar } from '../../../components/ui/Avatar';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../../../components/ui/AlertDialog';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
-import { updateUserProfile, getUserProfile } from '../api/userApi';
+import { updateUserProfile, getUserProfile, getMyReputation, getMySellerVerification, requestSellerVerification, getMyDevices, removeDevice, trustDevice, uploadUserAvatar, getProfileCompletion } from '../api/userApi';
 
 const getTrustLabelColor = (colorStr) => {
   const map = {
@@ -25,6 +35,11 @@ const getTrustLabelColor = (colorStr) => {
 
 const ProfilePage = () => {
   const { user: authUser, logout } = useAuth();
+  const queryClient = useQueryClient();
+  const avatarInputRef = useRef(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const [showTradingInfo, setShowTradingInfo] = useState(false);
 
   const { data: profileData, isLoading, refetch } = useQuery({
     queryKey: ['profile', authUser?.id],
@@ -32,9 +47,84 @@ const ProfilePage = () => {
     enabled: !!authUser?.id,
   });
 
+  const { data: completionData, refetch: refetchCompletion } = useQuery({
+    queryKey: ['profile-completion'],
+    queryFn: getProfileCompletion,
+    enabled: !!authUser?.id,
+  });
+
+  const { data: reputationData } = useQuery({
+    queryKey: ['my-reputation'],
+    queryFn: getMyReputation,
+    enabled: !!authUser?.id,
+  });
+
+  const { data: verificationData } = useQuery({
+    queryKey: ['my-seller-verification'],
+    queryFn: getMySellerVerification,
+    enabled: !!authUser?.id,
+  });
+
+  const { data: devicesData } = useQuery({
+    queryKey: ['my-devices'],
+    queryFn: getMyDevices,
+    enabled: !!authUser?.id,
+  });
+
+  const verificationMutation = useMutation({
+    mutationFn: requestSellerVerification,
+    onSuccess: () => {
+      toast.success('Verification request submitted');
+      queryClient.invalidateQueries({ queryKey: ['my-seller-verification'] });
+    },
+    onError: (err) => toast.error(err.response?.data?.message || 'Failed to submit request'),
+  });
+
+  const removeDeviceMutation = useMutation({
+    mutationFn: removeDevice,
+    onSuccess: () => {
+      toast.success('Device removed');
+      queryClient.invalidateQueries({ queryKey: ['my-devices'] });
+    },
+    onError: () => toast.error('Failed to remove device'),
+  });
+
+  const trustDeviceMutation = useMutation({
+    mutationFn: trustDevice,
+    onSuccess: () => {
+      toast.success('Device marked as trusted');
+      queryClient.invalidateQueries({ queryKey: ['my-devices'] });
+    },
+  });
+
   const profile = profileData?.user || authUser;
   const trustSignals = profileData?.trustSignals;
 
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast.error('Please select an image file'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return; }
+
+    setAvatarUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('avatar', file);
+      await uploadUserAvatar(profile.id || profile._id, fd);
+      toast.success('Profile photo updated!');
+      refetch();
+      refetchCompletion();
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['profile-completion'] });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to upload photo');
+    } finally {
+      setAvatarUploading(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+    }
+  };
+
+  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -43,12 +133,10 @@ const ProfilePage = () => {
     avatar: '',
   });
   const [campusForm, setCampusForm] = useState({
-    collegeName: '',
     department: '',
     course: '',
     year: '',
     semester: '',
-    enrollmentId: '',
     hostel: '',
     residentType: '',
   });
@@ -63,12 +151,10 @@ const ProfilePage = () => {
         avatar: profile.avatar || '',
       });
       setCampusForm({
-        collegeName: profile.campus?.collegeName || '',
         department: profile.campus?.department || '',
         course: profile.campus?.course || '',
         year: profile.campus?.year || '',
         semester: profile.campus?.semester || '',
-        enrollmentId: profile.campus?.enrollmentId || '',
         hostel: profile.campus?.hostel || '',
         residentType: profile.campus?.residentType || '',
       });
@@ -96,6 +182,8 @@ const ProfilePage = () => {
       toast.success('Profile updated successfully!');
       setIsEditing(false);
       refetch();
+      refetchCompletion();
+      queryClient.invalidateQueries({ queryKey: ['profile-completion'] });
     } catch {
       toast.error('Failed to update profile.');
     }
@@ -110,12 +198,10 @@ const ProfilePage = () => {
         avatar: profile.avatar || '',
       });
       setCampusForm({
-        collegeName: profile.campus?.collegeName || '',
         department: profile.campus?.department || '',
         course: profile.campus?.course || '',
         year: profile.campus?.year || '',
         semester: profile.campus?.semester || '',
-        enrollmentId: profile.campus?.enrollmentId || '',
         hostel: profile.campus?.hostel || '',
         residentType: profile.campus?.residentType || '',
       });
@@ -150,18 +236,44 @@ const ProfilePage = () => {
           <div className="absolute inset-0 bg-linear-to-br from-primary-900 via-indigo-900 to-blue-950 opacity-90" />
           <div className="absolute top-0 right-0 w-60 h-60 rounded-full bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] from-cyan-400/20 via-transparent to-transparent blur-3xl" />
           <div className="relative z-10 p-5 md:p-8 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 md:gap-6">
-            <Avatar
-              src={profile.avatar}
-              fallback={profile.name}
-              size="2xl"
-              className="border-4 border-white/20 shadow-xl"
-            />
+            {/* Clickable avatar with upload overlay */}
+            <div className="relative group shrink-0">
+              <Avatar
+                src={profile.avatar}
+                fallback={profile.name}
+                size="2xl"
+                className="border-4 border-white/20 shadow-xl"
+              />
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={avatarUploading}
+                className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                title="Change profile photo"
+              >
+                {avatarUploading
+                  ? <Loader2 className="w-6 h-6 text-white animate-spin" />
+                  : <Camera className="w-6 h-6 text-white" />
+                }
+              </button>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
+              {/* Camera badge */}
+              <div className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-white flex items-center justify-center shadow-md border border-gray-100 pointer-events-none">
+                <Camera className="w-3.5 h-3.5 text-primary-600" />
+              </div>
+            </div>
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <Badge
                   className={`text-xs font-bold px-3 py-1 border-0 ${profile.role === 'admin'
-                      ? 'bg-rose-500/20 text-rose-200 backdrop-blur-sm'
-                      : 'bg-white/10 text-white/80 backdrop-blur-sm'
+                    ? 'bg-rose-500/20 text-rose-200 backdrop-blur-sm'
+                    : 'bg-white/10 text-white/80 backdrop-blur-sm'
                     }`}
                 >
                   <ShieldCheck className="w-3 h-3 mr-1" />
@@ -181,38 +293,120 @@ const ProfilePage = () => {
               </div>
               <h1 className="text-3xl font-black text-white tracking-tight">{profile.name}</h1>
               <p className="text-primary-200/70 text-sm mt-0.5">{profile.email}</p>
-              {profile.campus?.collegeName && (
+              {profile.campus?.department && (
                 <p className="text-white/50 text-xs mt-1 flex items-center gap-1">
                   <Building2 className="w-3 h-3" />
-                  {profile.campus.collegeName}
-                  {profile.campus.department && ` · ${profile.campus.department}`}
+                  {profile.campus.department}
                 </p>
               )}
             </div>
           </div>
         </div>
 
-        {/* Profile Completion Bar */}
-        {trustSignals?.profileCompletionScore !== undefined && trustSignals.profileCompletionScore < 100 && (
+        {/* Profile Completion & Trading Eligibility */}
+        {completionData && (
           <Card className="rounded-4xl border border-indigo-100 shadow-sm mb-6 bg-indigo-50/30">
             <CardContent className="p-5 md:p-6">
+
+              {/* Header row */}
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-indigo-900 flex items-center gap-2">
-                  <BadgeCheck className="w-4 h-4 text-indigo-600" />
-                  Profile Completion
-                </h3>
-                <span className="text-sm font-bold text-indigo-600">{trustSignals.profileCompletionScore}%</span>
+                <div className="flex items-center gap-1.5">
+                  <h3 className="text-sm font-bold text-indigo-900 flex items-center gap-2">
+                    <BadgeCheck className="w-4 h-4 text-indigo-600" />
+                    Profile Completion
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowTradingInfo(!showTradingInfo)}
+                    className="inline-flex items-center justify-center w-5 h-5 rounded-full hover:bg-indigo-100 text-indigo-400 hover:text-indigo-600 transition-colors"
+                    title="Trading Eligibility Info"
+                  >
+                    <Info className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  {/* Trading status badge */}
+                  <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                    completionData.canTrade
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : 'bg-rose-100 text-rose-600'
+                  }`}>
+                    {completionData.canTrade
+                      ? <><CheckCircle2 className="w-3 h-3" /> Trading Enabled</>
+                      : <><AlertCircle className="w-3 h-3" /> Trading Locked</>
+                    }
+                  </span>
+                  <span className="text-sm font-bold text-indigo-600">{completionData.score}%</span>
+                </div>
               </div>
+
+              {/* Progress bar */}
               <div className="w-full bg-indigo-100 rounded-full h-2 mb-4 overflow-hidden">
                 <div
                   className="bg-indigo-600 h-2 rounded-full transition-all duration-1000 ease-out"
-                  style={{ width: `${trustSignals.profileCompletionScore}%` }}
+                  style={{ width: `${completionData.score}%` }}
                 ></div>
               </div>
-              {trustSignals.profileCompletionScore < 60 && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex gap-3 text-amber-800 text-sm focus-within:animate-pulse">
+
+              {/* Eligibility detail panel */}
+              {showTradingInfo && (
+                <div className="p-4 rounded-2xl bg-white border border-indigo-100 shadow-xs mb-4">
+                  <p className="text-[11px] font-bold text-indigo-900 uppercase tracking-wider mb-1">How Trading Eligibility Works</p>
+                  <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+                    Both buyers and sellers must have a 100% complete profile with all required fields filled in.
+                  </p>
+
+                  {/* Required fields checklist */}
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Required Fields</p>
+                  <div className="space-y-1.5 mb-4">
+                    {[
+                      { label: 'Email Verified', key: 'Email verification' },
+                      { label: 'Full Name', key: 'Full name' },
+                      { label: 'Profile Photo', key: 'Profile photo' },
+                      { label: 'Department', key: 'Department' },
+                      { label: 'Course', key: 'Course' },
+                      { label: 'Campus Role', key: 'Campus role' },
+                      { label: 'Year / Study Level', key: 'Year / study level' },
+                      { label: 'Resident Type', key: 'Resident type' },
+                      { label: 'Campus Meetup Location', key: 'Preferred campus meetup area' },
+                    ].map((field, idx) => {
+                      const isDone = !completionData.missing?.includes(field.key);
+                      return (
+                        <div key={idx} className={`flex items-center justify-between text-xs px-3 py-2 rounded-xl ${
+                          isDone ? 'bg-emerald-50/60' : 'bg-rose-50/60'
+                        }`}>
+                          <span className={isDone ? 'text-slate-600' : 'text-rose-700 font-medium'}>{field.label}</span>
+                          {isDone
+                            ? <><span className="text-[10px] font-bold text-emerald-600 mr-1">Done</span><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /></>
+                            : <><span className="text-[10px] font-bold text-rose-500 mr-1">Missing</span><X className="w-3.5 h-3.5 text-rose-400" /></>
+                          }
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Overall status */}
+                  {completionData.canTrade ? (
+                    <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-100">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <p className="text-xs text-emerald-700 font-medium">You are eligible to buy and sell on CampusMitra.</p>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-50 border border-rose-100">
+                      <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                      <p className="text-xs text-rose-700">
+                        Complete the <span className="font-bold">{completionData.missing?.length ?? 0} missing field{completionData.missing?.length !== 1 ? 's' : ''}</span> below to unlock buying and selling.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Low score warning */}
+              {completionData.score < 60 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex gap-3 text-amber-800 text-sm">
                   <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-                  <p>Your profile completion is low. Complete the campus fields below to build trust and fully unlock trading features.</p>
+                  <p>Your profile completion is low. Complete the fields below to unlock trading features.</p>
                 </div>
               )}
             </CardContent>
@@ -267,14 +461,6 @@ const ProfilePage = () => {
                   value: formData.email,
                   display: profile.email,
                   type: 'email',
-                },
-                {
-                  icon: User,
-                  label: 'Profile Image URL',
-                  name: 'avatar',
-                  value: formData.avatar,
-                  display: formData.avatar ? 'Image URL provided' : 'No image',
-                  type: 'text',
                 },
                 {
                   icon: MapPin,
@@ -340,7 +526,7 @@ const ProfilePage = () => {
 
             <div className="pt-6 mt-6 border-t border-gray-100">
               <Button
-                onClick={logout}
+                onClick={() => setIsLogoutDialogOpen(true)}
                 variant="outline"
                 className="gap-2 text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 rounded-full"
               >
@@ -366,10 +552,7 @@ const ProfilePage = () => {
 
             {isEditing ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">College / University</label>
-                  <Input name="collegeName" value={campusForm.collegeName} onChange={handleCampusFormChange} placeholder="e.g. Gauhati University" />
-                </div>
+
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Department</label>
                   <Input name="department" value={campusForm.department} onChange={handleCampusFormChange} placeholder="e.g. Computer Science" />
@@ -408,10 +591,7 @@ const ProfilePage = () => {
                     <option value="faculty">Faculty Quarter</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Enrollment ID</label>
-                  <Input name="enrollmentId" value={campusForm.enrollmentId} onChange={handleCampusFormChange} placeholder="e.g. GU2023CS042" />
-                </div>
+
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Hostel Name (if Hosteler)</label>
                   <Input name="hostel" value={campusForm.hostel} onChange={handleCampusFormChange} placeholder="e.g. PG Boys Hostel" />
@@ -420,11 +600,9 @@ const ProfilePage = () => {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
-                  { label: 'College', value: profile.campus?.collegeName, icon: Building2 },
                   { label: 'Department', value: profile.campus?.department, icon: GraduationCap },
                   { label: 'Course', value: profile.campus?.course, icon: GraduationCap },
                   { label: 'Year & Sem', value: [profile.campus?.year, profile.campus?.semester].filter(Boolean).join(' - '), icon: BadgeCheck },
-                  { label: 'Enrollment ID', value: profile.campus?.enrollmentId, icon: ShieldCheck },
                   { label: 'Resident Type', value: profile.campus?.residentType?.replace('_', ' '), icon: Building2 },
                   { label: 'Hostel', value: profile.campus?.hostel, icon: MapPin },
                 ].map((field) => (
@@ -443,7 +621,158 @@ const ProfilePage = () => {
           </CardContent>
         </Card>
 
+        {/* Reputation Card */}
+        {reputationData && (
+          <Card className="rounded-4xl border border-gray-100 shadow-sm animate-fade-in mt-6">
+            <CardContent className="p-5 md:p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
+                  <Star className="w-5 h-5 text-amber-500" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-gray-900 tracking-tight">Reputation</h2>
+                  <p className="text-gray-500 text-sm">Your seller performance metrics</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+                {[
+                  { label: 'Score', value: `${reputationData.score}/100` },
+                  { label: 'Completion Rate', value: `${reputationData.completionRate}%` },
+                  { label: 'Avg Rating', value: `${reputationData.averageRating} ★` },
+                  { label: 'Total Orders', value: reputationData.totalOrders },
+                ].map((m) => (
+                  <div key={m.label} className="bg-gray-50 rounded-2xl p-4 text-center">
+                    <p className="text-2xl font-black text-gray-900">{m.value}</p>
+                    <p className="text-xs text-gray-500 mt-1">{m.label}</p>
+                  </div>
+                ))}
+              </div>
+              {reputationData.trustLabels?.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {reputationData.trustLabels.map((label) => (
+                    <span key={label} className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200">
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Seller Verification Card */}
+        <Card className="rounded-4xl border border-gray-100 shadow-sm animate-fade-in mt-6">
+          <CardContent className="p-5 md:p-8">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                  <Award className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-gray-900 tracking-tight">Seller Verification</h2>
+                  <p className="text-gray-500 text-sm">Get a verified badge to build buyer trust</p>
+                </div>
+              </div>
+              {verificationData?.sellerVerificationStatus === 'verified' && (
+                <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">Verified ✓</Badge>
+              )}
+              {verificationData?.sellerVerificationStatus === 'pending' && (
+                <Badge className="bg-amber-100 text-amber-700 border-amber-200">Pending Review</Badge>
+              )}
+              {verificationData?.sellerVerificationStatus === 'rejected' && (
+                <Badge className="bg-red-100 text-red-700 border-red-200">Rejected</Badge>
+              )}
+            </div>
+            {(!verificationData?.sellerVerificationStatus || verificationData?.sellerVerificationStatus === 'none' || verificationData?.sellerVerificationStatus === 'rejected') && (
+              <div>
+                <p className="text-sm text-gray-600 mb-4">
+                  Requirements: email verified, 5+ completed orders, 4.0+ rating, 80%+ completion rate.
+                </p>
+                {verificationData?.sellerVerificationStatus === 'rejected' && verificationData?.sellerVerificationReason && (
+                  <p className="text-sm text-red-600 mb-3">Rejection reason: {verificationData.sellerVerificationReason}</p>
+                )}
+                <Button
+                  onClick={() => verificationMutation.mutate()}
+                  disabled={verificationMutation.isPending}
+                  className="rounded-full gap-2"
+                >
+                  <Shield className="w-4 h-4" />
+                  Request Verification
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Devices Card */}
+        {devicesData?.devices?.length > 0 && (
+          <Card className="rounded-4xl border border-gray-100 shadow-sm animate-fade-in mt-6">
+            <CardContent className="p-5 md:p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
+                  <Smartphone className="w-5 h-5 text-gray-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-gray-900 tracking-tight">Active Devices</h2>
+                  <p className="text-gray-500 text-sm">Devices currently logged into your account</p>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {devicesData.devices.map((device) => (
+                  <div key={device._id} className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-gray-50 border border-gray-100">
+                    <div className="flex items-center gap-3">
+                      <Smartphone className="w-4 h-4 text-gray-500 shrink-0" />
+                      <div>
+                        <p className="font-semibold text-sm text-gray-900">{device.deviceName}</p>
+                        <p className="text-xs text-gray-500">{device.browser} · {device.os} · {device.lastIpAddress}</p>
+                        <p className="text-xs text-gray-400">Last used: {new Date(device.lastUsedAt).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {device.isTrusted && (
+                        <span className="text-xs text-emerald-600 font-semibold">Trusted</span>
+                      )}
+                      {!device.isTrusted && (
+                        <Button size="sm" variant="outline" onClick={() => trustDeviceMutation.mutate(device._id)} className="text-xs rounded-xl">
+                          Trust
+                        </Button>
+                      )}
+                      <Button size="sm" variant="outline" onClick={() => removeDeviceMutation.mutate(device._id)} className="text-red-500 border-red-200 hover:bg-red-50 rounded-xl">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
       </div>
+      <AlertDialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+        <AlertDialogContent className="rounded-3xl border-gray-100 shadow-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-gray-900">Confirm Logout</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-500">
+              Are you sure you want to sign out? You will need to login again to access your account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel className="rounded-xl border-gray-200 font-semibold hover:bg-gray-50">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                logout();
+                setIsLogoutDialogOpen(false);
+              }}
+              className="rounded-xl bg-red-600 font-semibold text-white hover:bg-red-700 border-none shadow-lg shadow-red-200"
+            >
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageShell>
   );
 };

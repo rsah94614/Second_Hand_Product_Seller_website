@@ -36,3 +36,11 @@ export type NoShowPayload = {
 
 export const reportNoShow = (orderId: string, payload: NoShowPayload) =>
   api.patch(`/api/orders/${orderId}/no-show`, payload).then((r) => r.data);
+
+// ── Phase 2: Confirmation Photo ───────────────────────────────────────────────
+export const uploadConfirmationPhoto = (orderId: string, formData: FormData) =>
+  api.post(`/api/orders/${orderId}/confirmation-photo`, formData).then((r) => r.data);
+
+// ── Phase 2: Disputes ─────────────────────────────────────────────────────────
+export const createDispute = (orderId: string, formData: FormData) =>
+  api.post(`/api/orders/${orderId}/dispute`, formData).then((r) => r.data);

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "App_Frontend",
-    "slug": "App_Frontend",
+    "name": "Campus Mitra",
+    "slug": "campus-mitra",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -12,15 +12,18 @@
       "supportsTablet": true
     },
     "android": {
-      "usesCleartextTraffic": true,
+      "usesCleartextTraffic": false,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0f172a",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundImage": "./assets/images/android-icon-background.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.anonymous.App_Frontend"
     },
     "web": {
       "bundler": "metro",
@@ -41,9 +44,12 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#f8fafc",
           "dark": {
-            "backgroundColor": "#000000"
+            "image": "./assets/images/splash-icon.png",
+            "imageWidth": 200,
+            "resizeMode": "contain",
+            "backgroundColor": "#020617"
           }
         }
       ]
@@ -51,6 +57,12 @@
     "experiments": {
       "typedRoutes": false,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "c2c35317-26e0-4663-894d-ee5f8f9eda13"
+      }
     }
   }
 }

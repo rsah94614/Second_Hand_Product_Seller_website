@@ -1,16 +1,19 @@
 import { Redirect, Stack, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import { Screen } from "../../components/ui/Screen";
 import { useAuth } from "../../context/AuthContext";
-import { useSocket } from "../../context/SocketContext";
-import { getConversationMessages, markConversationAsRead, reportChatUser } from "../../lib/api/chat";
+import { useSocket, useSocketStatus } from "../../context/SocketContext";
+import { getConversationMessages, markConversationAsRead, reportChatUser, uploadChatImage } from "../../lib/api/chat";
 import { Ionicons } from "@expo/vector-icons";
 import { blockUser } from "../../lib/api/users";
 
 type Msg = {
   _id: string;
-  content: string;
+  content?: string;
+  image?: string;
   sender: unknown;
   receiver: unknown;
   timestamp?: string;
@@ -27,6 +30,7 @@ export default function ChatThreadScreen() {
   const { userId, name } = useLocalSearchParams<{ userId: string; name?: string }>();
   const { user } = useAuth();
   const socket = useSocket();
+  const isConnected = useSocketStatus();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
@@ -35,6 +39,7 @@ export default function ChatThreadScreen() {
   const [reportReason, setReportReason] = useState("spam");
   const [reportDetails, setReportDetails] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [sendingImage, setSendingImage] = useState(false);
   const listRef = useRef<FlatList>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -87,7 +92,7 @@ export default function ChatThreadScreen() {
   };
 
   const load = useCallback(async () => {
-    if (!partnerId || !user) return;
+    if (!partnerId || !user || !isConnected) return;
     setLoading(true);
     try {
       const data = await getConversationMessages(partnerId);
@@ -99,7 +104,7 @@ export default function ChatThreadScreen() {
     } finally {
       setLoading(false);
     }
-  }, [partnerId, user, socket]);
+  }, [partnerId, user, socket, isConnected]);
 
   useEffect(() => {
     load();
@@ -180,6 +185,41 @@ export default function ChatThreadScreen() {
     setText("");
   };
 
+  const sendImage = async () => {
+    if (sendingImage || !partnerId) return;
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission", "Photo access is required to send images.");
+      return;
+    }
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.8,
+    });
+    if (res.canceled || !res.assets?.length) return;
+    const asset = res.assets[0];
+    const mimeType = asset.mimeType || "image/jpeg";
+    const ext = mimeType.includes("png") ? "png" : "jpg";
+    const fd = new FormData();
+    if (Platform.OS === "web") {
+      const blob = await fetch(asset.uri).then((r) => r.blob());
+      fd.append("image", blob, `chat.${ext}`);
+    } else {
+      fd.append("image", { uri: asset.uri, name: `chat.${ext}`, type: mimeType } as unknown as Blob);
+    }
+    fd.append("receiverId", partnerId);
+    setSendingImage(true);
+    try {
+      await uploadChatImage(fd);
+      // The socket event will update the message list automatically
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      Alert.alert("Error", msg || "Failed to send image.");
+    } finally {
+      setSendingImage(false);
+    }
+  };
+
   if (!user) {
     return <Redirect href="/(auth)/login" />;
   }
@@ -238,24 +278,26 @@ export default function ChatThreadScreen() {
                 return (
                   <View className={`mb-2.5 max-w-[80%] ${mine ? "self-end" : "self-start"}`}>
                     <View
-                      className={`rounded-2xl px-4 py-2.5 ${
-                        mine
+                      className={`rounded-2xl px-4 py-2.5 ${mine
                           ? "bg-primary-600 dark:bg-primary-500 rounded-br-sm"
                           : "bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-bl-sm"
-                      }`}
-                    >
-                      <Text
-                        className={`text-[15px] font-outfit leading-relaxed ${
-                          mine ? "text-white" : "text-slate-900 dark:text-slate-100"
                         }`}
-                      >
-                        {m.isDeleted ? "This message was deleted" : m.content}
-                      </Text>
+                    >
+                      {m.isDeleted ? (
+                        <Text className={`text-[15px] font-outfit leading-relaxed italic ${mine ? "text-white/70" : "text-slate-400"}`}>
+                          This message was deleted
+                        </Text>
+                      ) : m.image ? (
+                        <Image source={{ uri: m.image }} style={{ width: 200, height: 200, borderRadius: 12 }} contentFit="cover" />
+                      ) : (
+                        <Text className={`text-[15px] font-outfit leading-relaxed ${mine ? "text-white" : "text-slate-900 dark:text-slate-100"}`}>
+                          {m.content}
+                        </Text>
+                      )}
                     </View>
                     <Text
-                      className={`text-[10px] font-outfit-m text-slate-400 dark:text-slate-500 mt-1 ${
-                        mine ? "text-right mr-1" : "ml-1"
-                      }`}
+                      className={`text-[10px] font-outfit-m text-slate-400 dark:text-slate-500 mt-1 ${mine ? "text-right mr-1" : "ml-1"
+                        }`}
                     >
                       {formatTime(m)}
                       {mine && m.read ? " · Read" : ""}
@@ -269,6 +311,14 @@ export default function ChatThreadScreen() {
 
         {/* Input Bar */}
         <View className="flex-row items-end gap-2 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 pb-3">
+          {/* Image button */}
+          <Pressable
+            onPress={sendImage}
+            disabled={sendingImage}
+            className="h-11 w-11 rounded-full items-center justify-center bg-slate-100 dark:bg-slate-800 active:bg-slate-200"
+          >
+            <Ionicons name={sendingImage ? "hourglass-outline" : "image-outline"} size={20} color="#64748b" />
+          </Pressable>
           <TextInput
             value={text}
             onChangeText={(t) => {
@@ -288,11 +338,10 @@ export default function ChatThreadScreen() {
           <Pressable
             onPress={send}
             disabled={!text.trim()}
-            className={`h-11 w-11 rounded-full items-center justify-center ${
-              text.trim()
+            className={`h-11 w-11 rounded-full items-center justify-center ${text.trim()
                 ? "bg-primary-600 dark:bg-primary-500 active:bg-primary-700"
                 : "bg-slate-200 dark:bg-slate-700"
-            }`}
+              }`}
           >
             <Ionicons name="send" size={18} color={text.trim() ? "#fff" : "#94a3b8"} />
           </Pressable>

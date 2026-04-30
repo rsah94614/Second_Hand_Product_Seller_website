@@ -9,7 +9,9 @@ const router = express.Router();
 
 router.get('/', productController.listProducts);
 router.get('/user/:userId', productController.getProductsByUser);
+router.get('/analytics/summary', userAuth, productController.getSellerAnalyticsSummary);
 router.get('/:id/related', productController.getRelatedProducts);
+router.get('/:id/analytics', userAuth, productController.getProductAnalytics);
 router.get('/:id', productController.getProduct);
 
 router.post('/:id/report', userAuth, reportLimiter, productController.reportProduct);

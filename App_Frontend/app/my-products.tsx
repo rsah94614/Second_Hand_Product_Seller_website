@@ -1,13 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Redirect, router } from "expo-router";
-import { FlatList, Pressable, Text, View } from "react-native";
+import { Alert, FlatList, Pressable, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { Screen } from "../components/ui/Screen";
 import { Loading } from "../components/Loading";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/EmptyState";
 import { useAuth } from "../context/AuthContext";
-import { getUserProducts } from "../lib/api/products";
+import { getUserProducts, relistProduct } from "../lib/api/products";
 import { formatInr } from "../lib/format";
 import { getImageUri } from "../lib/product-image";
 import type { ProductImage } from "../lib/types";
@@ -15,11 +15,24 @@ import { Ionicons } from "@expo/vector-icons";
 
 export default function MyProductsScreen() {
   const { user, loading } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["my-products", user?.id],
     queryFn: () => getUserProducts(user!.id),
     enabled: !!user?.id && user.role === "user",
+  });
+
+  const relistM = useMutation({
+    mutationFn: (productId: string) => relistProduct(productId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-products"] });
+      Alert.alert("Relisted", "Your listing has been relisted for another 60 days.");
+    },
+    onError: (e: unknown) => {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      Alert.alert("Failed", msg || "Could not relist this product.");
+    },
   });
 
   if (loading || isLoading) {
@@ -41,6 +54,9 @@ export default function MyProductsScreen() {
     price: number;
     isSold?: boolean;
     isActive?: boolean;
+    isExpired?: boolean;
+    daysRemaining?: number | null;
+    isExpiringSoon?: boolean;
     images?: ProductImage[];
     views?: number;
   }[];
@@ -104,6 +120,30 @@ export default function MyProductsScreen() {
                     <Ionicons name="create-outline" size={14} color="#64748b" />
                  </View>
               </View>
+
+              {/* Expiry info */}
+              {p.daysRemaining !== null && p.daysRemaining !== undefined && !p.isSold && (
+                <Text className={`mt-1 text-[11px] font-outfit-m ${p.isExpiringSoon ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'}`}>
+                  {p.daysRemaining > 0 ? `Expires in ${p.daysRemaining}d` : "Expired"}
+                </Text>
+              )}
+
+              {/* Relist button */}
+              {(p.isExpired || (!p.isActive && !p.isSold)) && (
+                <Pressable
+                  onPress={(e) => {
+                    e.stopPropagation?.();
+                    Alert.alert("Relist", "Relist this item for another 60 days?", [
+                      { text: "Cancel", style: "cancel" },
+                      { text: "Relist", onPress: () => relistM.mutate(p._id) },
+                    ]);
+                  }}
+                  className="mt-2 flex-row items-center gap-1 px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 self-start"
+                >
+                  <Ionicons name="refresh-outline" size={12} color="#6366f1" />
+                  <Text className="text-[11px] font-outfit-sb text-indigo-600 dark:text-indigo-400">Relist</Text>
+                </Pressable>
+              )}
             </View>
           </Pressable>
         )}

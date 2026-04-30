@@ -10,6 +10,12 @@ const getNotificationsForUser = async (userId, { page = 1, limit = 20, unread = 
     query.isRead = false;
   }
 
+  // Filter out snoozed notifications (Task 2.4.2)
+  query.$or = [
+    { snoozedUntil: null },
+    { snoozedUntil: { $lte: new Date() } },
+  ];
+
   const [notifications, total, unreadCount] = await Promise.all([
     Notification.find(query)
       .populate(notificationPopulate)
@@ -18,7 +24,14 @@ const getNotificationsForUser = async (userId, { page = 1, limit = 20, unread = 
       .limit(numericLimit)
       .lean(),
     Notification.countDocuments(query),
-    Notification.countDocuments({ user: userId, isRead: false }),
+    Notification.countDocuments({ 
+      user: userId, 
+      isRead: false,
+      $or: [
+        { snoozedUntil: null },
+        { snoozedUntil: { $lte: new Date() } },
+      ],
+    }),
   ]);
 
   return {
@@ -34,6 +47,10 @@ const getUnreadCountForUser = async (userId) => {
   return Notification.countDocuments({
     user: userId,
     isRead: false,
+    $or: [
+      { snoozedUntil: null },
+      { snoozedUntil: { $lte: new Date() } },
+    ],
   });
 };
 

@@ -63,7 +63,7 @@ const runSearchTests = async (app) => {
     .query({ q: 'a', limit: 5 });
 
   assert.equal(shortQueryResponse.statusCode, 200);
-  assert.deepEqual(shortQueryResponse.body, { products: [], users: [] });
+  assert.deepEqual(shortQueryResponse.body, { products: [], users: [], nextCursor: null, hasMore: false, total: 0 });
 };
 
 module.exports = {

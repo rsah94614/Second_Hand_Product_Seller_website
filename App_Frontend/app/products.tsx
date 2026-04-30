@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { useLocalSearchParams } from "expo-router";
 import {
   FlatList,
@@ -13,8 +13,11 @@ import {
 import { Screen } from "../components/ui/Screen";
 import { ProductCard, type ProductListItem } from "../components/ProductCard";
 import { Loading } from "../components/Loading";
+import { PageHeader } from "../components/ui/PageHeader";
 import { getProducts, getProductCategories } from "../lib/api/products";
+import { getSearchSuggestions } from "../lib/api/search";
 import { Ionicons } from "@expo/vector-icons";
+import { useColorScheme } from "nativewind";
 
 const PAGE_SIZE = 12;
 
@@ -24,15 +27,16 @@ export default function ProductsBrowseScreen() {
     category?: string;
     minPrice?: string;
     maxPrice?: string;
-    location?: string;
     sortBy?: string;
     sortOrder?: string;
   }>();
   const [search, setSearch] = useState(typeof params.search === "string" ? params.search : "");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [debouncedSuggestionQ, setDebouncedSuggestionQ] = useState("");
+  const suggestionDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [category, setCategory] = useState(typeof params.category === "string" ? params.category : "");
   const [minPrice, setMinPrice] = useState(typeof params.minPrice === "string" ? params.minPrice : "");
   const [maxPrice, setMaxPrice] = useState(typeof params.maxPrice === "string" ? params.maxPrice : "");
-  const [location, setLocation] = useState(typeof params.location === "string" ? params.location : "");
   const [sortBy, setSortBy] = useState(typeof params.sortBy === "string" ? params.sortBy : "createdAt");
   const [sortOrder, setSortOrder] = useState(typeof params.sortOrder === "string" ? params.sortOrder : "desc");
   const [showFilters, setShowFilters] = useState(
@@ -40,18 +44,19 @@ export default function ProductsBrowseScreen() {
       params.category ||
         params.minPrice ||
         params.maxPrice ||
-        params.location ||
         (typeof params.sortBy === "string" && params.sortBy !== "createdAt") ||
         (typeof params.sortOrder === "string" && params.sortOrder !== "desc")
     )
   );
+  
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   useEffect(() => {
     if (typeof params.search === "string") setSearch(params.search);
     if (typeof params.category === "string") setCategory(params.category);
     if (typeof params.minPrice === "string") setMinPrice(params.minPrice);
     if (typeof params.maxPrice === "string") setMaxPrice(params.maxPrice);
-    if (typeof params.location === "string") setLocation(params.location);
     if (typeof params.sortBy === "string") setSortBy(params.sortBy);
     if (typeof params.sortOrder === "string") setSortOrder(params.sortOrder);
 
@@ -59,7 +64,6 @@ export default function ProductsBrowseScreen() {
       params.category ||
       params.minPrice ||
       params.maxPrice ||
-      params.location ||
       (typeof params.sortBy === "string" && params.sortBy !== "createdAt") ||
       (typeof params.sortOrder === "string" && params.sortOrder !== "desc")
     ) {
@@ -70,7 +74,6 @@ export default function ProductsBrowseScreen() {
     params.category,
     params.minPrice,
     params.maxPrice,
-    params.location,
     params.sortBy,
     params.sortOrder,
   ]);
@@ -79,6 +82,15 @@ export default function ProductsBrowseScreen() {
     queryKey: ["product-categories"],
     queryFn: getProductCategories,
   });
+
+  const { data: suggestionsData } = useQuery({
+    queryKey: ["search-suggestions-products", debouncedSuggestionQ],
+    queryFn: () => getSearchSuggestions(debouncedSuggestionQ),
+    enabled: showSuggestions && debouncedSuggestionQ.length >= 1,
+    staleTime: 30000,
+  });
+
+  const suggestions = suggestionsData?.suggestions || [];
 
   const categories = useMemo(
     () => ["All", ...(catRes?.categories?.map((c: { name: string }) => c.name) || [])],
@@ -91,11 +103,10 @@ export default function ProductsBrowseScreen() {
       category: category.trim(),
       minPrice: minPrice.trim(),
       maxPrice: maxPrice.trim(),
-      location: location.trim(),
       sortBy,
       sortOrder,
     }),
-    [search, category, minPrice, maxPrice, location, sortBy, sortOrder]
+    [search, category, minPrice, maxPrice, sortBy, sortOrder]
   );
 
   type Page = { products?: ProductListItem[]; nextCursor?: string | null };
@@ -126,6 +137,9 @@ export default function ProductsBrowseScreen() {
 
   return (
     <Screen className="bg-slate-50 dark:bg-slate-950">
+      {/* ── Page Header ── */}
+      <PageHeader title="Browse Products" subtitle="Find exactly what you need" />
+
       <View className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 z-10 shadow-sm shadow-slate-200/50 dark:shadow-none w-full relative">
         <View className="px-4 py-3 flex-row gap-2 w-full">
            <View className="relative flex-1 shrink">
@@ -134,11 +148,43 @@ export default function ProductsBrowseScreen() {
               </View>
               <TextInput
                 value={search}
-                onChangeText={setSearch}
+                onChangeText={(t) => {
+                  setSearch(t);
+                  setShowSuggestions(true);
+                  if (suggestionDebounceRef.current) clearTimeout(suggestionDebounceRef.current);
+                  suggestionDebounceRef.current = setTimeout(() => setDebouncedSuggestionQ(t.trim()), 300);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                 placeholder="Search textbooks, cycles, more..."
                 placeholderTextColor="#94a3b8"
                 className="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 pl-10 pr-3 py-2.5 text-[15px] font-outfit text-slate-900 dark:text-white"
               />
+              {/* Suggestions dropdown */}
+              {showSuggestions && suggestions.length > 0 && (
+                <View className="absolute top-full left-0 right-0 z-50 mt-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg overflow-hidden">
+                  {suggestions.slice(0, 6).map((s: { query: string; type: string; count?: number; category?: string }, i: number) => (
+                    <Pressable
+                      key={i}
+                      onPress={() => {
+                        setSearch(s.query);
+                        setShowSuggestions(false);
+                      }}
+                      className="flex-row items-center gap-3 px-4 py-3 border-b border-slate-100 dark:border-slate-800 last:border-0 active:bg-slate-50 dark:active:bg-slate-800"
+                    >
+                      <Ionicons
+                        name={s.type === 'recent' ? 'time-outline' : s.type === 'popular' ? 'trending-up-outline' : 'search-outline'}
+                        size={15}
+                        color="#94a3b8"
+                      />
+                      <Text className="flex-1 text-[14px] font-outfit text-slate-800 dark:text-slate-200">{s.query}</Text>
+                      {s.category && (
+                        <Text className="text-[11px] font-outfit-m text-slate-400">{s.category}</Text>
+                      )}
+                    </Pressable>
+                  ))}
+                </View>
+              )}
            </View>
            <Pressable 
              onPress={() => setShowFilters(!showFilters)}
@@ -185,14 +231,6 @@ export default function ProductsBrowseScreen() {
                 placeholderTextColor="#94a3b8"
                 className="flex-1 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-4 py-2 text-[14px] font-outfit text-slate-900 dark:text-white"
               />
-              <TextInput
-                value={location}
-                onChangeText={setLocation}
-                placeholder="Location"
-                placeholderTextColor="#94a3b8"
-                style={{ flex: 1.5 }}
-                className="rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-4 py-2 text-[14px] font-outfit text-slate-900 dark:text-white"
-              />
             </View>
 
             <View className="mt-3 flex-row gap-3">
@@ -228,9 +266,9 @@ export default function ProductsBrowseScreen() {
             <View className="py-8"><Loading message="Loading more..." /></View>
           ) : null
         }
-        renderItem={({ item }) => (
+        renderItem={({ item, index }) => (
           <View className="flex-1 max-w-[50%]">
-            <ProductCard product={item} />
+            <ProductCard product={item} index={index} />
           </View>
         )}
         ListEmptyComponent={

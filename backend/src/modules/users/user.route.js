@@ -19,6 +19,16 @@ router.get('/me/blocked', auth, userController.getBlockedUsers);
 router.post('/block/:userId', auth, userController.blockUser);
 router.delete('/block/:userId', auth, userController.unblockUser);
 
+// ── Seller Verification (Task 2.7.1) ──────────────────────────────────────────
+router.post('/me/seller-verification', auth, userController.requestSellerVerification);
+router.get('/me/seller-verification', auth, userController.getSellerVerificationStatus);
+
+// ── Reputation System (Task 2.7.2) ────────────────────────────────────────────
+router.get('/me/reputation', auth, userController.getUserReputation);
+router.get('/me/reputation/history', auth, userController.getUserReputationHistory);
+router.get('/:id/reputation', userController.getUserReputation);
+router.get('/:id/reputation/history', userController.getUserReputationHistory);
+
 // ── Public profile ────────────────────────────────────────────────────────────
 router.get('/:id', userController.getUserProfile);
 router.post('/:id/avatar', auth, upload.single('avatar'), userController.uploadAvatar);

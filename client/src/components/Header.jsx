@@ -2,10 +2,10 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { globalSearch } from '../features/search/api/searchApi';
+import { globalSearch, getSearchSuggestions } from '../features/search/api/searchApi';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
-import { Search, Plus, User, LogOut, Menu, Briefcase, ShoppingCart, History, MessageCircle, LayoutDashboard, ShieldCheck, Users, FolderTree, Package, Heart, Flag, Bell, CheckCheck } from 'lucide-react';
+import { Search, Plus, User, LogOut, Menu, Briefcase, ShoppingCart, History, MessageCircle, LayoutDashboard, ShieldCheck, Users, FolderTree, Package, Heart, Flag, Bell, CheckCheck, Clock, TrendingUp } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Badge } from './ui/Badge';
@@ -25,6 +25,16 @@ import {
   DropdownMenuSeparator,
 } from './ui/DropdownMenu';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/AlertDialog';
+import {
   Sheet,
   SheetContent,
   SheetHeader,
@@ -40,8 +50,11 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchRef = useRef(null);
   const location = useLocation();
   const seenToastIdsRef = useRef(new Set());
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -53,14 +66,34 @@ const Header = () => {
 
   const { data: globalSearchData } = useQuery({
     queryKey: ['global-search', debouncedSearch],
-    queryFn: () => globalSearch(debouncedSearch, 5),
+    queryFn: () => globalSearch(debouncedSearch, { limit: 5 }),
     enabled: debouncedSearch.length >= 2,
     staleTime: 60 * 1000,
+  });
+
+  const { data: suggestionsData } = useQuery({
+    queryKey: ['search-suggestions', debouncedSearch],
+    queryFn: () => getSearchSuggestions(debouncedSearch),
+    enabled: showSuggestions && debouncedSearch.length >= 1,
+    staleTime: 30 * 1000,
   });
 
   const searchProducts = globalSearchData?.products || [];
   const searchUsers = globalSearchData?.users || [];
   const hasResults = searchProducts.length > 0 || searchUsers.length > 0;
+  const suggestions = suggestionsData?.suggestions || [];
+  const showSuggestionDropdown = showSuggestions && debouncedSearch.length >= 1 && !hasResults && suggestions.length > 0;
+
+  // Close search dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const { data: notificationPreview } = useQuery({
     queryKey: ['notifications-preview'],
@@ -203,13 +236,19 @@ const Header = () => {
     if (searchQuery.trim()) {
       navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
+      setShowSuggestions(false);
     }
   };
 
-  const handleLogout = () => {
+  const handleLogoutClick = () => {
+    setIsLogoutDialogOpen(true);
+  };
+
+  const confirmLogout = () => {
     logout();
     navigate('/');
     setIsMenuOpen(false);
+    setIsLogoutDialogOpen(false);
   };
 
   const roleTone = user?.role === 'admin' ? 'destructive' : 'success';
@@ -239,6 +278,8 @@ const Header = () => {
     { to: '/admin/categories', label: 'Categories', icon: FolderTree },
     { to: '/admin/orders', label: 'Orders', icon: History },
     { to: '/admin/reports', label: 'Reports', icon: Flag },
+    { to: '/admin/moderation-queue', label: 'Mod Queue', icon: ShieldCheck },
+    { to: '/admin/seller-verifications', label: 'Verifications', icon: ShieldCheck },
   ];
 
   const utilityLinks = isAdmin
@@ -293,7 +334,7 @@ const Header = () => {
               return (
                 <DropdownMenuItem
                   key={item.label}
-                  onClick={handleLogout}
+                  onClick={handleLogoutClick}
                   className="gap-3 rounded-xl text-red-600 focus:bg-red-50 focus:text-red-700 mt-1 cursor-pointer py-2.5"
                 >
                   {content}
@@ -398,15 +439,50 @@ const Header = () => {
           </Link>
 
           <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-4 lg:mx-8">
-            <div className="relative w-full group">
+            <div className="relative w-full group" ref={searchRef}>
               <Input
                 type="text"
                 placeholder="Search for anything..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => { setSearchQuery(e.target.value); setShowSuggestions(true); }}
+                onFocus={() => setShowSuggestions(true)}
                 className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/15 focus:border-white/30 transition-all"
               />
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40 group-hover:text-white/70 transition-colors w-4 h-4" />
+
+              {/* Suggestions dropdown (shown when no full results yet) */}
+              {showSuggestionDropdown && (
+                <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl animate-soft-pop">
+                  <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Suggestions</p>
+                  </div>
+                  {suggestions.map((s, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery(s.query);
+                        setShowSuggestions(false);
+                        navigate(`/products?search=${encodeURIComponent(s.query)}`);
+                      }}
+                      className="flex w-full items-center gap-3 border-b border-gray-100 px-4 py-2.5 text-left transition-colors hover:bg-gray-50 last:border-b-0"
+                    >
+                      {s.type === 'recent' && <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />}
+                      {s.type === 'popular' && <TrendingUp className="w-3.5 h-3.5 text-primary-500 shrink-0" />}
+                      {s.type === 'product' && <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />}
+                      <span className="text-sm text-gray-700">{s.query}</span>
+                      {s.type === 'popular' && s.count && (
+                        <span className="ml-auto text-xs text-gray-400">{s.count} searches</span>
+                      )}
+                      {s.category && (
+                        <span className="ml-auto text-xs text-gray-400">{s.category}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Full results dropdown */}
               {debouncedSearch.length >= 2 && hasResults && (
                 <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl animate-soft-pop">
                   {searchUsers.length > 0 && (
@@ -605,7 +681,7 @@ const Header = () => {
                       <div className="h-px bg-gray-100 my-2" />
 
                       <button
-                        onClick={handleLogout}
+                        onClick={handleLogoutClick}
                         className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
                       >
                         <LogOut className="w-5 h-5" />
@@ -644,6 +720,27 @@ const Header = () => {
         </div>
       </div>
 
+      <AlertDialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+        <AlertDialogContent className="rounded-3xl border-gray-100 shadow-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-gray-900">Confirm Logout</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-500">
+              Are you sure you want to sign out? You will need to login again to access your account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel className="rounded-xl border-gray-200 font-semibold hover:bg-gray-50">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmLogout}
+              className="rounded-xl bg-red-600 font-semibold text-white hover:bg-red-700 border-none shadow-lg shadow-red-200"
+            >
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   );
 };

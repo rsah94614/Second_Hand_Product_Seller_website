@@ -87,9 +87,9 @@ const SignUpPage = () => {
       setIsOtpSent(true);
       setTimer(60);
       toast.success('Verification code sent to your email!');
-      
+
       // Development Fallback: Log OTP to console for easy testing
-      if (process.env.NODE_ENV !== 'production' && result.code) {
+      if (import.meta.env.MODE !== 'production' && result.code) {
         console.log(`[DEBUG] Signup OTP: ${result.code}`);
       }
     } else {
@@ -304,11 +304,10 @@ const SignUpPage = () => {
                       key={role.id}
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, profileRole: role.id }))}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all border ${
-                        formData.profileRole === role.id 
-                          ? 'bg-primary-600 border-primary-600 text-white shadow-md shadow-primary-600/20' 
+                      className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all border ${formData.profileRole === role.id
+                          ? 'bg-primary-600 border-primary-600 text-white shadow-md shadow-primary-600/20'
                           : 'bg-white border-gray-200 text-gray-600 hover:border-primary-400 hover:text-primary-600'
-                      }`}
+                        }`}
                     >
                       <role.icon className="w-3 h-3" />
                       {role.label}
@@ -338,7 +337,7 @@ const SignUpPage = () => {
                       placeholder="Enter Department"
                     />
                   </div>
-                  
+
                   {formData.profileRole === 'student' && (
                     <div className="animate-fade-in">
                       <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-1">

@@ -21,3 +21,18 @@ export type ReportChatPayload = {
 
 export const reportChatUser = (userId: string, payload: ReportChatPayload) =>
   api.post(`/api/chat/report/${userId}`, payload).then((r) => r.data);
+
+// ── Phase 3: Message Search ───────────────────────────────────────────────────
+export const searchMessages = (q: string, userId?: string) =>
+  api.get(`/api/chat/search`, { params: { q, ...(userId && { userId }) } }).then((r) => r.data);
+
+// ── Phase 3: Conversation Pinning ─────────────────────────────────────────────
+export const pinConversation = (userId: string) =>
+  api.post(`/api/chat/pin/${userId}`).then((r) => r.data);
+
+export const unpinConversation = (userId: string) =>
+  api.delete(`/api/chat/pin/${userId}`).then((r) => r.data);
+
+// ── Phase 3: Image Sharing ────────────────────────────────────────────────────
+export const uploadChatImage = (formData: FormData) =>
+  api.post(`/api/chat/upload-image`, formData).then((r) => r.data);

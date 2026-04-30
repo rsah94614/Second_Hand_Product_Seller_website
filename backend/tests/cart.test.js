@@ -110,7 +110,7 @@ const runCartTests = async (app) => {
 
   const overStockResponse = await request(app)
     .post('/api/cart')
-    .set('Authorization', `Bearer ${buyer.token}`)
+    .set('Authorization', `Bearer ${secondBuyer.token}`)
     .send({
       productId: stockLimitedProduct._id.toString(),
       quantity: 5,
