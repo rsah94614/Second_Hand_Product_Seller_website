@@ -19,7 +19,7 @@ export const getRecentlyViewed = () =>
 
 export const submitSellerReview = (
   userId: string,
-  payload: { rating: number; comment: string; orderId: string; productId?: string }
+  payload: { rating: number; comment: string; orderId?: string; productId?: string }
 ) =>
   api.post(`/api/users/${userId}/reviews`, payload).then((r) => r.data);
 
@@ -52,3 +52,7 @@ export const removeDevice = (deviceId: string) =>
 
 export const trustDevice = (deviceId: string) =>
   api.post(`/api/auth/devices/${deviceId}/trust`).then((r) => r.data);
+
+// ── Profile Completion ────────────────────────────────────────────────────────
+export const getProfileCompletion = () =>
+  api.get(`/api/users/me/profile-completion`).then((r) => r.data);

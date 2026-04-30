@@ -70,8 +70,7 @@ const getProduct = async (req, res) => {
       select: 'name location email reviews averageRating reviewCount createdAt profileRole campus isSuspended',
       populate: { 
         path: 'reviews.user', 
-        select: 'name',
-        options: { limit: 5, sort: { createdAt: -1 } }
+        select: 'name'
       },
     });
 

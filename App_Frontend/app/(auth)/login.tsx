@@ -61,6 +61,7 @@ export default function LoginScreen() {
             </View>
           ) : null}
           <Input 
+            key="email-input"
             label="Email Address" 
             value={email} 
             onChangeText={setEmail} 
@@ -68,6 +69,7 @@ export default function LoginScreen() {
             placeholder="Enter your email address"
           />
           <Input 
+            key="password-input"
             label="Password" 
             value={password} 
             onChangeText={setPassword} 

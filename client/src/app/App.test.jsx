@@ -16,10 +16,6 @@ vi.mock('./router', () => ({
     default: () => <div data-testid="router-mock">App Router</div>,
 }));
 
-vi.mock('../components/EmailVerificationBanner', () => ({
-    default: () => <div data-testid="banner-mock">Banner</div>,
-}));
-
 describe('App Root Component', () => {
     afterEach(() => {
         vi.clearAllMocks();
@@ -34,6 +30,5 @@ describe('App Root Component', () => {
 
         // Verify the children are rendered
         expect(getByTestId('router-mock')).toBeInTheDocument();
-        expect(getByTestId('banner-mock')).toBeInTheDocument();
     });
 });

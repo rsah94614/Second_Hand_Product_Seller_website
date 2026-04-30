@@ -81,7 +81,6 @@ const userSchema = new mongoose.Schema({
   },
   // Campus identity
   campus: {
-    collegeName: { type: String, trim: true, default: '' },
     department: { type: String, trim: true, default: '' },
     course: { type: String, trim: true, default: '' },       // NEW: program/course
     year: {
@@ -90,7 +89,6 @@ const userSchema = new mongoose.Schema({
       default: ''
     },
     semester: { type: String, trim: true, default: '' },     // NEW: e.g. "3rd Sem"
-    enrollmentId: { type: String, trim: true, default: '' },
     hostel: { type: String, trim: true, default: '' },
     residentType: {                                           // NEW
       type: String,

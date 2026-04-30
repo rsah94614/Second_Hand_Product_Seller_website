@@ -13,13 +13,20 @@ import { Ionicons } from "@expo/vector-icons";
 import { SettingRow } from "../../components/ui/SettingRow";
 import { SectionCard } from "../../components/ui/SectionCard";
 import { saveThemePreference, loadThemePreference } from "../../lib/theme-storage";
-import { getUserProfile, uploadUserAvatar, getMyReputation, getMySellerVerification, requestSellerVerification } from "../../lib/api/users";
+import { getUserProfile, uploadUserAvatar, getMyReputation, getMySellerVerification, requestSellerVerification, getProfileCompletion } from "../../lib/api/users";
 
 type TrustLabel = { key: string; label: string; color: string };
 type TrustSignals = {
   profileCompletionScore: number;
   trustLabels: TrustLabel[];
-  phoneVerified: boolean;
+  canTrade: boolean;
+  missing: string[];
+};
+type ProfileCompletion = {
+  score: number;
+  missing: string[];
+  isComplete: boolean;
+  canTrade: boolean;
 };
 
 export default function ProfileScreen() {
@@ -46,17 +53,16 @@ export default function ProfileScreen() {
   };
 
   const [editCampus, setEditCampus] = useState({
-    collegeName: user?.campus?.collegeName || "",
     department: user?.campus?.department || "",
     course: user?.campus?.course || "",
     year: user?.campus?.year || "",
     semester: user?.campus?.semester || "",
-    enrollmentId: user?.campus?.enrollmentId || "",
     hostel: user?.campus?.hostel || "",
     residentType: user?.campus?.residentType || "",
   });
   const [saving, setSaving] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [showTradingInfo, setShowTradingInfo] = useState(false);
 
   const {
     data: profileData,
@@ -70,6 +76,16 @@ export default function ProfileScreen() {
   });
 
   const trustSignals = profileData?.trustSignals as TrustSignals | undefined;
+
+  const {
+    data: completionData,
+    refetch: refetchCompletion,
+  } = useQuery({
+    queryKey: ["profile-completion"],
+    queryFn: getProfileCompletion,
+    enabled: !!user?.id,
+    select: (d) => d as ProfileCompletion,
+  });
 
   const { data: reputationData } = useQuery({
     queryKey: ["my-reputation"],
@@ -110,6 +126,7 @@ export default function ProfileScreen() {
       });
       setEditMode(false);
       await refetchTrust();
+      await refetchCompletion();
     } catch {
       Alert.alert("Error", "Could not update profile. Please try again.");
     } finally {
@@ -301,12 +318,10 @@ export default function ProfileScreen() {
                   <View className="mb-3">
                     <Text className="text-[11px] font-outfit-sb text-primary-500 uppercase tracking-widest mb-2">🎓 Campus Info</Text>
                     {[
-                      { label: "College Name", key: "collegeName", icon: "school-outline" as const, placeholder: "e.g. MIT" },
                       { label: "Department", key: "department", icon: "library-outline" as const, placeholder: "e.g. Computer Science" },
                       { label: "Course", key: "course", icon: "book-outline" as const, placeholder: "e.g. B.Tech" },
                       { label: "Year", key: "year", icon: "calendar-outline" as const, placeholder: "e.g. 2nd Year" },
                       { label: "Semester", key: "semester", icon: "layers-outline" as const, placeholder: "e.g. 4th Sem" },
-                      { label: "Enrollment ID", key: "enrollmentId", icon: "id-card-outline" as const, placeholder: "Your enrollment ID" },
                       { label: "Hostel", key: "hostel", icon: "home-outline" as const, placeholder: "Hostel name" },
                       { label: "Resident Type", key: "residentType", icon: "people-outline" as const, placeholder: "e.g. Day Scholar" },
                     ].map((f) => (
@@ -339,12 +354,10 @@ export default function ProfileScreen() {
                           setEditLocation(user.location || "");
                           setEditProfileRole(user.profileRole || "");
                           setEditCampus({
-                            collegeName: user.campus?.collegeName || "",
                             department: user.campus?.department || "",
                             course: user.campus?.course || "",
                             year: user.campus?.year || "",
                             semester: user.campus?.semester || "",
-                            enrollmentId: user.campus?.enrollmentId || "",
                             hostel: user.campus?.hostel || "",
                             residentType: user.campus?.residentType || "",
                           });
@@ -372,9 +385,9 @@ export default function ProfileScreen() {
                     <View className="px-3 py-1 rounded-full bg-primary-50 dark:bg-primary-950/50 border border-primary-100 dark:border-primary-900">
                       <Text className="text-[11px] font-outfit-sb text-primary-600 dark:text-primary-400 uppercase tracking-widest">{user.role}</Text>
                     </View>
-                    {user.campus?.collegeName ? (
+                    {user.campus?.department ? (
                       <View className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800">
-                        <Text className="text-[11px] font-outfit-sb text-slate-600 dark:text-slate-300 uppercase tracking-widest">{user.campus.collegeName}</Text>
+                        <Text className="text-[11px] font-outfit-sb text-slate-600 dark:text-slate-300 uppercase tracking-widest">{user.campus.department}</Text>
                       </View>
                     ) : null}
                     {user.campus?.course ? (
@@ -391,12 +404,10 @@ export default function ProfileScreen() {
                       setEditLocation(user.location || "");
                       setEditProfileRole(user.profileRole || "");
                       setEditCampus({
-                        collegeName: user.campus?.collegeName || "",
                         department: user.campus?.department || "",
                         course: user.campus?.course || "",
                         year: user.campus?.year || "",
                         semester: user.campus?.semester || "",
-                        enrollmentId: user.campus?.enrollmentId || "",
                         hostel: user.campus?.hostel || "",
                         residentType: user.campus?.residentType || "",
                       });
@@ -417,58 +428,130 @@ export default function ProfileScreen() {
         {/* ── Trust / Profile Progress ── */}
         {!editMode && (
           <View className="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm shadow-slate-200/50 dark:shadow-none mb-4">
-            <Text className="text-[13px] font-outfit-sb text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">
-              Profile & Trust
-            </Text>
+            {/* Header */}
+            <View className="flex-row items-center justify-between mb-3">
+              <View className="flex-row items-center gap-1.5">
+                <Ionicons name="shield-checkmark-outline" size={15} color="#6366f1" />
+                <Text className="text-[13px] font-outfit-sb text-slate-800 dark:text-slate-200">
+                  Profile Completion
+                </Text>
+                <Pressable onPress={() => setShowTradingInfo(!showTradingInfo)} hitSlop={10}>
+                  <Ionicons name="information-circle-outline" size={16} color="#6366f1" />
+                </Pressable>
+              </View>
+              {/* Trading status badge */}
+              <View className={`flex-row items-center gap-1 px-2.5 py-1 rounded-full ${
+                completionData?.canTrade
+                  ? 'bg-emerald-100 dark:bg-emerald-900/40'
+                  : 'bg-rose-100 dark:bg-rose-900/40'
+              }`}>
+                <Ionicons
+                  name={completionData?.canTrade ? 'checkmark-circle' : 'lock-closed'}
+                  size={11}
+                  color={completionData?.canTrade ? '#059669' : '#e11d48'}
+                />
+                <Text className={`text-[10px] font-outfit-b ${
+                  completionData?.canTrade ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                }`}>
+                  {completionData?.canTrade ? 'Trading Enabled' : 'Trading Locked'}
+                </Text>
+              </View>
+            </View>
 
-            {profileTrustLoading ? (
-              <Text className="text-[13px] font-outfit text-slate-500 dark:text-slate-400">Loading trust signals...</Text>
-            ) : profileTrustError ? (
-              <Text className="text-[13px] font-outfit text-red-500">Could not load trust signals.</Text>
-            ) : (
-              <>
-                <View className="mb-3">
-                  <Text className="text-[14px] font-outfit-m text-slate-800 dark:text-slate-200">
-                    Completion: {trustSignals?.profileCompletionScore ?? 0}%
-                  </Text>
-                  <View className="mt-2 h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                    <View
-                      className="h-2 rounded-full bg-primary-600"
-                      style={{
-                        width: `${Math.max(0, Math.min(100, trustSignals?.profileCompletionScore ?? 0))}%`,
-                      }}
-                    />
-                  </View>
-                </View>
+            {/* Progress bar */}
+            <View className="mb-1">
+              <Text className="text-[13px] font-outfit-m text-slate-500 dark:text-slate-400 mb-2">
+                {completionData?.score ?? 0}% complete
+              </Text>
+              <View className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                <View
+                  className="h-2 rounded-full bg-primary-600"
+                  style={{ width: `${Math.max(0, Math.min(100, completionData?.score ?? 0))}%` }}
+                />
+              </View>
+            </View>
 
-                <View className="flex-row flex-wrap gap-2 mb-4">
-                  {(trustSignals?.trustLabels || []).map((l) => {
-                    const tone = toneForLabelColor(l.color);
+            {/* Eligibility detail panel */}
+            {showTradingInfo && (
+              <View className="mt-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                <Text className="text-[11px] font-outfit-sb text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-1">
+                  How Trading Eligibility Works
+                </Text>
+                <Text className="text-[12px] font-outfit text-slate-500 dark:text-slate-400 mb-3 leading-5">
+                  Both buyers and sellers must have a 100% complete profile with all required fields filled in.
+                </Text>
+
+                <Text className="text-[10px] font-outfit-sb text-slate-400 uppercase tracking-widest mb-2">Required Fields</Text>
+                <View className="gap-1.5 mb-3">
+                  {[
+                    { label: 'Email Verified', key: 'Email verification' },
+                    { label: 'Full Name', key: 'Full name' },
+                    { label: 'Profile Photo', key: 'Profile photo' },
+                    { label: 'Department', key: 'Department' },
+                    { label: 'Course', key: 'Course' },
+                    { label: 'Campus Role', key: 'Campus role' },
+                    { label: 'Year / Level', key: 'Year / study level' },
+                    { label: 'Resident Type', key: 'Resident type' },
+                    { label: 'Meetup Location', key: 'Preferred campus meetup area' },
+                  ].map((field, idx) => {
+                    const isDone = !completionData?.missing?.includes(field.key);
                     return (
-                      <View key={l.key} className={`px-3 py-1 rounded-full ${tone.bg}`}>
-                        <Text className={`text-[12px] font-outfit-sb ${tone.text}`}>{l.label}</Text>
+                      <View key={idx} className={`flex-row items-center justify-between px-3 py-2 rounded-xl ${
+                        isDone ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-rose-50 dark:bg-rose-900/20'
+                      }`}>
+                        <Text className={`text-[12px] font-outfit ${
+                          isDone ? 'text-slate-600 dark:text-slate-400' : 'text-rose-700 dark:text-rose-400 font-outfit-m'
+                        }`}>{field.label}</Text>
+                        <Ionicons
+                          name={isDone ? 'checkmark-circle' : 'close-circle'}
+                          size={14}
+                          color={isDone ? '#10b981' : '#f43f5e'}
+                        />
                       </View>
                     );
                   })}
-                  {(trustSignals?.trustLabels || []).length === 0 ? (
-                    <Text className="text-[12px] font-outfit text-slate-500 dark:text-slate-400">No trust labels yet.</Text>
-                  ) : null}
                 </View>
-              </>
+
+                {/* Overall status message */}
+                {completionData?.canTrade ? (
+                  <View className="flex-row items-center gap-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/40">
+                    <Ionicons name="checkmark-circle" size={14} color="#059669" />
+                    <Text className="text-[12px] font-outfit-m text-emerald-700 dark:text-emerald-400 flex-1">
+                      You are eligible to buy and sell on CampusMitra.
+                    </Text>
+                  </View>
+                ) : (
+                  <View className="flex-row items-start gap-2 p-3 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/40">
+                    <Ionicons name="alert-circle" size={14} color="#e11d48" style={{ marginTop: 1 }} />
+                    <Text className="text-[12px] font-outfit text-rose-700 dark:text-rose-400 flex-1">
+                      Complete <Text className="font-outfit-b">{completionData?.missing?.length ?? 0} missing field{completionData?.missing?.length !== 1 ? 's' : ''}</Text> below to unlock buying and selling.
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* Trust labels */}
+            {(trustSignals?.trustLabels || []).length > 0 && (
+              <View className="flex-row flex-wrap gap-2 mt-3">
+                {(trustSignals?.trustLabels || []).map((l) => {
+                  const tone = toneForLabelColor(l.color);
+                  return (
+                    <View key={l.key} className={`px-3 py-1 rounded-full ${tone.bg}`}>
+                      <Text className={`text-[12px] font-outfit-sb ${tone.text}`}>{l.label}</Text>
+                    </View>
+                  );
+                })}
+              </View>
             )}
           </View>
         )}
 
         {/* ── Campus Info ── */}
-        {user.campus && (user.campus.collegeName || user.campus.department || user.campus.year) && (
+        {user.campus && (user.campus.department || user.campus.course || user.campus.year) && (
           <View className="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm shadow-slate-200/50 dark:shadow-none mb-4">
             <Text className="text-[13px] font-outfit-sb text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Campus Info</Text>
-            {user.campus.collegeName ? (
-              <View className="flex-row items-center gap-2 mb-2">
-                <Ionicons name="school-outline" size={15} color="#6366f1" />
-                <Text className="text-[14px] font-outfit-m text-slate-800 dark:text-slate-200">{user.campus.collegeName}</Text>
-              </View>
-            ) : null}
+
             {user.campus.department ? (
               <View className="flex-row items-center gap-2 mb-2">
                 <Ionicons name="library-outline" size={15} color="#6366f1" />

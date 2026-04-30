@@ -141,12 +141,10 @@ const register = async (req, res) => {
     const isVerified = !!collegeInfo?.verified;
 
     const campusData = {
-      collegeName: campus?.collegeName || collegeInfo?.collegeName || '',
       department: campus?.department || '',
       course: campus?.course || '',
       year: campus?.year || '',
       semester: campus?.semester || '',
-      enrollmentId: campus?.enrollmentId || '',
       hostel: campus?.hostel || '',
       residentType: campus?.residentType || '',
     };

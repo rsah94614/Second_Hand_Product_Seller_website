@@ -126,7 +126,7 @@ exports.search = async (req, res) => {
                 .limit(cap + 1)
                 .lean(),
             User.find({ $or: [{ name: searchRegex }, { email: q.trim().toLowerCase() }], role: 'user', isActive: true })
-                .select('name email avatar campus.collegeName')
+                .select('name email avatar campus.department')
                 .limit(Math.min(cap, 10))
                 .lean(),
         ]);

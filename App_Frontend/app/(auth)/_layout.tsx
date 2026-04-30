@@ -16,7 +16,7 @@ export default function AuthLayout() {
           router.replace("/(tabs)");
         }
       }}
-      className="p-1"
+      className="pr-4"
     >
       <Ionicons name="arrow-back" size={24} color={isDark ? "#ffffff" : "#1e293b"} />
     </Pressable>

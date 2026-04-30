@@ -25,6 +25,16 @@ import {
   DropdownMenuSeparator,
 } from './ui/DropdownMenu';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/AlertDialog';
+import {
   Sheet,
   SheetContent,
   SheetHeader,
@@ -44,6 +54,7 @@ const Header = () => {
   const searchRef = useRef(null);
   const location = useLocation();
   const seenToastIdsRef = useRef(new Set());
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -229,10 +240,15 @@ const Header = () => {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogoutClick = () => {
+    setIsLogoutDialogOpen(true);
+  };
+
+  const confirmLogout = () => {
     logout();
     navigate('/');
     setIsMenuOpen(false);
+    setIsLogoutDialogOpen(false);
   };
 
   const roleTone = user?.role === 'admin' ? 'destructive' : 'success';
@@ -318,7 +334,7 @@ const Header = () => {
               return (
                 <DropdownMenuItem
                   key={item.label}
-                  onClick={handleLogout}
+                  onClick={handleLogoutClick}
                   className="gap-3 rounded-xl text-red-600 focus:bg-red-50 focus:text-red-700 mt-1 cursor-pointer py-2.5"
                 >
                   {content}
@@ -665,7 +681,7 @@ const Header = () => {
                       <div className="h-px bg-gray-100 my-2" />
 
                       <button
-                        onClick={handleLogout}
+                        onClick={handleLogoutClick}
                         className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
                       >
                         <LogOut className="w-5 h-5" />
@@ -704,6 +720,27 @@ const Header = () => {
         </div>
       </div>
 
+      <AlertDialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+        <AlertDialogContent className="rounded-3xl border-gray-100 shadow-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-gray-900">Confirm Logout</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-500">
+              Are you sure you want to sign out? You will need to login again to access your account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel className="rounded-xl border-gray-200 font-semibold hover:bg-gray-50">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmLogout}
+              className="rounded-xl bg-red-600 font-semibold text-white hover:bg-red-700 border-none shadow-lg shadow-red-200"
+            >
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   );
 };

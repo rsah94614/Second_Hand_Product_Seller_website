@@ -170,14 +170,14 @@ export default function HomeScreen() {
         {/* Search bar */}
         <Pressable
           onPress={handleSearch}
-          className="flex-row items-center gap-2 rounded-2xl bg-black/10 border border-white/20 pl-4 pr-3 py-3"
+          className="flex-row items-center gap-2 rounded-2xl bg-black/10 border border-white/20 pl-4 pr-3 h-12 active:bg-black/20"
         >
           <Ionicons name="search" size={17} color="rgba(255,255,255,0.7)" />
           <TextInput
             value={search}
             onChangeText={setSearch}
             onSubmitEditing={handleSearch}
-            placeholder="Search textbooks, cycles, more..."
+            placeholder="Search products, categories..."
             placeholderTextColor="rgba(255,255,255,0.6)"
             className="flex-1 text-[14px] font-outfit text-white"
             returnKeyType="search"

@@ -118,7 +118,7 @@ const getUserProfile = async (req, res) => {
       Order.countDocuments({ seller: req.params.id, status: 'cancelled' }),
     ]);
 
-    const profileCompletionScore = computeProfileScore(user);
+    const { score: profileCompletionScore, missing, canTrade } = canTradeOnCampus(user);
     const trustLabels = buildTrustLabels(user, { completedOrders: completedOrderCount, openReports: openReportCount });
 
     const ageDays = Math.floor(
@@ -143,6 +143,8 @@ const getUserProfile = async (req, res) => {
         reviewCount: user.reviewCount,
         averageRating: user.averageRating,
         isNewSeller: ageDays < 7,
+        missing,
+        canTrade,
       },
     });
   } catch (error) {
@@ -163,7 +165,7 @@ const updateUserProfile = async (req, res) => {
 
     if (req.body.campus) {
       const c = req.body.campus;
-      const campusFields = ['collegeName', 'department', 'course', 'year', 'semester', 'enrollmentId', 'hostel', 'residentType'];
+      const campusFields = ['department', 'course', 'year', 'semester', 'hostel', 'residentType'];
       campusFields.forEach((f) => {
         if (c[f] !== undefined) allowedUpdates[`campus.${f}`] = c[f];
       });
@@ -363,7 +365,7 @@ const getBlockedUsers = async (req, res) => {
 const getProfileCompletion = async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
-      .select('name avatar campus profileRole location');
+      .select('name avatar campus profileRole location emailVerified');
 
     if (!user) return res.status(404).json({ message: 'User not found' });
 

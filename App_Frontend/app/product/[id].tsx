@@ -1,16 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   ScrollView,
   Text,
   View,
   Pressable,
+  Modal,
+  TextInput,
 } from "react-native";
 import { Image } from "expo-image";
 import { Screen } from "../../components/ui/Screen";
 import { Button } from "../../components/ui/Button";
+import { Input } from "../../components/ui/Input";
 import { Loading } from "../../components/Loading";
 import { useAuth } from "../../context/AuthContext";
 import { addToCart, getCart } from "../../lib/api/cart";
@@ -20,7 +23,7 @@ import {
   getRelatedProducts,
   reportProduct,
 } from "../../lib/api/products";
-import { toggleWishlist } from "../../lib/api/users";
+import { toggleWishlist, submitSellerReview } from "../../lib/api/users";
 import { PRODUCT_FALLBACK_IMAGE } from "../../lib/fallbackImage";
 import { formatInr } from "../../lib/format";
 import { getImageUri } from "../../lib/product-image";
@@ -32,6 +35,10 @@ export default function ProductDetailScreen() {
   const { user, refreshUser } = useAuth();
   const queryClient = useQueryClient();
   const [imgIdx, setImgIdx] = useState(0);
+  const [quantity, setQuantity] = useState(1);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportForm, setReportForm] = useState({ targetType: 'product', reason: '', details: '' });
+  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
 
   const { data: product, isLoading, error } = useQuery({
     queryKey: ["product", id],
@@ -64,7 +71,7 @@ export default function ProductDetailScreen() {
   const isInCart = cartData?.items?.some((item: any) => item.product?._id === id);
 
   const addCartM = useMutation({
-    mutationFn: () => addToCart(String(id), 1),
+    mutationFn: () => addToCart(String(id), quantity),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
       Alert.alert("Added", "Item added to cart.");
@@ -82,19 +89,36 @@ export default function ProductDetailScreen() {
     },
   });
 
-  // Fix B3: pass reason as a parameter so the mutation never reads stale state
   const reportM = useMutation({
-    mutationFn: (reason: string) =>
+    mutationFn: () =>
       reportProduct(String(id), {
-        targetType: "product",
-        reason: reason.trim(),
-        details: "",
+        targetType: reportForm.targetType,
+        reason: reportForm.reason.trim(),
+        details: reportForm.details.trim(),
       }),
     onSuccess: () => {
       Alert.alert("Report sent", "Thank you for reporting this listing.");
+      setReportModalOpen(false);
+      setReportForm({ targetType: 'product', reason: '', details: '' });
     },
     onError: (e: { response?: { data?: { message?: string } } }) => {
       Alert.alert("Error", e.response?.data?.message || "Report failed.");
+    },
+  });
+
+  const reviewM = useMutation({
+    mutationFn: () => submitSellerReview(sellerId, {
+      rating: reviewForm.rating,
+      comment: reviewForm.comment.trim(),
+      productId: String(id),
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["product", id] });
+      Alert.alert("Success", "Review submitted successfully.");
+      setReviewForm(prev => ({ ...prev, comment: "" }));
+    },
+    onError: (e: { response?: { data?: { message?: string } } }) => {
+      Alert.alert("Error", e.response?.data?.message || "Could not submit review.");
     },
   });
 
@@ -145,6 +169,14 @@ export default function ProductDetailScreen() {
       : false;
   const daysRemaining = product.daysRemaining ?? null;
   const isExpiringSoon = Boolean(product.isExpiringSoon);
+
+  const existingReview = sellerReviews.find((r: any) => r.user?._id === user?.id || r.user === user?.id);
+
+  useEffect(() => {
+    if (existingReview) {
+      setReviewForm({ rating: existingReview.rating || 5, comment: existingReview.comment || "" });
+    }
+  }, [existingReview?.rating, existingReview?.comment]);
 
   return (
     <Screen className="bg-white dark:bg-slate-950" safeAreaTop={false}>
@@ -256,13 +288,30 @@ export default function ProductDetailScreen() {
 
           {user && sellerId && sellerId !== user.id && (
             <View className="mt-8 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm shadow-slate-200/50 dark:shadow-none">
-              <Text className="font-outfit-sb text-slate-900 dark:text-white mb-2">Reviews</Text>
-              <Text className="text-[13px] font-outfit text-slate-500 dark:text-slate-400">
-                You can leave a review after completing an order with this seller.
+              <Text className="font-outfit-sb text-slate-900 dark:text-white mb-2">
+                {existingReview ? "Update your seller review" : "Review this seller"}
               </Text>
-              <View className="mt-4">
-                <Button title="Go to Orders" variant="outline" onPress={() => router.push("/(tabs)/orders" as never)} />
+              <View className="flex-row items-center gap-2 mb-4">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Pressable key={star} onPress={() => setReviewForm(prev => ({ ...prev, rating: star }))} className="p-1">
+                    <Ionicons name={star <= reviewForm.rating ? "star" : "star-outline"} size={28} color="#fbbf24" />
+                  </Pressable>
+                ))}
               </View>
+              <TextInput
+                value={reviewForm.comment}
+                onChangeText={(t) => setReviewForm(prev => ({ ...prev, comment: t }))}
+                placeholder="Share your experience with this seller..."
+                placeholderTextColor="#94a3b8"
+                multiline
+                className="min-h-[80px] rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-4 text-[15px] font-outfit text-slate-900 dark:text-white mb-4"
+                textAlignVertical="top"
+              />
+              <Button 
+                title={existingReview ? "Update Review" : "Submit Review"} 
+                onPress={() => reviewM.mutate()} 
+                loading={reviewM.isPending}
+              />
             </View>
           )}
 
@@ -299,20 +348,8 @@ export default function ProductDetailScreen() {
 
           <View className="mt-6 mb-10 pt-4 border-t border-slate-100 dark:border-slate-800">
             <Text className="font-outfit-sb text-slate-900 dark:text-white mb-3 text-sm tracking-wider uppercase text-center">Report Issue</Text>
-              <Pressable
-              onPress={() => {
-                Alert.alert(
-                  "Report Listing",
-                  "Why are you reporting this listing?",
-                  [
-                    { text: "Cancel", style: "cancel" },
-                    // Fix B3: reason passed directly — no stale-state risk
-                    { text: "Spam", onPress: () => reportM.mutate("Spam") },
-                    { text: "Misleading", onPress: () => reportM.mutate("Misleading") },
-                    { text: "Inappropriate", onPress: () => reportM.mutate("Inappropriate") },
-                  ]
-                );
-              }}
+            <Pressable
+              onPress={() => setReportModalOpen(true)}
               className="py-2 active:opacity-60"
             >
               <Text className="text-sm font-outfit-m text-red-500 text-center">Report this listing</Text>
@@ -322,21 +359,97 @@ export default function ProductDetailScreen() {
       </ScrollView>
 
       {user && available && !isOwner && (
-        <View className="absolute bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 px-4 py-4 pb-8 flex-row gap-3">
-          <View className="flex-1">
-            <Button
-              variant={isInCart ? "outline" : "outline"}
-              title={isInCart ? "In Cart" : "Add to Cart"}
-              onPress={() => { if (!isInCart) addCartM.mutate(); }}
-              loading={addCartM.isPending}
-              disabled={isInCart || addCartM.isPending}
-            />
+        <View className="absolute bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 px-4 py-4 pb-8">
+          <View className="flex-row items-center justify-between mb-4 bg-slate-50 dark:bg-slate-950 p-2 px-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+            <Text className="text-[14px] font-outfit-sb text-slate-700 dark:text-slate-300">Quantity</Text>
+            <View className="flex-row items-center gap-4">
+              <Pressable
+                onPress={() => setQuantity(q => Math.max(1, q - 1))}
+                className="h-9 w-9 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 items-center justify-center shadow-sm"
+              >
+                <Ionicons name="remove" size={18} color="#64748b" />
+              </Pressable>
+              <Text className="text-lg font-outfit-bl text-slate-900 dark:text-white min-w-[24px] text-center">{quantity}</Text>
+              <Pressable
+                onPress={() => setQuantity(q => Math.min(product.stock || 1, q + 1))}
+                className="h-9 w-9 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 items-center justify-center shadow-sm"
+              >
+                <Ionicons name="add" size={18} color="#64748b" />
+              </Pressable>
+            </View>
           </View>
-          <View className="flex-1">
-            <Button title="Buy Now" onPress={() => router.push(`/order/${id}` as never)} />
+          <View className="flex-row gap-3">
+            <View className="flex-1">
+              <Button
+                variant={isInCart ? "outline" : "outline"}
+                title={isInCart ? "In Cart" : "Add to Cart"}
+                onPress={() => { if (!isInCart) addCartM.mutate(); }}
+                loading={addCartM.isPending}
+                disabled={isInCart || addCartM.isPending || product.stock === 0}
+              />
+            </View>
+            <View className="flex-1">
+              <Button title="Buy Now" onPress={() => router.push(`/order/${id}` as never)} disabled={product.stock === 0} />
+            </View>
           </View>
         </View>
       )}
+
+      <Modal visible={reportModalOpen} animationType="slide" transparent>
+        <View className="flex-1 justify-end bg-black/60">
+          <View className="rounded-t-3xl bg-slate-50 dark:bg-slate-950 p-6 pt-4 pb-12">
+            <View className="flex-row justify-between items-center mb-6">
+              <Text className="text-xl font-outfit-bl text-slate-900 dark:text-white">Report Issue</Text>
+              <Pressable onPress={() => setReportModalOpen(false)} className="p-1">
+                <Ionicons name="close" size={24} color="#94a3b8" />
+              </Pressable>
+            </View>
+            <View className="flex-row gap-3 mb-6">
+              <Pressable 
+                onPress={() => setReportForm(prev => ({ ...prev, targetType: "product" }))}
+                className={`flex-1 py-3 rounded-xl border ${reportForm.targetType === "product" ? "bg-primary-50 border-primary-200 dark:bg-primary-900/30 dark:border-primary-800" : "bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800"}`}
+              >
+                <Text className={`text-center font-outfit-sb ${reportForm.targetType === "product" ? "text-primary-700 dark:text-primary-400" : "text-slate-600 dark:text-slate-400"}`}>Report Listing</Text>
+              </Pressable>
+              {sellerId && (
+                <Pressable 
+                  onPress={() => setReportForm(prev => ({ ...prev, targetType: "user" }))}
+                  className={`flex-1 py-3 rounded-xl border ${reportForm.targetType === "user" ? "bg-primary-50 border-primary-200 dark:bg-primary-900/30 dark:border-primary-800" : "bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800"}`}
+                >
+                  <Text className={`text-center font-outfit-sb ${reportForm.targetType === "user" ? "text-primary-700 dark:text-primary-400" : "text-slate-600 dark:text-slate-400"}`}>Report Owner</Text>
+                </Pressable>
+              )}
+            </View>
+            <Input
+              label="Reason"
+              value={reportForm.reason}
+              onChangeText={(t) => setReportForm(prev => ({ ...prev, reason: t }))}
+              placeholder="E.g. spam, fake photos, abusive"
+            />
+            <TextInput
+              value={reportForm.details}
+              onChangeText={(t) => setReportForm(prev => ({ ...prev, details: t }))}
+              placeholder="Additional details (optional)"
+              placeholderTextColor="#94a3b8"
+              multiline
+              className="min-h-[100px] rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 text-[16px] font-outfit text-slate-900 dark:text-white mb-6"
+              textAlignVertical="top"
+            />
+            <Button
+              title="Submit Report"
+              variant="danger"
+              loading={reportM.isPending}
+              onPress={() => {
+                if (!reportForm.reason.trim()) {
+                  Alert.alert("Required", "Please provide a reason.");
+                  return;
+                }
+                reportM.mutate();
+              }}
+            />
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }
