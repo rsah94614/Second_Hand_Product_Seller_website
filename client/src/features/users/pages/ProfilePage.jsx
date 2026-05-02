@@ -20,6 +20,7 @@ import {
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
 import { updateUserProfile, getUserProfile, getMyReputation, getMySellerVerification, requestSellerVerification, getMyDevices, removeDevice, trustDevice, uploadUserAvatar, getProfileCompletion } from '../api/userApi';
+import { parseApiError, formatErrorForDisplay } from '../../../lib/errorHandler';
 
 const getTrustLabelColor = (colorStr) => {
   const map = {
@@ -77,7 +78,10 @@ const ProfilePage = () => {
       toast.success('Verification request submitted');
       queryClient.invalidateQueries({ queryKey: ['my-seller-verification'] });
     },
-    onError: (err) => toast.error(err.response?.data?.message || 'Failed to submit request'),
+    onError: (err) => {
+      const parsedError = parseApiError(err, 'Failed to submit request');
+      toast.error(formatErrorForDisplay(parsedError));
+    },
   });
 
   const removeDeviceMutation = useMutation({
@@ -86,7 +90,10 @@ const ProfilePage = () => {
       toast.success('Device removed');
       queryClient.invalidateQueries({ queryKey: ['my-devices'] });
     },
-    onError: () => toast.error('Failed to remove device'),
+    onError: (err) => {
+      const parsedError = parseApiError(err, 'Failed to remove device');
+      toast.error(formatErrorForDisplay(parsedError));
+    },
   });
 
   const trustDeviceMutation = useMutation({
@@ -117,7 +124,8 @@ const ProfilePage = () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       queryClient.invalidateQueries({ queryKey: ['profile-completion'] });
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to upload photo');
+      const parsedError = parseApiError(err, 'Failed to upload photo');
+      toast.error(formatErrorForDisplay(parsedError));
     } finally {
       setAvatarUploading(false);
       if (avatarInputRef.current) avatarInputRef.current.value = '';
@@ -184,8 +192,9 @@ const ProfilePage = () => {
       refetch();
       refetchCompletion();
       queryClient.invalidateQueries({ queryKey: ['profile-completion'] });
-    } catch {
-      toast.error('Failed to update profile.');
+    } catch (err) {
+      const parsedError = parseApiError(err, 'Failed to update profile.');
+      toast.error(formatErrorForDisplay(parsedError));
     }
   };
   const handleCancel = () => {

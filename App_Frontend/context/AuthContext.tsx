@@ -18,6 +18,7 @@ import {
 import { updateUserProfile } from "../lib/api/users";
 import * as storage from "../lib/auth-storage";
 import type { AuthUser } from "../lib/types";
+import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
 
 type AuthContextValue = {
   user: AuthUser | null;
@@ -36,12 +37,9 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const getApiErrorMessage = (error: unknown, fallback: string) => {
-  const response = (error as { response?: { data?: { message?: string; errors?: string[] } } })?.response?.data;
-  if (Array.isArray(response?.errors) && response.errors.length > 0) {
-    return response.errors.join("\n");
-  }
-  return response?.message || fallback;
+const getApiErrorMessage = (error: any, fallback: string) => {
+  const parsed = parseApiError(error, fallback);
+  return formatErrorForDisplay(parsed);
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {

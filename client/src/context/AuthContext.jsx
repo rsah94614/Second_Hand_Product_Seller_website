@@ -11,6 +11,7 @@ import {
   verifyEmailApi,
   resendVerificationEmailApi,
 } from '../features/auth/api/authApi';
+import { parseApiError, formatErrorForDisplay } from '../lib/errorHandler';
 
 const AuthContext = createContext();
 
@@ -61,7 +62,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Login failed'
+        message: formatErrorForDisplay(parseApiError(error, 'Login failed')),
       };
     }
   };
@@ -80,7 +81,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Registration failed'
+        message: formatErrorForDisplay(parseApiError(error, 'Registration failed')),
       };
     }
   };
@@ -102,7 +103,7 @@ export const AuthProvider = ({ children }) => {
       const response = await forgotPasswordApi(email);
       return { success: true, message: response.message };
     } catch (error) {
-      return { success: false, message: error.response?.data?.message || 'Failed to send reset link.' };
+      return { success: false, message: formatErrorForDisplay(parseApiError(error, 'Failed to send reset link.')) };
     }
   };
 
@@ -111,7 +112,7 @@ export const AuthProvider = ({ children }) => {
       const response = await resetPasswordApi(token, newPassword);
       return { success: true, message: response.message };
     } catch (error) {
-      return { success: false, message: error.response?.data?.message || 'Failed to reset password.' };
+      return { success: false, message: formatErrorForDisplay(parseApiError(error, 'Failed to reset password.')) };
     }
   };
 
@@ -122,7 +123,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to send verification code',
+        message: formatErrorForDisplay(parseApiError(error, 'Failed to send verification code')),
       };
     }
   };
@@ -135,7 +136,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to verify email.',
+        message: formatErrorForDisplay(parseApiError(error, 'Failed to verify email.')),
       };
     }
   };
@@ -147,7 +148,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to resend verification email.',
+        message: formatErrorForDisplay(parseApiError(error, 'Failed to resend verification email.')),
       };
     }
   };

@@ -14,6 +14,7 @@ import { SettingRow } from "../../components/ui/SettingRow";
 import { SectionCard } from "../../components/ui/SectionCard";
 import { saveThemePreference, loadThemePreference } from "../../lib/theme-storage";
 import { getUserProfile, uploadUserAvatar, getMyReputation, getMySellerVerification, requestSellerVerification, getProfileCompletion } from "../../lib/api/users";
+import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
 
 type TrustLabel = { key: string; label: string; color: string };
 type TrustSignals = {
@@ -103,9 +104,9 @@ export default function ProfileScreen() {
       Alert.alert("Submitted", "Your seller verification request has been submitted.");
       refetchVerification();
     },
-    onError: (e: unknown) => {
-      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      Alert.alert("Error", msg || "Could not submit verification request.");
+    onError: (e: any) => {
+      const parsedError = parseApiError(e, "Could not submit verification request.");
+      Alert.alert("Error", formatErrorForDisplay(parsedError));
     },
   });
 
@@ -125,8 +126,9 @@ export default function ProfileScreen() {
       setEditMode(false);
       await refetchTrust();
       await refetchCompletion();
-    } catch {
-      Alert.alert("Error", "Could not update profile. Please try again.");
+    } catch (e: any) {
+      const parsedError = parseApiError(e, "Could not update profile. Please try again.");
+      Alert.alert("Error", formatErrorForDisplay(parsedError));
     } finally {
       setSaving(false);
     }
@@ -225,9 +227,9 @@ export default function ProfileScreen() {
       await uploadUserAvatar(user.id, fd);
       await refreshAuthUser();
       await refetchTrust();
-    } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      Alert.alert("Upload failed", msg || "Could not upload profile photo.");
+    } catch (e: any) {
+      const parsedError = parseApiError(e, "Could not upload profile photo.");
+      Alert.alert("Upload failed", formatErrorForDisplay(parsedError));
     } finally {
       setAvatarUploading(false);
     }

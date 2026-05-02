@@ -11,6 +11,7 @@ import { useAuth } from "../../context/AuthContext";
 import { getProduct, updateProduct } from "../../lib/api/products";
 import { PRODUCT_CONDITIONS } from "../../lib/product-options";
 import { getImageUri } from "../../lib/product-image";
+import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
 
 type Picked = { uri: string; mimeType: string };
 
@@ -103,9 +104,9 @@ export default function EditProductScreen() {
       });
       await updateProduct(String(id), fd);
       Alert.alert("Saved", "Listing updated.", [{ text: "OK", onPress: () => router.back() }]);
-    } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      Alert.alert("Error", msg || "Update failed.");
+    } catch (e: any) {
+      const parsedError = parseApiError(e, "Update failed.");
+      Alert.alert("Error", formatErrorForDisplay(parsedError));
     } finally {
       setSubmitting(false);
     }

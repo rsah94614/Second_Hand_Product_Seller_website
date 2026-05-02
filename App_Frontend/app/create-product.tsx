@@ -11,6 +11,7 @@ import { useAuth } from "../context/AuthContext";
 import { createProduct, getProductCategories } from "../lib/api/products";
 import { PRODUCT_CONDITIONS } from "../lib/product-options";
 import { Ionicons } from "@expo/vector-icons";
+import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
 
 const LISTING_POLICIES = [
   {
@@ -168,27 +169,22 @@ export default function CreateProductScreen() {
       await createProduct(fd);
       Alert.alert("Success", "Listing created.", [{ text: "OK", onPress: () => router.back() }]);
     } catch (e: any) {
-      const errorData = e.response?.data;
-      const code = errorData?.code;
-      const msg = errorData?.message || e.message; // Fallback to axios error message if no backend response
+      const parsedError = parseApiError(e, "Could not create listing.");
+      const code = parsedError.code;
 
       if (code === "PROFILE_INCOMPLETE") {
-        const missing = errorData?.missing;
-        const missingStr = missing?.length ? `\n\nMissing: ${missing.join(", ")}` : "";
         Alert.alert(
           "Complete Your Profile First",
-          `You need to complete your profile before creating a listing.${missingStr}\n\nGo to your Profile tab to fill in the missing details.`
+          `You need to complete your profile before creating a listing.\n\n${parsedError.details}\n\nGo to your Profile tab to fill in the missing details.`
         );
       } else if (code === "DAILY_LISTING_CAP") {
-        Alert.alert("Daily Limit Reached", msg || "You can only create 2 listings per day for new accounts.");
+        Alert.alert("Daily Limit Reached", parsedError.message || "You can only create 2 listings per day for new accounts.");
       } else if (code === "TOTAL_LISTING_CAP") {
-        Alert.alert("Listing Limit Reached", msg || "New accounts can have at most 3 active listings.");
+        Alert.alert("Listing Limit Reached", parsedError.message || "New accounts can have at most 3 active listings.");
       } else if (code === "MIN_IMAGES_REQUIRED") {
-        Alert.alert("More Photos Needed", msg || "This category requires at least 2 photos.");
+        Alert.alert("More Photos Needed", parsedError.message || "This category requires at least 2 photos.");
       } else {
-        // If it's a validation error with multiple messages, join them
-        const detail = errorData?.errors ? `\n${errorData.errors.join("\n")}` : "";
-        Alert.alert("Error", `${msg}${detail}` || "Could not create listing.");
+        Alert.alert("Error", formatErrorForDisplay(parsedError));
       }
     } finally {
       setSubmitting(false);
@@ -308,7 +304,7 @@ export default function CreateProductScreen() {
            <Text className="mb-2 mt-2 text-[14px] font-outfit-m text-slate-700 dark:text-slate-300">Category</Text>
            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-5 -mx-5 px-5">
               <View className="flex-row gap-2.5">
-                 {(catRes?.categories?.map((c: { name: string }) => c.name) || ["Books", "Electronics", "Cycles", "Misc"]).map((cat: string) => (
+                 {(catRes?.categories?.map((c: { name: string }) => c.name) || ["Books & Study Materials", "Electronics", "Cycles", "Other"]).map((cat: string) => (
                     <Pressable
                       key={cat}
                       onPress={() => setF("category", cat)}

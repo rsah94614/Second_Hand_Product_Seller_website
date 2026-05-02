@@ -20,6 +20,7 @@ import { DEFAULT_PRODUCT_CATEGORIES, PRODUCT_CONDITIONS } from '../../../config/
 import { CAMPUS_LOCATIONS } from '../../../lib/campus';
 import { getProduct, getProductCategories, updateProduct } from '../api/productApi';
 import { useAuth } from '../../../context/AuthContext';
+import { parseApiError, formatErrorForDisplay } from '../../../lib/errorHandler';
 
 const EditProductPage = () => {
   const { id } = useParams();
@@ -169,7 +170,8 @@ const EditProductPage = () => {
       toast.success('Product updated successfully!');
       navigate(`/products/${id}`);
     } catch (error) {
-      toast.error(error.response?.data?.message || error.message || 'Failed to update product');
+      const parsedError = parseApiError(error, "Failed to update product");
+      toast.error(formatErrorForDisplay(parsedError), { duration: 5000 });
     } finally {
       setIsLoading(false);
     }

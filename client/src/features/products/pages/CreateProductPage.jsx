@@ -20,6 +20,7 @@ import { Textarea } from '../../../components/ui/Textarea';
 import { DEFAULT_PRODUCT_CATEGORIES, PRODUCT_CONDITIONS } from '../../../config/productOptions';
 import { CAMPUS_LOCATIONS } from '../../../lib/campus';
 import { createProduct, getProductCategories } from '../api/productApi';
+import { parseApiError, formatErrorForDisplay } from '../../../lib/errorHandler';
 
 const LISTING_POLICIES = [
   {
@@ -265,7 +266,16 @@ const CreateProductPage = () => {
       toast.success('Product created successfully!');
       navigate(`/products/${product._id}`);
     } catch (error) {
-      toast.error(error.response?.data?.message || error.message || 'Failed to create product');
+      const parsedError = parseApiError(error, "Failed to create product");
+      const code = parsedError.code;
+
+      if (code === "PROFILE_INCOMPLETE") {
+        toast.error(`Please complete your profile first.\n\n${parsedError.details}`, { duration: 5000 });
+      } else if (code === "DAILY_LISTING_CAP" || code === "TOTAL_LISTING_CAP" || code === "MIN_IMAGES_REQUIRED") {
+        toast.error(parsedError.message, { duration: 5000 });
+      } else {
+        toast.error(formatErrorForDisplay(parsedError), { duration: 5000 });
+      }
     } finally {
       setIsLoading(false);
     }
