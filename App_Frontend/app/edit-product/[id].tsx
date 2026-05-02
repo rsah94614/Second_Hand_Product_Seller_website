@@ -26,7 +26,6 @@ export default function EditProductScreen() {
     condition: "",
     price: "",
     location: "",
-    phone: "",
     email: "",
   });
 
@@ -39,7 +38,6 @@ export default function EditProductScreen() {
   useEffect(() => {
     if (!product) return;
     const ci = product.contactInfo;
-    const phone = typeof ci === "object" && ci && "phone" in ci ? String((ci as { phone?: string }).phone || "") : "";
     const email = typeof ci === "object" && ci && "email" in ci ? String((ci as { email?: string }).email || "") : "";
     setForm({
       title: product.title || "",
@@ -48,7 +46,6 @@ export default function EditProductScreen() {
       condition: product.condition || "",
       price: String(product.price ?? ""),
       location: product.location || "",
-      phone,
       email,
     });
   }, [product]);
@@ -92,7 +89,7 @@ export default function EditProductScreen() {
       fd.append("condition", form.condition);
       fd.append("price", form.price);
       fd.append("location", form.location.trim());
-      fd.append("contactInfo", JSON.stringify({ phone: form.phone.trim(), email: form.email.trim() }));
+      fd.append("contactInfo", JSON.stringify({ email: form.email.trim() }));
       (product.images || []).forEach((im: string | { url?: string }) => {
         fd.append("existingImages", getImageUri(im));
       });
@@ -170,7 +167,6 @@ export default function EditProductScreen() {
         </View>
         <Input label="Price" value={form.price} onChangeText={(t) => setF("price", t)} keyboardType="numeric" />
         <Input label="Location" value={form.location} onChangeText={(t) => setF("location", t)} />
-        <Input label="Phone" value={form.phone} onChangeText={(t) => setF("phone", t)} keyboardType="phone-pad" />
         <Input label="Email" value={form.email} onChangeText={(t) => setF("email", t)} keyboardType="email-address" />
         <View className="mb-10 mt-4">
           <Button title="Save changes" onPress={submit} loading={submitting} />
