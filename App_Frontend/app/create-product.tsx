@@ -89,7 +89,6 @@ export default function CreateProductScreen() {
     condition: "",
     price: "",
     location: "",
-    phone: "",
     email: "",
   });
 
@@ -103,7 +102,6 @@ export default function CreateProductScreen() {
       setForm((f) => ({
         ...f,
         location: f.location || user.location || "",
-        phone: f.phone || user.phone || "",
         email: f.email || user.email || "",
       }));
     }
@@ -145,8 +143,8 @@ export default function CreateProductScreen() {
       Alert.alert("Images", "Add at least one image.");
       return;
     }
-    if (!form.title.trim() || !form.category || !form.condition || !form.price) {
-      Alert.alert("Form", "Fill title, category, condition, and price.");
+    if (!form.title.trim() || !form.description.trim() || !form.category || !form.condition || !form.price) {
+      Alert.alert("Form", "Please fill in all required fields (title, description, category, condition, and price).");
       return;
     }
     setSubmitting(true);
@@ -158,7 +156,7 @@ export default function CreateProductScreen() {
       fd.append("condition", form.condition);
       fd.append("price", form.price);
       fd.append("location", form.location.trim());
-      fd.append("contactInfo", JSON.stringify({ phone: form.phone.trim(), email: form.email.trim() }));
+      fd.append("contactInfo", JSON.stringify({ email: form.email.trim() }));
       images.forEach((img, i) => {
         const ext = img.uri.split(".").pop() || "jpg";
         fd.append("images", {
@@ -169,9 +167,29 @@ export default function CreateProductScreen() {
       });
       await createProduct(fd);
       Alert.alert("Success", "Listing created.", [{ text: "OK", onPress: () => router.back() }]);
-    } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      Alert.alert("Error", msg || "Could not create listing.");
+    } catch (e: any) {
+      const errorData = e.response?.data;
+      const code = errorData?.code;
+      const msg = errorData?.message || e.message; // Fallback to axios error message if no backend response
+
+      if (code === "PROFILE_INCOMPLETE") {
+        const missing = errorData?.missing;
+        const missingStr = missing?.length ? `\n\nMissing: ${missing.join(", ")}` : "";
+        Alert.alert(
+          "Complete Your Profile First",
+          `You need to complete your profile before creating a listing.${missingStr}\n\nGo to your Profile tab to fill in the missing details.`
+        );
+      } else if (code === "DAILY_LISTING_CAP") {
+        Alert.alert("Daily Limit Reached", msg || "You can only create 2 listings per day for new accounts.");
+      } else if (code === "TOTAL_LISTING_CAP") {
+        Alert.alert("Listing Limit Reached", msg || "New accounts can have at most 3 active listings.");
+      } else if (code === "MIN_IMAGES_REQUIRED") {
+        Alert.alert("More Photos Needed", msg || "This category requires at least 2 photos.");
+      } else {
+        // If it's a validation error with multiple messages, join them
+        const detail = errorData?.errors ? `\n${errorData.errors.join("\n")}` : "";
+        Alert.alert("Error", `${msg}${detail}` || "Could not create listing.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -319,7 +337,6 @@ export default function CreateProductScreen() {
         <View className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm shadow-slate-200/50 dark:shadow-none mb-8">
            <Text className="text-[18px] font-outfit-sb text-slate-900 dark:text-white mb-5 tracking-wide">Contact Details</Text>
            <Input label="Location / Pickup Area" placeholder="Enter pickup location" value={form.location} onChangeText={(t) => setF("location", t)} />
-           <Input label="Contact Phone" placeholder="Enter contact phone number" value={form.phone} onChangeText={(t) => setF("phone", t)} keyboardType="phone-pad" />
            <Input label="Contact Email" placeholder="Enter contact email address" value={form.email} onChangeText={(t) => setF("email", t)} keyboardType="email-address" />
         </View>
 

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Alert,
   ScrollView,
@@ -23,6 +23,7 @@ import {
   getRelatedProducts,
   reportProduct,
 } from "../../lib/api/products";
+import { getOrders } from "../../lib/api/orders";
 import { toggleWishlist, submitSellerReview } from "../../lib/api/users";
 import { PRODUCT_FALLBACK_IMAGE } from "../../lib/fallbackImage";
 import { formatInr } from "../../lib/format";
@@ -67,8 +68,25 @@ export default function ProductDetailScreen() {
     queryFn: getCart,
     enabled: !!user,
   });
+  
+  const { data: ordersData } = useQuery({
+    queryKey: ["orders"],
+    queryFn: getOrders,
+    enabled: !!user,
+  });
 
   const isInCart = cartData?.items?.some((item: any) => item.product?._id === id);
+
+  const completedOrder = useMemo(() => {
+    if (!ordersData) return null;
+    const orders = Array.isArray(ordersData) ? ordersData : ordersData.orders || [];
+    return orders.find((o: any) => 
+      o.status === "completed" && 
+      o.items?.some((item: any) => 
+        (typeof item.product === "string" ? item.product : item.product?._id) === id
+      )
+    );
+  }, [ordersData, id]);
 
   const addCartM = useMutation({
     mutationFn: () => addToCart(String(id), quantity),
@@ -110,7 +128,7 @@ export default function ProductDetailScreen() {
     mutationFn: () => submitSellerReview(sellerId, {
       rating: reviewForm.rating,
       comment: reviewForm.comment.trim(),
-      productId: String(id),
+      orderId: String(completedOrder?._id || ""),
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["product", id] });
@@ -286,39 +304,43 @@ export default function ProductDetailScreen() {
             </View>
           )}
 
-          {user && sellerId && sellerId !== user.id && (
-            <View className="mt-8 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm shadow-slate-200/50 dark:shadow-none">
-              <Text className="font-outfit-sb text-slate-900 dark:text-white mb-2">
-                {existingReview ? "Update your seller review" : "Review this seller"}
-              </Text>
-              <View className="flex-row items-center gap-2 mb-4">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Pressable key={star} onPress={() => setReviewForm(prev => ({ ...prev, rating: star }))} className="p-1">
-                    <Ionicons name={star <= reviewForm.rating ? "star" : "star-outline"} size={28} color="#fbbf24" />
-                  </Pressable>
-                ))}
-              </View>
-              <TextInput
-                value={reviewForm.comment}
-                onChangeText={(t) => setReviewForm(prev => ({ ...prev, comment: t }))}
-                placeholder="Share your experience with this seller..."
-                placeholderTextColor="#94a3b8"
-                multiline
-                className="min-h-[80px] rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-4 text-[15px] font-outfit text-slate-900 dark:text-white mb-4"
-                textAlignVertical="top"
-              />
-              <Button 
-                title={existingReview ? "Update Review" : "Submit Review"} 
-                onPress={() => reviewM.mutate()} 
-                loading={reviewM.isPending}
-              />
-            </View>
-          )}
 
-          {sellerReviews.length > 0 && (
-            <View className="mt-8">
+          {user && (
+            <View className="mt-8 border-t border-slate-100 dark:border-slate-800 pt-6">
               <Text className="text-[18px] font-outfit-b text-slate-900 dark:text-white mb-4">Seller Reviews</Text>
-              {sellerReviews.map((r) => (
+              
+              {completedOrder ? (
+                <View className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm mb-6">
+                  <Text className="text-[15px] font-outfit-sb text-slate-900 dark:text-white mb-3">Rate your experience</Text>
+                  <View className="flex-row gap-2 mb-4">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Pressable key={s} onPress={() => setReviewForm((f) => ({ ...f, rating: s }))} className="p-1">
+                        <Ionicons name={reviewForm.rating >= s ? "star" : "star-outline"} size={28} color="#fbbf24" />
+                      </Pressable>
+                    ))}
+                  </View>
+                  <TextInput
+                    value={reviewForm.comment}
+                    onChangeText={(t) => setReviewForm((f) => ({ ...f, comment: t }))}
+                    placeholder="Write your review..."
+                    placeholderTextColor="#94a3b8"
+                    multiline
+                    className="min-h-[80px] rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-4 text-[15px] font-outfit text-slate-900 dark:text-white mb-4"
+                    textAlignVertical="top"
+                  />
+                  <Button title="Submit Review" loading={reviewM.isPending} onPress={() => reviewM.mutate()} />
+                </View>
+              ) : (
+                <View className="mb-6 p-4 rounded-2xl bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
+                  <Text className="text-[13px] font-outfit text-slate-500 dark:text-slate-400 text-center">
+                    You can only review a seller after completing a deal with them.
+                  </Text>
+                </View>
+              )}
+
+              {sellerReviews.length > 0 && (
+                <View className="gap-3">
+                  {sellerReviews.map((r) => (
                 <View key={r._id} className="mb-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
                   <View className="flex-row items-center mb-1">
                     <Ionicons name="star" size={16} color="#fbbf24" />
@@ -330,6 +352,8 @@ export default function ProductDetailScreen() {
                   <Text className="mt-1 text-[14px] font-outfit text-slate-600 dark:text-slate-400 leading-snug">{r.comment}</Text>
                 </View>
               ))}
+                </View>
+              )}
             </View>
           )}
 

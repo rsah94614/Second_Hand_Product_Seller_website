@@ -41,7 +41,6 @@ export default function ProfileScreen() {
   const isDark = colorScheme === "dark";
   const [editMode, setEditMode] = useState(false);
   const [editName, setEditName] = useState(user?.name || "");
-  const [editPhone, setEditPhone] = useState(user?.phone || "");
   const [editLocation, setEditLocation] = useState(user?.location || "");
   const [editProfileRole, setEditProfileRole] = useState(user?.profileRole || "");
 
@@ -119,7 +118,6 @@ export default function ProfileScreen() {
     try {
       await updateProfile({
         name: editName.trim(),
-        phone: editPhone.trim(),
         location: editLocation.trim(),
         profileRole: editProfileRole.trim(),
         campus: { ...editCampus },
@@ -350,7 +348,6 @@ export default function ProfileScreen() {
                         onPress={() => {
                           setEditMode(false);
                           setEditName(user.name || "");
-                          setEditPhone(user.phone || "");
                           setEditLocation(user.location || "");
                           setEditProfileRole(user.profileRole || "");
                           setEditCampus({
@@ -400,7 +397,6 @@ export default function ProfileScreen() {
                   <Pressable
                     onPress={() => {
                       setEditName(user.name || "");
-                      setEditPhone(user.phone || "");
                       setEditLocation(user.location || "");
                       setEditProfileRole(user.profileRole || "");
                       setEditCampus({

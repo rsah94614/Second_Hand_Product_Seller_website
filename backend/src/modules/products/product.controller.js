@@ -190,7 +190,7 @@ const createProduct = async (req, res) => {
   const tempFilePaths = (req.files || []).map((f) => f.path).filter(Boolean);
 
   try {
-    const { title, description, category, condition, price, contactInfo, stock = 1 } = req.body;
+    const { title, description, category, condition, price, contactInfo, location, stock = 1 } = req.body;
 
     // ── Image requirement ─────────────────────────────────────────────────
     if (!req.files || req.files.length === 0) {
@@ -238,6 +238,7 @@ const createProduct = async (req, res) => {
       price: Number(price),
       stock: Number(stock),
       contactInfo: parseContactInfo(contactInfo),
+      location: location || '',
       images: uploadedImages,
       seller: req.user._id,
       expiresAt,
