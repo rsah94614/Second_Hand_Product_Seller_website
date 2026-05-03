@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Redirect, router } from "expo-router";
-import { FlatList, Pressable, Text, View } from "react-native";
+import { Alert, FlatList, Pressable, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { Screen } from "../components/ui/Screen";
 import { Loading } from "../components/Loading";
@@ -10,6 +10,7 @@ import { getWishlist, toggleWishlist } from "../lib/api/users";
 import { formatInr } from "../lib/format";
 import { getImageUri } from "../lib/product-image";
 import type { ProductImage } from "../lib/types";
+import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
 
 export default function WishlistScreen() {
   const { user, refreshUser } = useAuth();
@@ -26,6 +27,10 @@ export default function WishlistScreen() {
     onSuccess: async () => {
       await refreshUser();
       queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+    },
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Could not update wishlist.");
+      Alert.alert("Error", formatErrorForDisplay(parsed));
     },
   });
 

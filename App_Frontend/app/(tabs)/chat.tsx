@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, Redirect } from "expo-router";
-import { FlatList, Pressable, Text, View } from "react-native";
+import { Alert, FlatList, Pressable, Text, View } from "react-native";
 import { Screen } from "../../components/ui/Screen";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { Loading } from "../../components/Loading";
@@ -23,6 +23,7 @@ export default function ChatTabScreen() {
   const socket = useSocket();
   const [list, setList] = useState<Conv[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [online, setOnline] = useState<Record<string, boolean>>({});
   const [pinning, setPinning] = useState<string | null>(null);
   const { colorScheme } = useColorScheme();
@@ -30,10 +31,12 @@ export default function ChatTabScreen() {
 
   const load = useCallback(async () => {
     if (!user) return;
+    setLoadError(false);
     try {
       const data = await getConversations();
       setList(Array.isArray(data) ? data : []);
     } catch {
+      setLoadError(true);
       setList([]);
     } finally {
       setLoading(false);
@@ -51,7 +54,7 @@ export default function ChatTabScreen() {
       }
       await load();
     } catch {
-      // ignore
+      Alert.alert("Error", "Could not update pin. Please try again.");
     } finally {
       setPinning(null);
     }
@@ -107,6 +110,19 @@ export default function ChatTabScreen() {
     return (
       <Screen>
         <Loading />
+      </Screen>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <Screen>
+        <EmptyState
+          title="Could not load messages"
+          message="Check your connection and try again."
+          actionLabel="Retry"
+          onAction={() => { setLoading(true); load(); }}
+        />
       </Screen>
     );
   }

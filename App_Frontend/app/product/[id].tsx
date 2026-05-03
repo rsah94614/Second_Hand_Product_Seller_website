@@ -9,6 +9,8 @@ import {
   Pressable,
   Modal,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Image } from "expo-image";
 import { Screen } from "../../components/ui/Screen";
@@ -24,12 +26,13 @@ import {
   reportProduct,
 } from "../../lib/api/products";
 import { getOrders } from "../../lib/api/orders";
-import { toggleWishlist, submitSellerReview } from "../../lib/api/users";
+import { toggleWishlist, submitSellerReview, getProfileCompletion } from "../../lib/api/users";
 import { PRODUCT_FALLBACK_IMAGE } from "../../lib/fallbackImage";
 import { formatInr } from "../../lib/format";
 import { getImageUri } from "../../lib/product-image";
 import { ProductCard, type ProductListItem } from "../../components/ProductCard";
 import { Ionicons } from "@expo/vector-icons";
+import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -77,6 +80,12 @@ export default function ProductDetailScreen() {
 
   const isInCart = cartData?.items?.some((item: any) => item.product?._id === id);
 
+  const { data: completionData } = useQuery({
+    queryKey: ["profile-completion"],
+    queryFn: getProfileCompletion,
+    enabled: !!user,
+  });
+
   const completedOrder = useMemo(() => {
     if (!ordersData) return null;
     const orders = Array.isArray(ordersData) ? ordersData : ordersData.orders || [];
@@ -94,8 +103,9 @@ export default function ProductDetailScreen() {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
       Alert.alert("Added", "Item added to cart.");
     },
-    onError: (e: { response?: { data?: { message?: string } } }) => {
-      Alert.alert("Error", e.response?.data?.message || "Could not add to cart.");
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Could not add to cart.");
+      Alert.alert("Error", formatErrorForDisplay(parsed));
     },
   });
 
@@ -104,6 +114,10 @@ export default function ProductDetailScreen() {
     onSuccess: async (res: { message?: string }) => {
       await refreshUser();
       queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+    },
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Could not update wishlist.");
+      Alert.alert("Error", formatErrorForDisplay(parsed));
     },
   });
 
@@ -119,8 +133,9 @@ export default function ProductDetailScreen() {
       setReportModalOpen(false);
       setReportForm({ targetType: 'product', reason: '', details: '' });
     },
-    onError: (e: { response?: { data?: { message?: string } } }) => {
-      Alert.alert("Error", e.response?.data?.message || "Report failed.");
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Report failed.");
+      Alert.alert("Error", formatErrorForDisplay(parsed));
     },
   });
 
@@ -135,8 +150,9 @@ export default function ProductDetailScreen() {
       Alert.alert("Success", "Review submitted successfully.");
       setReviewForm(prev => ({ ...prev, comment: "" }));
     },
-    onError: (e: { response?: { data?: { message?: string } } }) => {
-      Alert.alert("Error", e.response?.data?.message || "Could not submit review.");
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Could not submit review.");
+      Alert.alert("Error", formatErrorForDisplay(parsed));
     },
   });
 
@@ -146,10 +162,31 @@ export default function ProductDetailScreen() {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       router.back();
     },
-    onError: (e: { response?: { data?: { message?: string } } }) => {
-      Alert.alert("Error", e.response?.data?.message || "Delete failed.");
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Delete failed.");
+      Alert.alert("Error", formatErrorForDisplay(parsed));
     },
   });
+
+  const sellerReviews =
+    product?.seller && typeof product.seller === "object"
+      ? ((product.seller as {
+        reviews?: {
+          _id: string;
+          rating?: number;
+          comment?: string;
+          user?: { _id: string; name?: string };
+        }[];
+      }).reviews || [])
+      : [];
+
+  const existingReview = sellerReviews.find((r: any) => r.user?._id === user?.id || r.user === user?.id);
+
+  useEffect(() => {
+    if (existingReview) {
+      setReviewForm({ rating: existingReview.rating || 5, comment: existingReview.comment || "" });
+    }
+  }, [existingReview?.rating, existingReview?.comment]);
 
   if (!id || isLoading) return <Screen><Loading /></Screen>;
   if (error || !product) return <Screen><View className="flex-1 justify-center items-center"><Text className="text-xl font-outfit-sb">Product not found.</Text></View></Screen>;
@@ -170,31 +207,13 @@ export default function ProductDetailScreen() {
     product.seller && typeof product.seller === "object"
       ? Number((product.seller as { reviewCount?: number }).reviewCount || 0)
       : 0;
-  const sellerReviews =
-    product.seller && typeof product.seller === "object"
-      ? ((product.seller as {
-        reviews?: {
-          _id: string;
-          rating?: number;
-          comment?: string;
-          user?: { name?: string };
-        }[];
-      }).reviews || [])
-      : [];
+  
   const sellerVerified =
     product.seller && typeof product.seller === "object"
       ? Boolean((product.seller as { sellerVerified?: boolean }).sellerVerified)
       : false;
   const daysRemaining = product.daysRemaining ?? null;
   const isExpiringSoon = Boolean(product.isExpiringSoon);
-
-  const existingReview = sellerReviews.find((r: any) => r.user?._id === user?.id || r.user === user?.id);
-
-  useEffect(() => {
-    if (existingReview) {
-      setReviewForm({ rating: existingReview.rating || 5, comment: existingReview.comment || "" });
-    }
-  }, [existingReview?.rating, existingReview?.comment]);
 
   return (
     <Screen className="bg-white dark:bg-slate-950" safeAreaTop={false}>
@@ -250,7 +269,7 @@ export default function ProductDetailScreen() {
             )}
           </View>
 
-          {sellerName && (
+          {!!sellerName && (
             <View className="flex-row items-center gap-3 mt-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
               <View className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900 items-center justify-center">
                 <Text className="text-lg font-outfit-sb text-primary-600 dark:text-primary-400">{sellerName.charAt(0).toUpperCase()}</Text>
@@ -272,13 +291,24 @@ export default function ProductDetailScreen() {
                   </Text>
                 </View>
               </View>
-              {user && sellerId && sellerId !== user.id && (
+              {!!user && !!sellerId && sellerId !== user.id && (
                 <Pressable
-                  onPress={() =>
+                  onPress={() => {
+                    if (completionData && !completionData.canTrade) {
+                      Alert.alert(
+                        "Profile Incomplete",
+                        "Please complete your profile details (photo, location, campus info) before starting a new chat.",
+                        [
+                          { text: "Cancel", style: "cancel" },
+                          { text: "Go to Profile", onPress: () => router.push("/(tabs)/profile") }
+                        ]
+                      );
+                      return;
+                    }
                     router.push(
                       (`/chat/${sellerId}?name=${encodeURIComponent(String(sellerName || "Chat"))}` as never)
-                    )
-                  }
+                    );
+                  }}
                   className="h-10 w-10 rounded-full bg-primary-50 dark:bg-primary-900/40 items-center justify-center active:scale-95"
                 >
                   <Ionicons name="chatbubbles" size={20} color="#6366f1" />
@@ -420,59 +450,64 @@ export default function ProductDetailScreen() {
       )}
 
       <Modal visible={reportModalOpen} animationType="slide" transparent>
-        <View className="flex-1 justify-end bg-black/60">
-          <View className="rounded-t-3xl bg-slate-50 dark:bg-slate-950 p-6 pt-4 pb-12">
-            <View className="flex-row justify-between items-center mb-6">
-              <Text className="text-xl font-outfit-bl text-slate-900 dark:text-white">Report Issue</Text>
-              <Pressable onPress={() => setReportModalOpen(false)} className="p-1">
-                <Ionicons name="close" size={24} color="#94a3b8" />
-              </Pressable>
-            </View>
-            <View className="flex-row gap-3 mb-6">
-              <Pressable 
-                onPress={() => setReportForm(prev => ({ ...prev, targetType: "product" }))}
-                className={`flex-1 py-3 rounded-xl border ${reportForm.targetType === "product" ? "bg-primary-50 border-primary-200 dark:bg-primary-900/30 dark:border-primary-800" : "bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800"}`}
-              >
-                <Text className={`text-center font-outfit-sb ${reportForm.targetType === "product" ? "text-primary-700 dark:text-primary-400" : "text-slate-600 dark:text-slate-400"}`}>Report Listing</Text>
-              </Pressable>
-              {sellerId && (
-                <Pressable 
-                  onPress={() => setReportForm(prev => ({ ...prev, targetType: "user" }))}
-                  className={`flex-1 py-3 rounded-xl border ${reportForm.targetType === "user" ? "bg-primary-50 border-primary-200 dark:bg-primary-900/30 dark:border-primary-800" : "bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800"}`}
-                >
-                  <Text className={`text-center font-outfit-sb ${reportForm.targetType === "user" ? "text-primary-700 dark:text-primary-400" : "text-slate-600 dark:text-slate-400"}`}>Report Owner</Text>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          className="flex-1"
+        >
+          <View className="flex-1 justify-end bg-black/60">
+            <View className="rounded-t-3xl bg-slate-50 dark:bg-slate-950 p-6 pt-4 pb-12">
+              <View className="flex-row justify-between items-center mb-6">
+                <Text className="text-xl font-outfit-bl text-slate-900 dark:text-white">Report Issue</Text>
+                <Pressable onPress={() => setReportModalOpen(false)} className="p-1">
+                  <Ionicons name="close" size={24} color="#94a3b8" />
                 </Pressable>
-              )}
+              </View>
+              <View className="flex-row gap-3 mb-6">
+                <Pressable 
+                  onPress={() => setReportForm(prev => ({ ...prev, targetType: "product" }))}
+                  className={`flex-1 py-3 rounded-xl border ${reportForm.targetType === "product" ? "bg-primary-50 border-primary-200 dark:bg-primary-900/30 dark:border-primary-800" : "bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800"}`}
+                >
+                  <Text className={`text-center font-outfit-sb ${reportForm.targetType === "product" ? "text-primary-700 dark:text-primary-400" : "text-slate-600 dark:text-slate-400"}`}>Report Listing</Text>
+                </Pressable>
+                {!!sellerId && (
+                  <Pressable 
+                    onPress={() => setReportForm(prev => ({ ...prev, targetType: "user" }))}
+                    className={`flex-1 py-3 rounded-xl border ${reportForm.targetType === "user" ? "bg-primary-50 border-primary-200 dark:bg-primary-900/30 dark:border-primary-800" : "bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800"}`}
+                  >
+                    <Text className={`text-center font-outfit-sb ${reportForm.targetType === "user" ? "text-primary-700 dark:text-primary-400" : "text-slate-600 dark:text-slate-400"}`}>Report Owner</Text>
+                  </Pressable>
+                )}
+              </View>
+              <Input
+                label="Reason"
+                value={reportForm.reason}
+                onChangeText={(t) => setReportForm(prev => ({ ...prev, reason: t }))}
+                placeholder="E.g. spam, fake photos, abusive"
+              />
+              <TextInput
+                value={reportForm.details}
+                onChangeText={(t) => setReportForm(prev => ({ ...prev, details: t }))}
+                placeholder="Additional details (optional)"
+                placeholderTextColor="#94a3b8"
+                multiline
+                className="min-h-[100px] rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 text-[16px] font-outfit text-slate-900 dark:text-white mb-6"
+                textAlignVertical="top"
+              />
+              <Button
+                title="Submit Report"
+                variant="danger"
+                loading={reportM.isPending}
+                onPress={() => {
+                  if (!reportForm.reason.trim()) {
+                    Alert.alert("Required", "Please provide a reason.");
+                    return;
+                  }
+                  reportM.mutate();
+                }}
+              />
             </View>
-            <Input
-              label="Reason"
-              value={reportForm.reason}
-              onChangeText={(t) => setReportForm(prev => ({ ...prev, reason: t }))}
-              placeholder="E.g. spam, fake photos, abusive"
-            />
-            <TextInput
-              value={reportForm.details}
-              onChangeText={(t) => setReportForm(prev => ({ ...prev, details: t }))}
-              placeholder="Additional details (optional)"
-              placeholderTextColor="#94a3b8"
-              multiline
-              className="min-h-[100px] rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 text-[16px] font-outfit text-slate-900 dark:text-white mb-6"
-              textAlignVertical="top"
-            />
-            <Button
-              title="Submit Report"
-              variant="danger"
-              loading={reportM.isPending}
-              onPress={() => {
-                if (!reportForm.reason.trim()) {
-                  Alert.alert("Required", "Please provide a reason.");
-                  return;
-                }
-                reportM.mutate();
-              }}
-            />
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </Screen>
   );

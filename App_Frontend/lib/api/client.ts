@@ -5,12 +5,14 @@ import * as storage from "../auth-storage";
 export const api = axios.create({
   baseURL: API_BASE_URL,
   headers: { "Content-Type": "application/json" },
-  timeout: 15000, // 15s timeout — prevents infinite loading on poor networks
+  timeout: 30000, // 30s — gives uploads time to complete on slow networks
 });
 
 api.interceptors.request.use(async (config) => {
   if (config.data instanceof FormData) {
     delete config.headers["Content-Type"];
+    // Give multipart uploads extra time — image uploads over mobile hotspot can be slow
+    config.timeout = 120000; // 2 minutes for file uploads
   }
   const token = await storage.getAccessToken();
   if (token) {

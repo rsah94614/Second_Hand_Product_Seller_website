@@ -44,3 +44,11 @@ export const uploadConfirmationPhoto = (orderId: string, formData: FormData) =>
 // ── Phase 2: Disputes ─────────────────────────────────────────────────────────
 export const createDispute = (orderId: string, formData: FormData) =>
   api.post(`/api/orders/${orderId}/dispute`, formData).then((r) => r.data);
+
+// ── Two-Party Confirmation ─────────────────────────────────────────────────────
+export const markOrderDelivered = (orderId: string) =>
+  api.patch(`/api/orders/${orderId}/deliver`).then((r) => r.data);
+
+// ── Admin: Auto-Complete ───────────────────────────────────────────────────────
+export const autoCompleteOrders = () =>
+  api.post(`/api/orders/admin/auto-complete`).then((r) => r.data);

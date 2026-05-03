@@ -9,6 +9,7 @@ import {
   updateNotificationPreferences,
 } from "../lib/api/notifications";
 import { Ionicons } from "@expo/vector-icons";
+import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
 
 type PrefKey =
   | "emailNotifications"
@@ -61,7 +62,10 @@ export default function NotificationPreferencesScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notification-preferences"] });
     },
-    onError: () => Alert.alert("Error", "Failed to save preferences."),
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Failed to save preferences.");
+      Alert.alert("Error", formatErrorForDisplay(parsed));
+    },
   });
 
   const update = (key: PrefKey, value: boolean) => {

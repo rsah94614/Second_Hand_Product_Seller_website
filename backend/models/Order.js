@@ -9,7 +9,7 @@ const mongoose = require('mongoose');
  *   cancelled       — either party cancelled before meetup
  *   no_show         — meetup happened but one party did not show up
  */
-const ORDER_STATUSES = ['requested', 'accepted', 'meetup_scheduled', 'completed', 'cancelled', 'no_show'];
+const ORDER_STATUSES = ['requested', 'accepted', 'meetup_scheduled', 'delivered', 'completed', 'cancelled', 'no_show'];
 
 const orderItemSchema = new mongoose.Schema(
   {
@@ -64,6 +64,9 @@ const orderSchema = new mongoose.Schema(
       scheduledAt: { type: Date },
       notes: { type: String, trim: true, maxlength: 500, default: '' },
     },
+
+    // Sequential delivery tracking
+    deliveredAt: { type: Date },
 
     // Reminder tracking (Task 2.3.1)
     reminders: {

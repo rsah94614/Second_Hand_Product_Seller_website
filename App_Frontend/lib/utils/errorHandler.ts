@@ -12,7 +12,7 @@ export interface ParsedError {
 
 export const parseApiError = (error: any, fallbackMessage = "An unexpected error occurred"): ParsedError => {
   const responseData = error?.response?.data;
-  
+
   if (!responseData) {
     return {
       message: error?.message || fallbackMessage,

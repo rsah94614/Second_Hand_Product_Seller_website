@@ -24,12 +24,15 @@ import {
   completeOrder,
   createDispute,
   getOrders,
+  markOrderDelivered,
+  autoCompleteOrders,
   reportNoShow,
   scheduleMeetup,
   uploadConfirmationPhoto,
 } from "../../lib/api/orders";
 import { formatInr } from "../../lib/format";
 import { useColorScheme } from "nativewind";
+import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
 
 type OrderRow = {
   _id: string;
@@ -116,11 +119,19 @@ export default function OrdersScreen() {
   const cancelM = useMutation({
     mutationFn: (orderId: string) => cancelOrder(orderId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Failed to cancel order.");
+      Alert.alert("Error", formatErrorForDisplay(parsed));
+    },
   });
 
   const acceptM = useMutation({
     mutationFn: (orderId: string) => acceptOrder(orderId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Failed to accept order.");
+      Alert.alert("Error", formatErrorForDisplay(parsed));
+    },
   });
 
   const scheduleM = useMutation({
@@ -133,6 +144,10 @@ export default function OrdersScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       setScheduleModalOpen(false);
+    },
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Failed to schedule meetup.");
+      Alert.alert("Error", formatErrorForDisplay(parsed));
     },
   });
 
@@ -157,6 +172,34 @@ export default function OrdersScreen() {
         Alert.alert("Completed", "Deal marked as completed.");
       }
     },
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Failed to complete order.");
+      Alert.alert("Error", formatErrorForDisplay(parsed));
+    },
+  });
+
+  const deliverM = useMutation({
+    mutationFn: (orderId: string) => markOrderDelivered(orderId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      Alert.alert("Handed Over", "Item marked as handed over. The buyer will now confirm receipt.");
+    },
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Failed to mark order as delivered.");
+      Alert.alert("Error", formatErrorForDisplay(parsed));
+    },
+  });
+
+  const autoCompleteM = useMutation({
+    mutationFn: () => autoCompleteOrders(),
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      Alert.alert("Auto-Complete", `${res?.count ?? 0} orders auto-completed.`);
+    },
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Failed to auto-complete orders.");
+      Alert.alert("Error", formatErrorForDisplay(parsed));
+    },
   });
 
   const noShowM = useMutation({
@@ -166,6 +209,10 @@ export default function OrdersScreen() {
         reason: payload.reason || "",
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Failed to report no-show.");
+      Alert.alert("Error", formatErrorForDisplay(parsed));
+    },
   });
 
   const disputeM = useMutation({
@@ -186,6 +233,10 @@ export default function OrdersScreen() {
     mutationFn: (payload: { orderId: string; formData: FormData }) =>
       uploadConfirmationPhoto(payload.orderId, payload.formData),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Failed to upload confirmation photo.");
+      Alert.alert("Error", formatErrorForDisplay(parsed));
+    },
   });
 
   const handleConfirmPhoto = async (orderId: string) => {
@@ -220,6 +271,7 @@ export default function OrdersScreen() {
     if (st === "requested") return { bg: "bg-yellow-100 dark:bg-amber-900/30", text: "text-yellow-700 dark:text-amber-200" };
     if (st === "accepted") return { bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-blue-700 dark:text-blue-200" };
     if (st === "meetup_scheduled") return { bg: "bg-indigo-100 dark:bg-indigo-900/30", text: "text-indigo-700 dark:text-indigo-200" };
+    if (st === "delivered") return { bg: "bg-teal-100 dark:bg-teal-900/30", text: "text-teal-700 dark:text-teal-200" };
     if (st === "completed") return { bg: "bg-green-100 dark:bg-emerald-900/30", text: "text-green-700 dark:text-emerald-200" };
     if (st === "cancelled") return { bg: "bg-red-100 dark:bg-red-900/30", text: "text-red-700 dark:text-red-200" };
     if (st === "no_show") return { bg: "bg-orange-100 dark:bg-orange-900/30", text: "text-orange-700 dark:text-orange-200" };
@@ -275,10 +327,11 @@ export default function OrdersScreen() {
 
           const canCancel = (status === "requested" || status === "accepted") && (isBuyer || isSeller);
           const canAccept = status === "requested" && isSeller;
-          const canSchedule = status === "accepted" && (isBuyer || isSeller);
-          const canComplete = status === "meetup_scheduled" && isBuyer;
+          const canSchedule = (status === "accepted") && (isBuyer || isSeller);
+          const canDeliver = ["accepted", "meetup_scheduled"].includes(status) && isSeller;
+          const canComplete = ["meetup_scheduled", "accepted", "delivered"].includes(status) && isBuyer;
           const canNoShow = status === "meetup_scheduled" && (isBuyer || isSeller);
-          const canDispute = ["meetup_scheduled", "completed", "no_show"].includes(status) && (isBuyer || isSeller);
+          const canDispute = ["meetup_scheduled", "delivered", "completed", "no_show"].includes(status) && (isBuyer || isSeller);
           const canConfirmPhoto = status === "completed" && (isBuyer || isSeller);
 
           const tone = statusTone(status);
@@ -333,6 +386,17 @@ export default function OrdersScreen() {
                 </View>
               ) : null}
 
+              {status === "delivered" ? (
+                <View className="mt-3 p-3 rounded-2xl bg-teal-50 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-900/40">
+                  <Text className="text-[12px] font-outfit-sb text-teal-700 dark:text-teal-300">
+                    📦 Item Handed Over
+                  </Text>
+                  <Text className="mt-0.5 text-[12px] font-outfit text-teal-600 dark:text-teal-400">
+                    {isBuyer ? "The seller has marked the item as handed over. Please confirm receipt." : "Waiting for buyer to confirm receipt."}
+                  </Text>
+                </View>
+              ) : null}
+
               {/* Fix U3: All action buttons now show loading spinners ───────────── */}
               <View className="mt-4 flex-row flex-wrap gap-2">
                 {canCancel && (
@@ -370,15 +434,29 @@ export default function OrdersScreen() {
                   />
                 )}
 
+                {canDeliver && (
+                  <ActionBtn
+                    label="Item Handed Over"
+                    color="bg-teal-50 dark:bg-teal-900/30"
+                    loading={deliverM.isPending}
+                    onPress={() =>
+                      Alert.alert("Confirm", "Mark this item as physically handed over to the buyer?", [
+                        { text: "No", style: "cancel" },
+                        { text: "Yes, Handed Over", onPress: () => deliverM.mutate(o._id) },
+                      ])
+                    }
+                  />
+                )}
+
                 {canComplete && (
                   <ActionBtn
-                    label="Mark Complete"
+                    label="Confirm Receipt"
                     color="bg-emerald-50 dark:bg-emerald-900/30"
                     loading={completeM.isPending}
                     onPress={() =>
-                      Alert.alert("Complete deal", "Mark this meetup as completed?", [
+                      Alert.alert("Confirm Receipt", "Confirm that you have received the item and the deal is complete?", [
                         { text: "No", style: "cancel" },
-                        { text: "Complete", onPress: () => completeM.mutate(o._id) },
+                        { text: "Yes, Received", onPress: () => completeM.mutate(o._id) },
                       ])
                     }
                   />

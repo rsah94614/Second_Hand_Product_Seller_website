@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Redirect, useLocalSearchParams, router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, ScrollView, Text, View } from "react-native";
+import { Alert, ScrollView, Text, View, Platform } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Screen } from "../../components/ui/Screen";
 import { Button } from "../../components/ui/Button";
@@ -94,16 +94,30 @@ export default function EditProductScreen() {
       (product.images || []).forEach((im: string | { url?: string }) => {
         fd.append("existingImages", getImageUri(im));
       });
-      images.forEach((img, i) => {
-        const ext = img.uri.split(".").pop() || "jpg";
-        fd.append("images", {
-          uri: img.uri,
-          name: `img_${i}.${ext}`,
-          type: img.mimeType,
-        } as unknown as Blob);
-      });
+      for (let i = 0; i < images.length; i++) {
+        const img = images[i];
+
+        if (Platform.OS === 'web') {
+          const res = await fetch(img.uri);
+          const blob = await res.blob();
+          const ext = img.mimeType?.split('/')[1] || 'jpg';
+          fd.append("images", blob, `img_${i}.${ext}`);
+        } else {
+          const ext = img.uri.split(".").pop() || "jpg";
+          fd.append("images", {
+            uri: img.uri,
+            name: `img_${i}.${ext}`,
+            type: img.mimeType,
+          } as unknown as Blob);
+        }
+      }
       await updateProduct(String(id), fd);
-      Alert.alert("Saved", "Listing updated.", [{ text: "OK", onPress: () => router.back() }]);
+      if (Platform.OS === 'web') {
+        window.alert("Listing updated successfully!");
+        router.back();
+      } else {
+        Alert.alert("Saved", "Listing updated.", [{ text: "OK", onPress: () => router.back() }]);
+      }
     } catch (e: any) {
       const parsedError = parseApiError(e, "Update failed.");
       Alert.alert("Error", formatErrorForDisplay(parsedError));

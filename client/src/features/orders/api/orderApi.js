@@ -32,3 +32,11 @@ export const createDispute = (orderId, formData) =>
 
 export const getDisputes = () =>
   axios.get(`${API_BASE_URL}/api/orders/disputes/all`).then((res) => res.data);
+
+// ── Two-Party Confirmation ─────────────────────────────────────────────────────
+export const markOrderDelivered = (orderId) =>
+  axios.patch(`${API_BASE_URL}/api/orders/${orderId}/deliver`).then((res) => res.data);
+
+// ── Admin: Auto-Complete ───────────────────────────────────────────────────────
+export const autoCompleteOrders = () =>
+  axios.post(`${API_BASE_URL}/api/orders/admin/auto-complete`).then((res) => res.data);

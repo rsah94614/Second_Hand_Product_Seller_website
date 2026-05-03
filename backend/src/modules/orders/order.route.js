@@ -28,7 +28,8 @@ router.get('/:id', auth, orderController.getOrderById);
 // ── Status transitions ────────────────────────────────────────────────────────
 router.patch('/:id/accept', auth, orderController.acceptOrder);          // seller accepts
 router.patch('/:id/meetup', auth, orderController.scheduleMeetup);       // either party schedules
-router.patch('/:id/complete', auth, orderController.markCompleted);      // buyer confirms done
+router.patch('/:id/deliver', auth, orderController.markDelivered);       // seller: item handed over
+router.patch('/:id/complete', auth, orderController.markCompleted);      // buyer confirms receipt
 router.patch('/:id/no-show', auth, orderController.markNoShow);         // either reports no-show
 router.patch('/:id/cancel', auth, orderController.cancelOrder);          // either cancels
 
@@ -41,5 +42,8 @@ router.get('/disputes/all', auth, orderController.getDisputes); // Admin only
 router.get('/disputes/:disputeId', auth, orderController.getDisputeById);
 router.patch('/disputes/:disputeId/resolve', auth, orderController.resolveDispute); // Admin only
 router.patch('/disputes/:disputeId/reject', auth, orderController.rejectDispute); // Admin only
+
+// ── Admin: force auto-complete stale delivered orders ─────────────────────────────
+router.post('/admin/auto-complete', auth, orderController.autoCompleteOrders); // Admin only
 
 module.exports = router;

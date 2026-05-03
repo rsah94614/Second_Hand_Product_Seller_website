@@ -12,6 +12,7 @@ import { formatInr } from "../lib/format";
 import { getImageUri } from "../lib/product-image";
 import type { ProductImage } from "../lib/types";
 import { Ionicons } from "@expo/vector-icons";
+import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
 
 export default function MyProductsScreen() {
   const { user, loading } = useAuth();
@@ -29,9 +30,9 @@ export default function MyProductsScreen() {
       queryClient.invalidateQueries({ queryKey: ["my-products"] });
       Alert.alert("Relisted", "Your listing has been relisted for another 60 days.");
     },
-    onError: (e: unknown) => {
-      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      Alert.alert("Failed", msg || "Could not relist this product.");
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Could not relist this product.");
+      Alert.alert("Failed", formatErrorForDisplay(parsed));
     },
   });
 

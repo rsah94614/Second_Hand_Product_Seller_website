@@ -21,16 +21,17 @@ import Footer from '../../../components/Footer';
 import Header from '../../../components/Header';
 import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
 import { formatCampusAddress } from '../../../lib/campus';
-import { cancelOrder, completeOrder, reportNoShow, getOrders, uploadConfirmationPhoto, createDispute } from '../api/orderApi';
+import { cancelOrder, completeOrder, reportNoShow, getOrders, uploadConfirmationPhoto, createDispute, markOrderDelivered } from '../api/orderApi';
 import { ErrorState } from '../../../components/ui/ErrorState';
 
 const statusStyles = {
-  requested: 'bg-yellow-100 text-yellow-700',
-  accepted: 'bg-blue-100 text-blue-700',
+  requested:        'bg-yellow-100 text-yellow-700',
+  accepted:         'bg-blue-100 text-blue-700',
   meetup_scheduled: 'bg-indigo-100 text-indigo-700',
-  completed: 'bg-green-100 text-green-700',
-  cancelled: 'bg-red-100 text-red-700',
-  no_show: 'bg-orange-100 text-orange-700',
+  delivered:        'bg-teal-100 text-teal-700',
+  completed:        'bg-green-100 text-green-700',
+  cancelled:        'bg-red-100 text-red-700',
+  no_show:          'bg-orange-100 text-orange-700',
 };
 
 const OrderHistoryPage = () => {
@@ -58,11 +59,22 @@ const OrderHistoryPage = () => {
   const completeOrderMutation = useMutation({
     mutationFn: (orderId) => completeOrder(orderId),
     onSuccess: () => {
-      toast.success('Order marked as complete!');
+      toast.success('Receipt confirmed! Deal is complete.');
       queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || 'Failed to complete order');
+    },
+  });
+
+  const deliverOrderMutation = useMutation({
+    mutationFn: (orderId) => markOrderDelivered(orderId),
+    onSuccess: () => {
+      toast.success('Item marked as handed over. Waiting for buyer confirmation.');
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to mark as delivered');
     },
   });
 
@@ -118,8 +130,14 @@ const OrderHistoryPage = () => {
     }
   };
 
+  const handleDeliverOrder = (orderId) => {
+    if (window.confirm('Confirm that you have physically handed the item over to the buyer?')) {
+      deliverOrderMutation.mutate(orderId);
+    }
+  };
+
   const handleCompleteOrder = (orderId) => {
-    if (window.confirm('Are you sure you want to mark this order as completed? Did you receive the item?')) {
+    if (window.confirm('Confirm that you have received the item and the deal is complete?')) {
       completeOrderMutation.mutate(orderId);
     }
   };
@@ -282,29 +300,45 @@ const OrderHistoryPage = () => {
                               </Button>
                             ) : null}
 
+                            {/* Seller: Handed Over button */}
+                            {['accepted', 'meetup_scheduled'].includes(order.status) && order.seller?._id === user?.id && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeliverOrder(order._id)}
+                                disabled={deliverOrderMutation.isPending}
+                                className="bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100"
+                              >
+                                <CheckCircle className="w-4 h-4 mr-1" />
+                                Item Handed Over
+                              </Button>
+                            )}
+
+                            {/* Buyer: Confirm Receipt button */}
+                            {['meetup_scheduled', 'accepted', 'delivered'].includes(order.status) && order.user?._id === user?.id && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleCompleteOrder(order._id)}
+                                disabled={completeOrderMutation.isPending}
+                                className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                              >
+                                <CheckCircle className="w-4 h-4 mr-1" />
+                                Confirm Receipt
+                              </Button>
+                            )}
+
                             {order.status === 'meetup_scheduled' && (
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleCompleteOrder(order._id)}
-                                  disabled={completeOrderMutation.isPending}
-                                  className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                                >
-                                  <CheckCircle className="w-4 h-4 mr-1" />
-                                  Complete
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleNoShow(order._id)}
-                                  disabled={noShowMutation.isPending}
-                                  className="text-orange-600 hover:bg-orange-50 hover:border-orange-200"
-                                >
-                                  <AlertTriangle className="w-4 h-4 mr-1" />
-                                  No-Show
-                                </Button>
-                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleNoShow(order._id)}
+                                disabled={noShowMutation.isPending}
+                                className="text-orange-600 hover:bg-orange-50 hover:border-orange-200"
+                              >
+                                <AlertTriangle className="w-4 h-4 mr-1" />
+                                No-Show
+                              </Button>
                             )}
 
                             {/* Confirmation photo for completed orders */}

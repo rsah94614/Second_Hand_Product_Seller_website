@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Redirect, Stack, useLocalSearchParams, router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, ScrollView, Text, TextInput, View, Pressable } from "react-native";
 import { Image } from "expo-image";
 import { Screen } from "../../components/ui/Screen";
 import { Button } from "../../components/ui/Button";
@@ -11,6 +11,7 @@ import { getProduct } from "../../lib/api/products";
 import { placeOrder } from "../../lib/api/orders";
 import { formatInr } from "../../lib/format";
 import { getImageUri } from "../../lib/product-image";
+import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
 
 export default function PlaceOrderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -20,14 +21,9 @@ export default function PlaceOrderScreen() {
   const [form, setForm] = useState({
     fullName: "",
     email: "",
-    phone: "",
     addressLine1: "",
     addressLine2: "",
     landmark: "",
-    city: "",
-    state: "",
-    postalCode: "",
-    country: "India",
   });
 
   const { data: product, isLoading } = useQuery({
@@ -42,7 +38,6 @@ export default function PlaceOrderScreen() {
         ...f,
         fullName: f.fullName || user.name || "",
         email: f.email || user.email || "",
-        phone: f.phone || user.phone || "",
       }));
     }
   }, [user]);
@@ -52,14 +47,21 @@ export default function PlaceOrderScreen() {
       placeOrder({
         productId: String(id),
         quantity: Math.max(1, parseInt(qty, 10) || 1),
-        shippingDetails: { ...form },
+        shippingDetails: { 
+          ...form,
+          city: "Guwahati",
+          state: "Assam",
+          postalCode: "781014",
+          country: "India"
+        },
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       Alert.alert("Success", "Order placed.", [{ text: "OK", onPress: () => router.replace("/(tabs)/orders") }]);
     },
-    onError: (e: { response?: { data?: { message?: string } } }) => {
-      Alert.alert("Error", e.response?.data?.message || "Order failed.");
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Order failed.");
+      Alert.alert("Error", formatErrorForDisplay(parsed));
     },
   });
 
@@ -68,11 +70,7 @@ export default function PlaceOrderScreen() {
   const validateShipping = () => {
     const required: (keyof typeof form)[] = [
       "fullName",
-      "phone",
       "addressLine1",
-      "city",
-      "state",
-      "postalCode",
     ];
     const missing = required.filter((key) => !form[key].trim());
 
@@ -107,30 +105,46 @@ export default function PlaceOrderScreen() {
         <View className="flex-row gap-3 py-4">
           <Image source={{ uri }} style={{ width: 96, height: 96, borderRadius: 12 }} />
           <View className="flex-1">
-            <Text className="font-bold text-slate-900" numberOfLines={2}>
+            <Text className="font-bold text-slate-900 dark:text-white" numberOfLines={2}>
               {product.title}
             </Text>
-            <Text className="mt-1 text-indigo-700">{formatInr(product.price)} each</Text>
-            <Text className="mt-2 font-semibold">Total {formatInr(total)}</Text>
+            <Text className="mt-1 text-indigo-700 dark:text-indigo-400">{formatInr(product.price)} each</Text>
+            <Text className="mt-2 font-semibold text-slate-900 dark:text-white">Total {formatInr(total)}</Text>
           </View>
         </View>
-        <Text className="text-sm text-slate-600">Quantity</Text>
-        <TextInput
-          value={qty}
-          onChangeText={setQty}
-          keyboardType="numeric"
-          className="mb-4 rounded-xl border border-slate-200 px-3 py-2"
-        />
-        <Field label="Full name" value={form.fullName} onChange={(t) => setF("fullName", t)} />
+        <Text className="text-sm text-slate-600 dark:text-slate-400 mb-2">Quantity</Text>
+        <View className="mb-6 flex-row items-center self-start rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+          <Pressable
+            onPress={() => setQty(String(Math.max(1, parseInt(qty, 10) - 1)))}
+            disabled={parseInt(qty, 10) <= 1}
+            className={`h-10 w-10 items-center justify-center ${parseInt(qty, 10) <= 1 ? 'opacity-30' : 'active:bg-slate-50 dark:active:bg-slate-700'} rounded-l-xl`}
+          >
+            <Text className="text-xl text-slate-600 dark:text-slate-400 font-outfit-sb">-</Text>
+          </Pressable>
+          <View className="w-12 items-center justify-center border-l border-r border-slate-100 dark:border-slate-700 h-10">
+            <Text className="text-[16px] font-outfit-sb text-slate-900 dark:text-white">{q}</Text>
+          </View>
+          <Pressable
+            onPress={() => setQty(String(parseInt(qty, 10) + 1))}
+            disabled={parseInt(qty, 10) >= (product.stock || 1)}
+            className={`h-10 w-10 items-center justify-center ${parseInt(qty, 10) >= (product.stock || 1) ? 'opacity-30' : 'active:bg-slate-50 dark:active:bg-slate-700'} rounded-r-xl`}
+          >
+            <Text className="text-xl text-slate-600 dark:text-slate-400 font-outfit-sb">+</Text>
+          </Pressable>
+        </View>
+        <Field label="Full Name*" value={form.fullName} onChange={(t) => setF("fullName", t)} />
         <Field label="Email" value={form.email} onChange={(t) => setF("email", t)} />
-        <Field label="Phone" value={form.phone} onChange={(t) => setF("phone", t)} />
-        <Field label="Address line 1" value={form.addressLine1} onChange={(t) => setF("addressLine1", t)} />
-        <Field label="Address line 2" value={form.addressLine2} onChange={(t) => setF("addressLine2", t)} />
-        <Field label="Landmark" value={form.landmark} onChange={(t) => setF("landmark", t)} />
-        <Field label="City" value={form.city} onChange={(t) => setF("city", t)} />
-        <Field label="State" value={form.state} onChange={(t) => setF("state", t)} />
-        <Field label="Postal code" value={form.postalCode} onChange={(t) => setF("postalCode", t)} />
-        <View className="mt-6 mb-10">
+        <Field label="Hostel / Department / Meetup Spot*" value={form.addressLine1} onChange={(t) => setF("addressLine1", t)} />
+        <Field label="Additional Note" value={form.addressLine2} onChange={(t) => setF("addressLine2", t)} />
+        <Field label="Nearby Landmark" value={form.landmark} onChange={(t) => setF("landmark", t)} />
+        
+        <View className="mb-4 rounded-xl border border-blue-100 dark:border-blue-900/50 bg-blue-50 dark:bg-blue-900/20 px-4 py-3">
+          <Text className="text-[13px] font-outfit leading-relaxed text-blue-800 dark:text-blue-300">
+            Orders on CampusMitra are handled as on-campus meetups. Location will be saved under Gauhati University, Guwahati, Assam.
+          </Text>
+        </View>
+
+        <View className="mt-2 mb-10">
           <Button
             title="Place order"
             loading={mutation.isPending}
@@ -157,12 +171,12 @@ function Field({
   onChange: (t: string) => void;
 }) {
   return (
-    <View className="mb-3">
-      <Text className="mb-1 text-sm text-slate-600">{label}</Text>
+    <View className="mb-4">
+      <Text className="mb-1.5 text-sm text-slate-600 dark:text-slate-400 font-outfit-m">{label}</Text>
       <TextInput
         value={value}
         onChangeText={onChange}
-        className="rounded-xl border border-slate-200 px-3 py-2 text-slate-900"
+        className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white"
         placeholderTextColor="#94a3b8"
       />
     </View>

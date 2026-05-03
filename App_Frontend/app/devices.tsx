@@ -7,6 +7,7 @@ import { EmptyState } from "../components/EmptyState";
 import { useAuth } from "../context/AuthContext";
 import { getMyDevices, removeDevice, trustDevice } from "../lib/api/users";
 import { Ionicons } from "@expo/vector-icons";
+import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
 
 type Device = {
   _id: string;
@@ -39,13 +40,19 @@ export default function DevicesScreen() {
   const removeMutation = useMutation({
     mutationFn: (deviceId: string) => removeDevice(deviceId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["my-devices"] }),
-    onError: () => Alert.alert("Error", "Failed to remove device."),
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Failed to remove device.");
+      Alert.alert("Error", formatErrorForDisplay(parsed));
+    },
   });
 
   const trustMutation = useMutation({
     mutationFn: (deviceId: string) => trustDevice(deviceId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["my-devices"] }),
-    onError: () => Alert.alert("Error", "Failed to trust device."),
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Failed to trust device.");
+      Alert.alert("Error", formatErrorForDisplay(parsed));
+    },
   });
 
   if (!user) return <Redirect href="/(auth)/login" />;

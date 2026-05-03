@@ -6,6 +6,7 @@ import { Screen } from "../../components/ui/Screen";
 import { Button } from "../../components/ui/Button";
 import { useAuth } from "../../context/AuthContext";
 import { submitSellerReview } from "../../lib/api/users";
+import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
 
 export default function ReviewSellerScreen() {
   const { sellerId, orderId } = useLocalSearchParams<{ sellerId: string; orderId?: string }>();
@@ -23,9 +24,9 @@ export default function ReviewSellerScreen() {
     onSuccess: () => {
       Alert.alert("Thanks", "Review submitted.", [{ text: "OK", onPress: () => router.back() }]);
     },
-    onError: (e: unknown) => {
-      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      Alert.alert("Error", msg || "Could not submit review.");
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Could not submit review.");
+      Alert.alert("Error", formatErrorForDisplay(parsed));
     },
   });
 

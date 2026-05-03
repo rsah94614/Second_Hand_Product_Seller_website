@@ -1,4 +1,4 @@
-import { Redirect, Stack, useLocalSearchParams } from "expo-router";
+import { Redirect, Stack, useLocalSearchParams, router } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
 import { Image } from "expo-image";
@@ -9,6 +9,7 @@ import { useSocket, useSocketStatus } from "../../context/SocketContext";
 import { getConversationMessages, markConversationAsRead, reportChatUser, uploadChatImage } from "../../lib/api/chat";
 import { Ionicons } from "@expo/vector-icons";
 import { blockUser } from "../../lib/api/users";
+import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
 
 type Msg = {
   _id: string;
@@ -34,6 +35,7 @@ export default function ChatThreadScreen() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [partnerTyping, setPartnerTyping] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState("spam");
@@ -78,9 +80,9 @@ export default function ChatThreadScreen() {
                 try {
                   await blockUser(partnerId);
                   Alert.alert("Blocked", "User blocked successfully.");
-                } catch (e: unknown) {
-                  const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
-                  Alert.alert("Error", msg || "Failed to block user.");
+                } catch (e: any) {
+                  const parsed = parseApiError(e, "Failed to block user.");
+                  Alert.alert("Error", formatErrorForDisplay(parsed));
                 }
               },
             },
@@ -94,12 +96,14 @@ export default function ChatThreadScreen() {
   const load = useCallback(async () => {
     if (!partnerId || !user || !isConnected) return;
     setLoading(true);
+    setLoadError(false);
     try {
       const data = await getConversationMessages(partnerId);
       setMessages(Array.isArray(data) ? data : []);
       await markConversationAsRead(partnerId);
       socket?.emit?.("mark_seen", { receiverId: partnerId });
     } catch {
+      setLoadError(true);
       setMessages([]);
     } finally {
       setLoading(false);
@@ -161,6 +165,18 @@ export default function ChatThreadScreen() {
     socket.on("user_typing", onTyping);
     socket.on("user_stop_typing", onStopTyping);
 
+    const onError = (err: { message?: string; code?: string }) => {
+      if (err.code === "PROFILE_INCOMPLETE") {
+        Alert.alert("Profile Incomplete", err.message || "Please complete your profile to start new chats.", [
+          { text: "Cancel", style: "cancel" },
+          { text: "Go to Profile", onPress: () => router.push("/(tabs)/profile") },
+        ]);
+      } else {
+        Alert.alert("Chat Error", err.message || "Failed to send message.");
+      }
+    };
+    socket.on("error", onError);
+
     return () => {
       socket.off("receive_message", onReceive);
       socket.off("message_edited", onEdited);
@@ -168,6 +184,7 @@ export default function ChatThreadScreen() {
       socket.off("messages_read", onMessagesRead);
       socket.off("user_typing", onTyping);
       socket.off("user_stop_typing", onStopTyping);
+      socket.off("error", onError);
     };
   }, [socket, user, partnerId]);
 
@@ -212,9 +229,9 @@ export default function ChatThreadScreen() {
     try {
       await uploadChatImage(fd);
       // The socket event will update the message list automatically
-    } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      Alert.alert("Error", msg || "Failed to send image.");
+    } catch (e: any) {
+      const parsed = parseApiError(e, "Failed to send image.");
+      Alert.alert("Error", formatErrorForDisplay(parsed));
     } finally {
       setSendingImage(false);
     }
@@ -245,12 +262,20 @@ export default function ChatThreadScreen() {
       />
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={80}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 80}
       >
         {loading ? (
           <View className="flex-1 items-center justify-center">
             <Text className="text-[15px] font-outfit-m text-slate-500 dark:text-slate-400">Loading messages...</Text>
+          </View>
+        ) : loadError ? (
+          <View className="flex-1 items-center justify-center px-8">
+            <Text className="text-[18px] font-outfit-sb text-slate-900 dark:text-white text-center mb-2">Could not load messages</Text>
+            <Text className="text-[14px] font-outfit text-slate-500 dark:text-slate-400 text-center mb-4">Check your connection and try again.</Text>
+            <Pressable onPress={load} className="px-6 py-2.5 rounded-2xl bg-primary-600 active:bg-primary-700">
+              <Text className="text-white font-outfit-sb">Retry</Text>
+            </Pressable>
           </View>
         ) : messages.length === 0 ? (
           <View className="flex-1 items-center justify-center px-8">
@@ -348,70 +373,75 @@ export default function ChatThreadScreen() {
         </View>
 
         <Modal visible={reportOpen} transparent animationType="slide" onRequestClose={() => setReportOpen(false)}>
-          <View className="flex-1 justify-end bg-black/60">
-            <View className="rounded-t-3xl bg-white dark:bg-slate-950 p-6">
-              <View className="items-center mb-4">
-                <View className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
-              </View>
-              <Text className="text-xl font-outfit-bl text-slate-900 dark:text-white mb-4">Report chat</Text>
-
-              <Text className="text-[12px] font-outfit-m text-slate-500 dark:text-slate-400 mb-1">Reason</Text>
-              <TextInput
-                value={reportReason}
-                onChangeText={setReportReason}
-                placeholder="e.g. spam, scam attempt, abusive language"
-                placeholderTextColor="#94a3b8"
-                className="mb-3 rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white"
-              />
-
-              <Text className="text-[12px] font-outfit-m text-slate-500 dark:text-slate-400 mb-1">Details (optional)</Text>
-              <TextInput
-                value={reportDetails}
-                onChangeText={setReportDetails}
-                placeholder="Extra details for moderators"
-                placeholderTextColor="#94a3b8"
-                multiline
-                className="mb-4 rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white"
-              />
-
-              <View className="flex-row gap-3">
-                <View className="flex-1">
-                  <Pressable
-                    onPress={() => setReportOpen(false)}
-                    className="rounded-xl border border-slate-300 dark:border-slate-700 px-4 py-3 items-center"
-                    disabled={reportSubmitting}
-                  >
-                    <Text className="text-[15px] font-outfit-sb text-slate-700 dark:text-slate-200">Cancel</Text>
-                  </Pressable>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            className="flex-1"
+          >
+            <View className="flex-1 justify-end bg-black/60">
+              <View className="rounded-t-3xl bg-white dark:bg-slate-950 p-6">
+                <View className="items-center mb-4">
+                  <View className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
                 </View>
-                <View className="flex-1">
-                  <Pressable
-                    onPress={async () => {
-                      if (!reportReason.trim()) {
-                        Alert.alert("Reason required", "Please enter a reason for reporting.");
-                        return;
-                      }
-                      setReportSubmitting(true);
-                      try {
-                        await reportChatUser(partnerId, { reason: reportReason.trim(), details: reportDetails.trim() });
-                        setReportOpen(false);
-                        Alert.alert("Reported", "Chat report submitted successfully.");
-                      } catch (e: unknown) {
-                        const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
-                        Alert.alert("Error", msg || "Failed to submit report.");
-                      } finally {
-                        setReportSubmitting(false);
-                      }
-                    }}
-                    className="rounded-xl bg-red-600 px-4 py-3 items-center"
-                    disabled={reportSubmitting}
-                  >
-                    <Text className="text-[15px] font-outfit-sb text-white">{reportSubmitting ? "Reporting..." : "Report"}</Text>
-                  </Pressable>
+                <Text className="text-xl font-outfit-bl text-slate-900 dark:text-white mb-4">Report chat</Text>
+
+                <Text className="text-[12px] font-outfit-m text-slate-500 dark:text-slate-400 mb-1">Reason</Text>
+                <TextInput
+                  value={reportReason}
+                  onChangeText={setReportReason}
+                  placeholder="e.g. spam, scam attempt, abusive language"
+                  placeholderTextColor="#94a3b8"
+                  className="mb-3 rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white"
+                />
+
+                <Text className="text-[12px] font-outfit-m text-slate-500 dark:text-slate-400 mb-1">Details (optional)</Text>
+                <TextInput
+                  value={reportDetails}
+                  onChangeText={setReportDetails}
+                  placeholder="Extra details for moderators"
+                  placeholderTextColor="#94a3b8"
+                  multiline
+                  className="mb-4 rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white"
+                />
+
+                <View className="flex-row gap-3">
+                  <View className="flex-1">
+                    <Pressable
+                      onPress={() => setReportOpen(false)}
+                      className="rounded-xl border border-slate-300 dark:border-slate-700 px-4 py-3 items-center"
+                      disabled={reportSubmitting}
+                    >
+                      <Text className="text-[15px] font-outfit-sb text-slate-700 dark:text-slate-200">Cancel</Text>
+                    </Pressable>
+                  </View>
+                  <View className="flex-1">
+                    <Pressable
+                      onPress={async () => {
+                        if (!reportReason.trim()) {
+                          Alert.alert("Reason required", "Please enter a reason for reporting.");
+                          return;
+                        }
+                        setReportSubmitting(true);
+                        try {
+                          await reportChatUser(partnerId, { reason: reportReason.trim(), details: reportDetails.trim() });
+                          setReportOpen(false);
+                          Alert.alert("Reported", "Chat report submitted successfully.");
+                        } catch (e: any) {
+                          const parsed = parseApiError(e, "Failed to submit report.");
+                          Alert.alert("Error", formatErrorForDisplay(parsed));
+                        } finally {
+                          setReportSubmitting(false);
+                        }
+                      }}
+                      className="rounded-xl bg-red-600 px-4 py-3 items-center"
+                      disabled={reportSubmitting}
+                    >
+                      <Text className="text-[15px] font-outfit-sb text-white">{reportSubmitting ? "Reporting..." : "Report"}</Text>
+                    </Pressable>
+                  </View>
                 </View>
               </View>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </Modal>
       </KeyboardAvoidingView>
     </Screen>

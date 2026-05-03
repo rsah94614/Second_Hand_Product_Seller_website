@@ -181,6 +181,40 @@ const scheduleMeetup = async (req, res) => {
   }
 };
 
+// ─── Mark Delivered (Sequential Delivery) ───────────────────────────────────
+
+const markDelivered = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id).populate('items.product', 'title _id');
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    if (order.seller.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Only the seller can mark this order as handed over' });
+    }
+    if (!['accepted', 'meetup_scheduled'].includes(order.status)) {
+      return res.status(400).json({ message: `Cannot deliver an order with status "${order.status}"` });
+    }
+
+    order.status = 'delivered';
+    order.deliveredAt = Date.now();
+    await order.save();
+
+    await createNotification({
+      userId: order.user,
+      actorId: req.user._id,
+      orderId: order._id,
+      type: 'order_delivered',
+      title: 'Item Handed Over 📦',
+      message: `${req.user.name} marked "${order.items[0]?.title}" as handed over. Please confirm receipt.`,
+      link: '/orders',
+      metadata: { status: 'delivered' },
+    });
+
+    return res.json({ message: 'Order marked as handed over', order });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 // ─── Mark Completed ───────────────────────────────────────────────────────────
 
 const markCompleted = async (req, res) => {
@@ -190,7 +224,7 @@ const markCompleted = async (req, res) => {
     if (order.user.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Only the buyer can confirm completion' });
     }
-    if (!['accepted', 'meetup_scheduled'].includes(order.status)) {
+    if (!['accepted', 'meetup_scheduled', 'delivered'].includes(order.status)) {
       return res.status(400).json({ message: `Cannot complete an order with status "${order.status}"` });
     }
 
@@ -681,11 +715,78 @@ const rejectDispute = async (req, res) => {
   }
 };
 
+// ─── Auto-Complete (Admin / Cron) ──────────────────────────────────────────────
+
+const autoCompleteOrders = async (req, res) => {
+  try {
+    const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+    const orders = await Order.find({
+      status: 'delivered',
+      deliveredAt: { $lte: fortyEightHoursAgo },
+    }).populate('items.product', 'title _id');
+
+    let completedCount = 0;
+
+    for (const order of orders) {
+      order.status = 'completed';
+      order.reviewUnlocked = true;
+      await order.save();
+
+      // Adjust stock
+      const stockUpdates = order.items.map(async (item) => {
+        const p = await Product.findById(item.product);
+        if (p) {
+          const newStock = Math.max(0, p.stock - item.quantity);
+          p.stock = newStock;
+          if (newStock === 0) {
+            p.isSold = true;
+            p.isActive = false;
+          }
+          await p.save();
+        }
+      });
+      await Promise.all(stockUpdates);
+
+      await Promise.all([
+        createNotification({
+          userId: order.seller,
+          actorId: req.user?._id, // might be null if cron
+          orderId: order._id,
+          type: 'order_completed',
+          title: 'Auto-Completed! ⏳',
+          message: `The 48h window passed for "${order.items[0]?.title}". The deal is now officially completed.`,
+          link: '/orders',
+          metadata: { status: 'completed' },
+        }),
+        createNotification({
+          userId: order.user,
+          actorId: req.user?._id,
+          orderId: order._id,
+          type: 'order_completed',
+          title: 'Auto-Completed! ⏳',
+          message: `Your order for "${order.items[0]?.title}" was auto-completed. You can now leave a review.`,
+          link: '/orders',
+          metadata: { status: 'completed', reviewUnlocked: true },
+        }),
+      ]);
+
+      completedCount++;
+    }
+
+    return res.json({ message: `Successfully auto-completed ${completedCount} orders`, count: completedCount });
+  } catch (error) {
+    console.error('Auto-Complete Error:', error);
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createOrder,
   acceptOrder,
   scheduleMeetup,
+  markDelivered,
   markCompleted,
+  autoCompleteOrders,
   uploadConfirmationPhoto,
   markNoShow,
   cancelOrder,

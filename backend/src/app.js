@@ -253,7 +253,7 @@ const createApp = () => {
         }
 
         // New account restriction: check if sender account < 24h old
-        const senderUser = await User.findById(sender).select('createdAt isSuspended suspendedReason name avatar campus profileRole location');
+        const senderUser = await User.findById(sender).select('createdAt isSuspended suspendedReason name avatar campus profileRole location emailVerified');
         const senderAgeHours = senderUser
           ? (Date.now() - new Date(senderUser.createdAt).getTime()) / (1000 * 60 * 60)
           : 999;

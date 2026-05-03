@@ -22,8 +22,10 @@ import { checkoutCart, getCart, removeFromCart, updateCartItem, type ShippingDet
 import { formatInr } from "../../lib/format";
 import { getImageUri } from "../../lib/product-image";
 import type { ProductImage } from "../../lib/types";
+import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
 
 type CartItem = {
+  _id?: string;
   product: {
     _id: string;
     title: string;
@@ -77,8 +79,9 @@ export default function CartScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
     },
-    onError: (e: { response?: { data?: { message?: string } } }) => {
-      Alert.alert("Error", e.response?.data?.message || "Failed to update quantity.");
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Failed to update quantity.");
+      Alert.alert("Error", formatErrorForDisplay(parsed));
     },
   });
 
@@ -91,8 +94,9 @@ export default function CartScreen() {
       Alert.alert("Success", "Order placed.");
       router.push("/(tabs)/orders");
     },
-    onError: (e: { response?: { data?: { message?: string } } }) => {
-      Alert.alert("Checkout failed", e.response?.data?.message || "Try again.");
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Checkout failed. Try again.");
+      Alert.alert("Checkout failed", formatErrorForDisplay(parsed));
     },
   });
 
@@ -164,7 +168,7 @@ export default function CartScreen() {
             const uri = getImageUri(row.product?.images?.[0]);
             return (
               <View
-                key={row.product?._id}
+                key={row._id || row.product?._id || Math.random().toString()}
                 className={`mb-4 flex-row overflow-hidden rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-sm shadow-slate-200/50 dark:shadow-none ${isItemUnavailable ? 'opacity-60 bg-slate-50 dark:bg-slate-950' : ''}`}
               >
                 <Image source={{ uri }} style={{ width: 100, height: 100, borderRadius: 16 }} transition={300} />

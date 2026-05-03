@@ -11,6 +11,7 @@ import { formatInr } from "../lib/format";
 import { getImageUri } from "../lib/product-image";
 import type { ProductImage } from "../lib/types";
 import { Ionicons } from "@expo/vector-icons";
+import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
 
 const STAT_CONFIGS = [
   { label: "Total Listings", key: "total", icon: "layers" as const, iconColor: "#4f46e5", bg: "bg-indigo-50 dark:bg-indigo-950/40", text: "text-indigo-600 dark:text-indigo-400" },
@@ -190,8 +191,13 @@ function ProductRow({
         text: "Confirm",
         style: "destructive",
         onPress: async () => {
-          await patchProduct(p._id, { isSold: true, isActive: false });
-          onSold();
+          try {
+            await patchProduct(p._id, { isSold: true, isActive: false });
+            onSold();
+          } catch (e: any) {
+            const parsed = parseApiError(e, "Failed to mark as sold.");
+            Alert.alert("Error", formatErrorForDisplay(parsed));
+          }
         },
       },
     ]);
