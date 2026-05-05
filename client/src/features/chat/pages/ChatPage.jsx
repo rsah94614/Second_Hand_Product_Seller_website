@@ -92,6 +92,25 @@ function ChatPage() {
     }
   });
 
+  useEffect(() => {
+    if (!socket) return undefined;
+
+    const handleSocketError = (err) => {
+      if (err?.code === 'PROFILE_INCOMPLETE') {
+        toast.error(err.message || 'Complete your profile before starting a new chat.');
+        return;
+      }
+
+      toast.error(err?.message || 'Chat action failed');
+    };
+
+    socket.on('error', handleSocketError);
+
+    return () => {
+      socket.off('error', handleSocketError);
+    };
+  }, [socket]);
+
   const handleBlock = () => {
     if (!currentChat) return;
     if (window.confirm('Are you sure you want to block this user? You will no longer receive messages from them.')) {
@@ -146,7 +165,6 @@ function ChatPage() {
   // ───── fetch conversations (HTTP, called once + on demand) ─────
   const fetchConversations = useCallback(async () => {
     try {
-      if (!localStorage.getItem('token')) return;
       const response = await getConversations();
       setConversations(response);
     } catch (error) {
@@ -285,7 +303,6 @@ function ChatPage() {
     const fetchMessages = async () => {
       if (!currentChat || !isConnected) return;
       try {
-        if (!localStorage.getItem('token')) return;
         const response = await getConversationMessages(currentChat._id);
         setMessages(response);
 

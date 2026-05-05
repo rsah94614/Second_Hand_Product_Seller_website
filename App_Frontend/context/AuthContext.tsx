@@ -14,6 +14,8 @@ import {
   loginUser,
   registerUser,
   resetPasswordApi,
+  resendVerificationEmailApi,
+  verifyEmailApi,
 } from "../lib/api/auth";
 import { updateUserProfile } from "../lib/api/users";
 import * as storage from "../lib/auth-storage";
@@ -31,6 +33,8 @@ type AuthContextValue = {
   refreshUser: () => Promise<void>;
   updateProfile: (payload: Record<string, unknown>) => Promise<void>;
   sendSignupOtp: (email: string) => Promise<{ success: boolean; message?: string; code?: string }>;
+  verifyEmail: (token: string) => Promise<{ success: boolean; message?: string }>;
+  resendVerificationEmail: () => Promise<{ success: boolean; message?: string }>;
   isUser: boolean;
   isAdmin: boolean;
 };
@@ -163,6 +167,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const verifyEmail = useCallback(async (token: string) => {
+    try {
+      const res = await verifyEmailApi(token);
+      await fetchUser();
+      return { success: true, message: res.message };
+    } catch (e: unknown) {
+      const msg = getApiErrorMessage(e, "Failed to verify email.");
+      return { success: false, message: msg };
+    }
+  }, [fetchUser]);
+
+  const resendVerificationEmail = useCallback(async () => {
+    try {
+      const res = await resendVerificationEmailApi();
+      return { success: true, message: res.message };
+    } catch (e: unknown) {
+      const msg = getApiErrorMessage(e, "Failed to resend verification email.");
+      return { success: false, message: msg };
+    }
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -175,6 +200,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshUser: fetchUser,
       updateProfile,
       sendSignupOtp,
+      verifyEmail,
+      resendVerificationEmail,
       isUser: user?.role === "user",
       isAdmin: user?.role === "admin",
     }),
@@ -189,6 +216,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       fetchUser,
       updateProfile,
       sendSignupOtp,
+      verifyEmail,
+      resendVerificationEmail,
     ]
   );
 

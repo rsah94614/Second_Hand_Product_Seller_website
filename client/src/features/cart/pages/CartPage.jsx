@@ -246,7 +246,7 @@ const CartPage = () => {
                   const isItemUnavailable = !item.product || item.product.isSold || item.product.isActive === false;
                   return (
                   <div
-                    key={item._id || item.product?._id || index}
+                    key={item._id || `${item.product?._id || 'unknown'}-${index}`}
                     className={`p-6 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-6 group transition-shadow ${isItemUnavailable ? 'opacity-60 bg-gray-50/50' : 'hover:shadow-md'}`}
                   >
                     <div className="relative w-full sm:w-32 h-32 shrink-0">
@@ -321,7 +321,7 @@ const CartPage = () => {
                           )}
                         </div>
                         <div className="text-right">
-                          <p className={`text-xl font-bold ${isItemUnavailable ? 'text-gray-500 line-through' : 'text-primary-600'}`}>
+                          <p className={`text-xl font-bold ${isItemUnavailable ? 'text-gray-500 line-through' : 'text-black'}`}>
                             {formatPrice(item.subtotal)}
                           </p>
                         </div>
@@ -341,14 +341,14 @@ const CartPage = () => {
                       <span>Subtotal ({summary.itemCount} items)</span>
                       <span className="font-medium text-gray-900">{formatPrice(summary.totalAmount)}</span>
                     </div>
-                    <div className="flex justify-between text-gray-600">
+                    {/* <div className="flex justify-between text-gray-600">
                       <span>Delivery Charges</span>
                       <span className="text-green-600 font-medium">Free</span>
-                    </div>
+                    </div> */}
                   </div>
                   <div className="flex justify-between items-center text-lg font-bold text-gray-900 my-6">
                     <span>Total Amount</span>
-                    <span className="text-2xl text-primary-600">{formatPrice(summary.totalAmount)}</span>
+                    <span className="text-2xl">{formatPrice(summary.totalAmount)}</span>
                   </div>
                   <Button
                     className="w-full py-4 shadow-lg shadow-primary-600/20"

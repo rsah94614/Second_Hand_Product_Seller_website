@@ -1,5 +1,5 @@
-import { Link, router } from "expo-router";
-import { useState, useEffect } from "react";
+import { router } from "expo-router";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Alert, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useColorScheme } from "nativewind";
@@ -12,7 +12,7 @@ import { useAuth } from "../../context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { SettingRow } from "../../components/ui/SettingRow";
 import { SectionCard } from "../../components/ui/SectionCard";
-import { saveThemePreference, loadThemePreference } from "../../lib/theme-storage";
+import { saveThemePreference } from "../../lib/theme-storage";
 import { getUserProfile, uploadUserAvatar, getMyReputation, getMySellerVerification, requestSellerVerification, getProfileCompletion } from "../../lib/api/users";
 import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
 
@@ -39,7 +39,6 @@ export default function ProfileScreen() {
     refreshUser: refreshAuthUser,
   } = useAuth();
   const { colorScheme, toggleColorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
   const [editMode, setEditMode] = useState(false);
   const [editName, setEditName] = useState(user?.name || "");
   const [editLocation, setEditLocation] = useState(user?.location || "");
@@ -67,8 +66,6 @@ export default function ProfileScreen() {
   const {
     data: profileData,
     refetch: refetchTrust,
-    isLoading: profileTrustLoading,
-    isError: profileTrustError,
   } = useQuery({
     queryKey: ["userProfile", user?.id],
     queryFn: () => getUserProfile(user!.id),

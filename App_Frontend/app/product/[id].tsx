@@ -186,7 +186,7 @@ export default function ProductDetailScreen() {
     if (existingReview) {
       setReviewForm({ rating: existingReview.rating || 5, comment: existingReview.comment || "" });
     }
-  }, [existingReview?.rating, existingReview?.comment]);
+  }, [existingReview]);
 
   if (!id || isLoading) return <Screen><Loading /></Screen>;
   if (error || !product) return <Screen><View className="flex-1 justify-center items-center"><Text className="text-xl font-outfit-sb">Product not found.</Text></View></Screen>;

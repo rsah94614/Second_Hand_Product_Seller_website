@@ -19,7 +19,7 @@ import {
 } from '../../../components/ui/AlertDialog';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
-import { updateUserProfile, getUserProfile, getMyReputation, getMySellerVerification, requestSellerVerification, getMyDevices, removeDevice, trustDevice, uploadUserAvatar, getProfileCompletion } from '../api/userApi';
+import { getUserProfile, getMyReputation, getMySellerVerification, requestSellerVerification, getMyDevices, removeDevice, trustDevice, uploadUserAvatar, getProfileCompletion } from '../api/userApi';
 import { parseApiError, formatErrorForDisplay } from '../../../lib/errorHandler';
 
 const getTrustLabelColor = (colorStr) => {
@@ -35,7 +35,7 @@ const getTrustLabelColor = (colorStr) => {
 };
 
 const ProfilePage = () => {
-  const { user: authUser, logout } = useAuth();
+  const { user: authUser, logout, updateProfile } = useAuth();
   const queryClient = useQueryClient();
   const avatarInputRef = useRef(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -186,7 +186,7 @@ const ProfilePage = () => {
 
   const handleSave = async () => {
     try {
-      await updateUserProfile(profile.id || profile._id, { ...formData, campus: campusForm });
+      await updateProfile({ ...formData, campus: campusForm });
       toast.success('Profile updated successfully!');
       setIsEditing(false);
       refetch();

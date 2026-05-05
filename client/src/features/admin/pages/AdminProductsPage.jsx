@@ -94,7 +94,13 @@ const AdminProductsPage = () => {
   });
 
   const products = useMemo(() => {
-    return data?.pages.flatMap((page) => page.products) || [];
+    const raw = data?.pages.flatMap((page) => page.products) || [];
+    const seen = new Set();
+    return raw.filter((p) => {
+      if (!p?._id || seen.has(p._id)) return false;
+      seen.add(p._id);
+      return true;
+    });
   }, [data]);
 
   const formatPrice = (value) =>

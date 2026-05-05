@@ -17,7 +17,6 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { getProducts, getProductCategories } from "../lib/api/products";
 import { getSearchSuggestions } from "../lib/api/search";
 import { Ionicons } from "@expo/vector-icons";
-import { useColorScheme } from "nativewind";
 
 const PAGE_SIZE = 12;
 
@@ -49,9 +48,6 @@ export default function ProductsBrowseScreen() {
     )
   );
   
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
-
   useEffect(() => {
     if (typeof params.search === "string") setSearch(params.search);
     if (typeof params.category === "string") setCategory(params.category);

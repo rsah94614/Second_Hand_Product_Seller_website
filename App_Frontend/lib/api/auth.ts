@@ -35,3 +35,13 @@ export const resetPasswordApi = (token: string, newPassword: string) =>
       newPassword,
     })
     .then((r) => r.data);
+
+export const verifyEmailApi = (token: string) =>
+  authAxios
+    .post<{ message: string }>(`${API_BASE_URL}/api/auth/verify-email`, { token })
+    .then((r) => r.data);
+
+export const resendVerificationEmailApi = () =>
+  authAxios
+    .post<{ message: string }>(`${API_BASE_URL}/api/auth/resend-verification`)
+    .then((r) => r.data);

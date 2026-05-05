@@ -8,7 +8,6 @@ import { EmptyState } from "../../components/EmptyState";
 import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
 import { getConversations, pinConversation, unpinConversation } from "../../lib/api/chat";
-import { useColorScheme } from "nativewind";
 
 type Conv = {
   _id: string;
@@ -26,8 +25,6 @@ export default function ChatTabScreen() {
   const [loadError, setLoadError] = useState(false);
   const [online, setOnline] = useState<Record<string, boolean>>({});
   const [pinning, setPinning] = useState<string | null>(null);
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -146,7 +143,10 @@ export default function ChatTabScreen() {
           </View>
         }
         renderItem={({ item }) => (
-          <Link href={`/chat/${item._id}?name=${encodeURIComponent(item.name || "")}` as never} asChild>
+          <Link
+            href={`/chat/${item._id}?name=${encodeURIComponent(item.name || "")}&pinned=${item.isPinned ? "1" : "0"}` as never}
+            asChild
+          >
             <Pressable
               onLongPress={() => togglePin(item)}
               className="flex-row items-center bg-white dark:bg-slate-900 px-5 py-4 border-b border-slate-100 dark:border-slate-800/80 active:bg-slate-50 dark:active:bg-slate-800/50"

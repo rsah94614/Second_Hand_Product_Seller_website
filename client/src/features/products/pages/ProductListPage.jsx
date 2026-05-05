@@ -129,7 +129,16 @@ const ProductListPage = () => {
   };
 
   const hasActiveFilters = filters.search || filters.category || filters.minPrice || filters.maxPrice;
-  const allProducts = data?.pages?.flatMap((p) => p.products) ?? [];
+  const allProducts = useMemo(() => {
+    const raw = data?.pages?.flatMap((p) => p.products) ?? [];
+    const seen = new Set();
+    return raw.filter((p) => {
+      if (!p?._id || seen.has(p._id)) return false;
+      seen.add(p._id);
+      return true;
+    });
+  }, [data]);
+
   const totalCount = data?.pages?.[0]?.total ?? 0;
 
   return (

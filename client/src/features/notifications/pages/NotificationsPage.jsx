@@ -160,7 +160,15 @@ const NotificationsPage = () => {
     snoozeMutation.mutate({ id, duration });
   };
 
-  const notifications = data?.notifications || [];
+  const rawNotifications = data?.notifications || [];
+  const notifications = useMemo(() => {
+    const seen = new Set();
+    return rawNotifications.filter((n) => {
+      if (!n?._id || seen.has(n._id)) return false;
+      seen.add(n._id);
+      return true;
+    });
+  }, [rawNotifications]);
   const filteredNotifications = notifications.filter((notification) => (
     activeCategory === 'all' || getNotificationCategory(notification.type) === activeCategory
   ));

@@ -19,6 +19,11 @@ const {
 const isMobileClient = (req) =>
   String(req.get('X-Client') || '').toLowerCase() === 'mobile';
 
+const shouldReturnRefreshToken = (req) => {
+  const client = String(req.get('X-Client') || '').toLowerCase();
+  return client === 'mobile' || client === 'web';
+};
+
 const getRefreshFromRequest = (req) => {
   if (req.cookies?.refreshToken) return req.cookies.refreshToken;
   if (req.body?.refreshToken) return req.body.refreshToken;
@@ -65,7 +70,7 @@ const issueSession = async (req, res, user, message) => {
     user: buildAuthUser(user),
   };
 
-  if (isMobileClient(req)) body.refreshToken = refreshToken;
+  if (shouldReturnRefreshToken(req)) body.refreshToken = refreshToken;
   return body;
 };
 
@@ -465,7 +470,7 @@ const refreshToken = async (req, res) => {
     };
 
     // For mobile clients, include refresh token in response
-    if (isMobileClient(req)) {
+    if (shouldReturnRefreshToken(req)) {
       body.refreshToken = newRefreshToken;
     }
 

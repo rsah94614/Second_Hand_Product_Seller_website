@@ -25,13 +25,11 @@ import {
   createDispute,
   getOrders,
   markOrderDelivered,
-  autoCompleteOrders,
   reportNoShow,
   scheduleMeetup,
   uploadConfirmationPhoto,
 } from "../../lib/api/orders";
 import { formatInr } from "../../lib/format";
-import { useColorScheme } from "nativewind";
 import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
 
 type OrderRow = {
@@ -79,8 +77,6 @@ function ActionBtn({
 
 export default function OrdersScreen() {
   const { user } = useAuth();
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
   const queryClient = useQueryClient();
   const { data, isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ["orders"],
@@ -186,18 +182,6 @@ export default function OrdersScreen() {
     },
     onError: (e: any) => {
       const parsed = parseApiError(e, "Failed to mark order as delivered.");
-      Alert.alert("Error", formatErrorForDisplay(parsed));
-    },
-  });
-
-  const autoCompleteM = useMutation({
-    mutationFn: () => autoCompleteOrders(),
-    onSuccess: (res: any) => {
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
-      Alert.alert("Auto-Complete", `${res?.count ?? 0} orders auto-completed.`);
-    },
-    onError: (e: any) => {
-      const parsed = parseApiError(e, "Failed to auto-complete orders.");
       Alert.alert("Error", formatErrorForDisplay(parsed));
     },
   });
