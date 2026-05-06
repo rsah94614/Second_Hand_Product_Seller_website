@@ -1,183 +1,39 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
-import { useAuth } from '../../../context/AuthContext';
-import {
-  History,
-  Clock,
-  IndianRupee,
-  ShoppingBag,
-  X,
-  CheckCircle,
-  AlertTriangle,
-  Camera,
-  Flag,
-} from 'lucide-react';
-import { Badge } from '../../../components/ui/Badge';
-import { Button } from '../../../components/ui/Button';
-import { Card, CardContent } from '../../../components/ui/Card';
-import Footer from '../../../components/Footer';
+import { History } from 'lucide-react';
 import Header from '../../../components/Header';
-import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
-import { formatCampusAddress } from '../../../lib/campus';
-import { cancelOrder, completeOrder, reportNoShow, getOrders, uploadConfirmationPhoto, createDispute, markOrderDelivered } from '../api/orderApi';
+import Footer from '../../../components/Footer';
+import { Button } from '../../../components/ui/Button';
 import { ErrorState } from '../../../components/ui/ErrorState';
-
-const statusStyles = {
-  requested:        'bg-yellow-100 text-yellow-700',
-  accepted:         'bg-blue-100 text-blue-700',
-  meetup_scheduled: 'bg-indigo-100 text-indigo-700',
-  delivered:        'bg-teal-100 text-teal-700',
-  completed:        'bg-green-100 text-green-700',
-  cancelled:        'bg-red-100 text-red-700',
-  no_show:          'bg-orange-100 text-orange-700',
-};
+import { useOrderHistoryLogic } from '../hooks/useOrderHistoryLogic';
+import { OrderHistoryCard } from '../components/OrderHistoryCard';
+import { OrderEmptyState } from '../components/OrderEmptyState';
 
 const OrderHistoryPage = () => {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-
-
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['orders'],
-    queryFn: getOrders,
-    enabled: !!user,
-  });
-
-  const cancelOrderMutation = useMutation({
-    mutationFn: (orderId) => cancelOrder(orderId),
-    onSuccess: () => {
-      toast.success('Order cancelled');
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || 'Failed to cancel order');
-    },
-  });
-
-  const completeOrderMutation = useMutation({
-    mutationFn: (orderId) => completeOrder(orderId),
-    onSuccess: () => {
-      toast.success('Receipt confirmed! Deal is complete.');
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || 'Failed to complete order');
-    },
-  });
-
-  const deliverOrderMutation = useMutation({
-    mutationFn: (orderId) => markOrderDelivered(orderId),
-    onSuccess: () => {
-      toast.success('Item marked as handed over. Waiting for buyer confirmation.');
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || 'Failed to mark as delivered');
-    },
-  });
-
-  const noShowMutation = useMutation({
-    mutationFn: (orderId) => reportNoShow(orderId),
-    onSuccess: () => {
-      toast.success('Reported as No-Show');
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || 'Failed to report no-show');
-    },
-  });
-
-  const confirmPhotoMutation = useMutation({
-    mutationFn: ({ orderId, formData }) => uploadConfirmationPhoto(orderId, formData),
-    onSuccess: () => {
-      toast.success('Confirmation photo uploaded');
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-    },
-    onError: (err) => toast.error(err.response?.data?.message || 'Failed to upload photo'),
-  });
-
-  const disputeMutation = useMutation({
-    mutationFn: ({ orderId, formData }) => createDispute(orderId, formData),
-    onSuccess: () => {
-      toast.success('Dispute submitted. Our team will review it.');
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-    },
-    onError: (err) => toast.error(err.response?.data?.message || 'Failed to submit dispute'),
-  });
-
-  const handlePhotoUpload = (orderId, file) => {
-    if (!file) return;
-    const formData = new FormData();
-    formData.append('photo', file);
-    confirmPhotoMutation.mutate({ orderId, formData });
-  };
-
-  const handleDispute = (orderId) => {
-    const reason = window.prompt('Reason for dispute (e.g. item not as described, no-show, scam):');
-    if (!reason?.trim()) return;
-    const details = window.prompt('Additional details (optional):') || '';
-    const formData = new FormData();
-    formData.append('reason', reason.trim());
-    formData.append('description', details.trim());
-    disputeMutation.mutate({ orderId, formData });
-  };
-
-  const handleCancelOrder = (orderId) => {
-    if (window.confirm('Are you sure you want to cancel this order?')) {
-      cancelOrderMutation.mutate(orderId);
-    }
-  };
-
-  const handleDeliverOrder = (orderId) => {
-    if (window.confirm('Confirm that you have physically handed the item over to the buyer?')) {
-      deliverOrderMutation.mutate(orderId);
-    }
-  };
-
-  const handleCompleteOrder = (orderId) => {
-    if (window.confirm('Confirm that you have received the item and the deal is complete?')) {
-      completeOrderMutation.mutate(orderId);
-    }
-  };
-
-  const handleNoShow = (orderId) => {
-    if (window.confirm('Are you sure you want to report a No-Show? This affects the seller\'s trust score.')) {
-      noShowMutation.mutate(orderId);
-    }
-  };
-
-  const formatPrice = (price = 0) =>
-    new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(price);
-
-  const formatDate = (date) =>
-    new Date(date).toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
+  const {
+    user,
+    orders,
+    isLoading,
+    isError,
+    refetch,
+    handleCancelOrder,
+    handleDeliverOrder,
+    handleCompleteOrder,
+    handleNoShow,
+    handlePhotoUpload,
+    handleDispute,
+    isMutating,
+  } = useOrderHistoryLogic();
 
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="max-w-md text-center bg-white p-8 rounded-xl shadow-md">
-          <History className="w-12 h-12 mx-auto text-primary-600 mb-4" />
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
-            Login to view your orders
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Track your purchases and download invoices once you&apos;re signed in.
-          </p>
-          <Link
-            to="/login"
-            className="inline-flex items-center justify-center"
-          >
-            <Button>Go to Login</Button>
+        <div className="max-w-md text-center bg-white p-10 rounded-3xl shadow-xl border border-gray-100">
+          <History className="w-16 h-16 mx-auto text-primary-600 mb-6" />
+          <h2 className="text-2xl font-black text-gray-900 mb-3">View your orders</h2>
+          <p className="text-gray-600 mb-8">Track your purchases and manage your campus deals once you&apos;re signed in.</p>
+          <Link to="/login">
+            <Button variant="primary" className="w-full rounded-full h-12 text-base font-bold">Go to Login</Button>
           </Link>
         </div>
       </div>
@@ -186,25 +42,19 @@ const OrderHistoryPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-6 md:py-10">
-        <div className="max-w-7xl mx-auto px-4 space-y-4">
+      <div className="min-h-screen bg-gray-50 py-12">
+        <div className="max-w-7xl mx-auto px-4 space-y-6">
           {[...Array(3)].map((_, index) => (
-            <div
-              key={index}
-              className="bg-white p-6 rounded-2xl shadow animate-pulse space-y-4"
-            >
-              <div className="h-6 w-1/3 bg-gray-200 rounded" />
-              <div className="h-4 w-1/4 bg-gray-200 rounded" />
-              <div className="h-4 w-full bg-gray-200 rounded" />
-              <div className="h-4 w-2/3 bg-gray-200 rounded" />
+            <div key={index} className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 animate-pulse space-y-4">
+              <div className="h-8 w-1/4 bg-gray-100 rounded-full" />
+              <div className="h-4 w-1/3 bg-gray-100 rounded-full" />
+              <div className="h-32 w-full bg-gray-50 rounded-2xl" />
             </div>
           ))}
         </div>
       </div>
     );
   }
-
-  const orders = data || [];
 
   if (isError) {
     return (
@@ -224,216 +74,47 @@ const OrderHistoryPage = () => {
     );
   }
 
+  const actions = {
+    onCancel: handleCancelOrder,
+    onDeliver: handleDeliverOrder,
+    onComplete: handleCompleteOrder,
+    onNoShow: handleNoShow,
+    onPhotoUpload: handlePhotoUpload,
+    onDispute: handleDispute,
+    isMutating,
+  };
+
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50">
       <Header />
-      <div className="min-h-screen bg-gray-50 py-8 md:py-12">
+      <main className="py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-6 md:mb-8">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center">
-              <History className="w-6 h-6 md:w-8 md:h-8 mr-3 text-primary-600" />
+          <div className="mb-10">
+            <h1 className="text-3xl font-black text-gray-900 flex items-center tracking-tight">
+              <History className="w-8 h-8 mr-4 text-primary-600" />
               Order History
             </h1>
-            <p className="text-gray-600 mt-2">
-              Review your past purchases and track their status in real-time.
+            <p className="text-gray-500 mt-2 text-lg">
+              Manage your campus deals and track the fulfillment process in real-time.
             </p>
           </div>
 
           {orders.length === 0 ? (
-            <Card className="rounded-2xl border-gray-100 shadow-sm text-center animate-fade-in">
-              <CardContent className="p-10">
-                <ShoppingBag className="w-16 h-16 text-primary-600 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                  No orders yet
-                </h2>
-                <p className="text-gray-600 mb-6">
-                  Once you place an order, it will appear here for easy tracking.
-                </p>
-                <Link
-                  to="/products"
-                  className="inline-flex items-center justify-center"
-                >
-                  <Button>Browse Products</Button>
-                </Link>
-              </CardContent>
-            </Card>
+            <OrderEmptyState />
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-8">
               {orders.map((order) => (
-                (() => {
-                  const shippingAddress = formatCampusAddress(order.shippingDetails);
-
-                  return (
-                    <Card
-                      key={order._id}
-                      className="space-y-4 rounded-2xl border-gray-100 shadow-sm animate-fade-in"
-                    >
-                      <CardContent className="p-6">
-                        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                          <div>
-                            <p className="text-sm text-gray-500">Order ID</p>
-                            <p className="text-lg font-semibold text-gray-800">
-                              #{order._id.slice(-6).toUpperCase()}
-                            </p>
-                            <p className="text-sm text-gray-500 mt-1">
-                              Placed on {formatDate(order.createdAt || order.placedAt)}
-                            </p>
-                          </div>
-                          <div className="mt-3 md:mt-0 flex items-center gap-3">
-                            <Badge className={`px-3 py-1 text-sm ${statusStyles[order.status] || statusStyles.requested}`}>
-                              {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
-                            </Badge>
-                            <div className="flex items-center text-gray-700 font-semibold">
-                              <IndianRupee className="w-4 h-4" />
-                              {formatPrice(order.total)}
-                            </div>
-                            {order.status === 'requested' || order.status === 'accepted' ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleCancelOrder(order._id)}
-                                disabled={cancelOrderMutation.isPending}
-                                className="text-red-600 hover:bg-red-50 hover:border-red-200"
-                              >
-                                <X className="w-4 h-4 mr-1" />
-                                Cancel
-                              </Button>
-                            ) : null}
-
-                            {/* Seller: Handed Over button */}
-                            {['accepted', 'meetup_scheduled'].includes(order.status) && order.seller?._id === user?.id && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDeliverOrder(order._id)}
-                                disabled={deliverOrderMutation.isPending}
-                                className="bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100"
-                              >
-                                <CheckCircle className="w-4 h-4 mr-1" />
-                                Item Handed Over
-                              </Button>
-                            )}
-
-                            {/* Buyer: Confirm Receipt button */}
-                            {['meetup_scheduled', 'accepted', 'delivered'].includes(order.status) && order.user?._id === user?.id && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleCompleteOrder(order._id)}
-                                disabled={completeOrderMutation.isPending}
-                                className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                              >
-                                <CheckCircle className="w-4 h-4 mr-1" />
-                                Confirm Receipt
-                              </Button>
-                            )}
-
-                            {order.status === 'meetup_scheduled' && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleNoShow(order._id)}
-                                disabled={noShowMutation.isPending}
-                                className="text-orange-600 hover:bg-orange-50 hover:border-orange-200"
-                              >
-                                <AlertTriangle className="w-4 h-4 mr-1" />
-                                No-Show
-                              </Button>
-                            )}
-
-                            {/* Confirmation photo for completed orders */}
-                            {order.status === 'completed' && !order.confirmationPhoto?.url && (
-                              <label className="cursor-pointer">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="text-blue-600 border-blue-200 hover:bg-blue-50 pointer-events-none"
-                                  asChild
-                                >
-                                  <span>
-                                    <Camera className="w-4 h-4 mr-1" />
-                                    Add Photo
-                                  </span>
-                                </Button>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={(e) => handlePhotoUpload(order._id, e.target.files?.[0])}
-                                />
-                              </label>
-                            )}
-
-                            {/* Dispute button for completed/no-show orders */}
-                            {['completed', 'no_show', 'meetup_scheduled'].includes(order.status) && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDispute(order._id)}
-                                disabled={disputeMutation.isPending}
-                                className="text-red-600 border-red-200 hover:bg-red-50"
-                              >
-                                <Flag className="w-4 h-4 mr-1" />
-                                Dispute
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="space-y-4 border-t border-gray-100 pt-4">
-                          {order.items?.map((item, index) => (
-                            <div key={`${order._id}-${index}`} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                              <img
-                                src={item.image || PRODUCT_FALLBACK_IMAGE}
-                                alt={item.title}
-                                className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-xl shrink-0"
-                                onError={setFallbackImage}
-                              />
-                              <div className="flex-1 min-w-0">
-                                <h3 className="text-base sm:text-lg font-semibold text-gray-800 truncate">
-                                  {item.title}
-                                  {item.quantity > 1 && (
-                                    <span className="ml-2 text-sm font-normal text-gray-500">
-                                      x{item.quantity}
-                                    </span>
-                                  )}
-                                </h3>
-                                <div className="flex flex-wrap items-center text-sm text-gray-600 gap-x-4 gap-y-1 mt-1">
-                                  <span className="flex items-center">
-                                    <Clock className="w-4 h-4 mr-1" />
-                                    {formatDate(order.updatedAt || order.createdAt)}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="text-left sm:text-right shrink-0">
-                                <p className="text-xs text-gray-500">Price</p>
-                                <p className="text-lg sm:text-xl font-semibold text-gray-800">
-                                  {formatPrice(item.price * item.quantity)}
-                                </p>
-                              </div>
-                            </div>
-                          ))}
-                          {order.shippingDetails?.fullName && (
-                            <div className="bg-gray-50 border border-gray-100 p-4 rounded-xl text-sm text-gray-700">
-                              <p className="font-semibold text-gray-800 mb-1">
-                                Delivery / Meetup Details
-                              </p>
-                              <p>{order.shippingDetails.fullName}</p>
-                              <p className="text-gray-600">{shippingAddress.primaryLine}</p>
-                              <p className="text-gray-600">{shippingAddress.secondaryLine}</p>
-                              <p className="text-gray-600">{shippingAddress.country}</p>
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })()
+                <OrderHistoryCard 
+                  key={order._id} 
+                  order={order} 
+                  user={user} 
+                  actions={actions} 
+                />
               ))}
             </div>
           )}
         </div>
-      </div>
+      </main>
       <Footer />
     </div>
   );

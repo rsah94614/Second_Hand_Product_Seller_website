@@ -223,6 +223,13 @@ const findRelatedProducts = async (productId) => {
   return { products: relatedProducts };
 };
 
+const LISTING_EXPIRY_DAYS = 60;
+
+const getBearerToken = (headerValue) => {
+  if (!headerValue || typeof headerValue !== 'string') return null;
+  return headerValue.replace(/Bearer\s+/i, '').trim() || null;
+};
+
 module.exports = {
   scoreSearchMatch,
   recalculateReviewStats,
@@ -233,4 +240,6 @@ module.exports = {
   notifyWishlistUsers,
   findProducts,
   findRelatedProducts,
+  LISTING_EXPIRY_DAYS,
+  getBearerToken,
 };
