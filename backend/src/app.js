@@ -28,6 +28,8 @@ const corsOriginHandler = (allowedList) => (origin, callback) => {
   if (!origin) return callback(null, true);
   if (allowedList.includes(origin)) return callback(null, true);
   if (process.env.NODE_ENV !== 'production') return callback(null, true);
+  
+  console.error(`[CORS REJECTED] Origin: ${origin}. Allowed origins: ${allowedList.join(', ')}`);
   callback(new Error('Not allowed by CORS'));
 };
 

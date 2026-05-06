@@ -77,7 +77,7 @@ const LISTING_POLICIES = [
   },
 ];
 
-type Picked = { uri: string; mimeType: string };
+type Picked = { uri: string; mimeType: string; fileSize?: number | null; fileName?: string | null };
 
 export default function CreateProductScreen() {
   const { user } = useAuth();
@@ -127,6 +127,8 @@ export default function CreateProductScreen() {
       const next = res.assets.map((a) => ({
         uri: a.uri,
         mimeType: a.mimeType || "image/jpeg",
+        fileSize: a.fileSize,
+        fileName: a.fileName,
       }));
       setImages((prev) => [...prev, ...next].slice(0, 5));
     }
@@ -139,6 +141,14 @@ export default function CreateProductScreen() {
   const submit = async () => {
     if (!user || user.role !== "user") {
       Alert.alert("Access", "Seller account required.");
+      return;
+    }
+    const oversizedImage = images.find((img) => Number(img.fileSize || 0) > 5 * 1024 * 1024);
+    if (oversizedImage) {
+      Alert.alert(
+        "Image Too Large",
+        "One selected image is larger than 5 MB. The backend currently allows up to 5 MB per image."
+      );
       return;
     }
     if (images.length < 1) {
@@ -165,6 +175,15 @@ export default function CreateProductScreen() {
     setSubmitting(true);
     console.log("[CreateProduct] Submitting to:", api.defaults.baseURL);
     console.log("[CreateProduct] Image count:", images.length);
+    console.log(
+      "[CreateProduct] Image meta:",
+      images.map((img) => ({
+        uri: img.uri,
+        mimeType: img.mimeType,
+        fileSize: img.fileSize,
+        fileName: img.fileName,
+      }))
+    );
     try {
       const fd = new FormData();
       fd.append("title", form.title.trim());
@@ -207,10 +226,11 @@ export default function CreateProductScreen() {
         Alert.alert(
           "Network Error",
           "The request failed to reach the server. This often happens due to:\n\n" +
-          "1. Slow mobile hotspot/VoWiFi connection\n" +
-          "2. Large image files (> 10MB total)\n" +
-          "3. Backend server cold start (Render)\n\n" +
-          "Please try again in a few seconds, or try switching your Wi-Fi off/on."
+          "1. Wrong multipart upload formatting\n" +
+          "2. An image larger than the 5 MB backend limit\n" +
+          "3. Slow mobile hotspot/VoWiFi connection\n" +
+          "4. Backend server cold start (Render)\n\n" +
+          "Please try once with a single small JPG/PNG image under 5 MB."
         );
         return;
       }

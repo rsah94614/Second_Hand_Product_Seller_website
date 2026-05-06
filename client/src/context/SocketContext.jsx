@@ -25,10 +25,11 @@ export function SocketProvider({ children }) {
 
     const activeSocket = io(SOCKET_URL, {
       auth: { token: `Bearer ${token}` },
-      transports: ['websocket'],
+      transports: ['polling', 'websocket'],
       reconnection: true,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 10,
       reconnectionDelay: 1000,
+      timeout: 20000,
     });
 
     activeSocket.on('connect_error', (err) => {
@@ -61,10 +62,11 @@ export function SocketProvider({ children }) {
 
       const activeSocket = io(SOCKET_URL, {
         auth: { token: `Bearer ${token}` },
-        transports: ['websocket'],
+        transports: ['polling', 'websocket'],
         reconnection: true,
-        reconnectionAttempts: 5,
+        reconnectionAttempts: 10,
         reconnectionDelay: 1000,
+        timeout: 20000,
       });
 
       if (cancelled) {

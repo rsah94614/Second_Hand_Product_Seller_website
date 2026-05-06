@@ -4,31 +4,131 @@ import * as storage from "../auth-storage";
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 60000, // 60s — crucial for Render cold starts and mobile uploads
+  timeout: 60000,
+  headers: {
+    Accept: "application/json",
+  },
 });
 
 api.interceptors.request.use(async (config) => {
-  const isFormData = config.data instanceof FormData || 
-                    (config.data && typeof config.data === 'object' && typeof config.data.append === 'function');
+  const isFormData =
+    config.data instanceof FormData ||
+    (config.data && typeof config.data === "object" && typeof config.data.append === "function");
+
+  config.headers = config.headers || {};
 
   if (isFormData) {
-    // In React Native, we must NOT set Content-Type for FormData to let Axios/Fetch set the boundary
-    delete config.headers["Content-Type"];
-    config.timeout = 180000; // 3 minutes for large multi-image uploads
+    // Let the native layer generate the multipart boundary.
+    if (typeof (config.headers as any).setContentType === "function") {
+      (config.headers as any).setContentType(undefined);
+    }
+    delete (config.headers as Record<string, unknown>)["Content-Type"];
+    delete (config.headers as Record<string, unknown>)["content-type"];
+    config.timeout = 180000;
   } else {
-    config.headers["Content-Type"] = "application/json";
+    if (typeof (config.headers as any).setContentType === "function") {
+      (config.headers as any).setContentType("application/json");
+    } else {
+      (config.headers as Record<string, unknown>)["Content-Type"] = "application/json";
+    }
   }
+
   const token = await storage.getAccessToken();
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    (config.headers as Record<string, unknown>).Authorization = `Bearer ${token}`;
   }
+
   return config;
 });
 
-// ── Refresh mutex ──────────────────────────────────────────────────────────────
-// Ensures that if multiple 401s fire concurrently, only ONE refresh call is made.
-// All other retries wait for the same promise.
 let refreshingPromise: Promise<string> | null = null;
+
+const refreshAccessToken = async () => {
+  const refreshToken = await storage.getRefreshToken();
+  if (!refreshToken) {
+    await storage.clearTokens();
+    throw new Error("Missing refresh token");
+  }
+
+  if (!refreshingPromise) {
+    refreshingPromise = axios
+      .post<{ token: string }>(
+        `${API_BASE_URL}/api/auth/refresh`,
+        { refreshToken },
+        { headers: { "Content-Type": "application/json" } }
+      )
+      .then(async ({ data }) => {
+        await storage.setAccessToken(data.token);
+        return data.token;
+      })
+      .finally(() => {
+        refreshingPromise = null;
+      });
+  }
+
+  return refreshingPromise;
+};
+
+const parseFetchResponse = async (response: Response) => {
+  const text = await response.text();
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { message: text };
+  }
+};
+
+const buildUploadHeaders = async () => {
+  const token = await storage.getAccessToken();
+  return {
+    Accept: "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
+
+const buildUploadError = (response: Response, data: any) => {
+  const error = new Error(data?.message || `Request failed with status ${response.status}`);
+  (error as any).response = {
+    status: response.status,
+    data,
+  };
+  return error;
+};
+
+export const uploadFormData = async <T = any>(
+  path: string,
+  formData: FormData,
+  method: "POST" | "PUT" = "POST"
+): Promise<T> => {
+  const url = `${API_BASE_URL}${path}`;
+  const send = async () =>
+    fetch(url, {
+      method,
+      headers: await buildUploadHeaders(),
+      body: formData,
+    });
+
+  let response = await send();
+  let data = await parseFetchResponse(response);
+
+  if (response.status === 401) {
+    try {
+      await refreshAccessToken();
+      response = await send();
+      data = await parseFetchResponse(response);
+    } catch {
+      await storage.clearTokens();
+    }
+  }
+
+  if (!response.ok) {
+    throw buildUploadError(response, data);
+  }
+
+  return data as T;
+};
 
 api.interceptors.response.use(
   (response) => response,
@@ -45,13 +145,16 @@ api.interceptors.response.use(
     const originalRequest = error.config as typeof error.config & {
       _retry?: boolean;
     };
+
     if (!originalRequest || error.response?.status !== 401 || originalRequest._retry) {
       return Promise.reject(error);
     }
+
     const url = String(originalRequest.url || "");
     if (url.includes("/api/auth/refresh") || url.includes("/api/auth/login")) {
       return Promise.reject(error);
     }
+
     originalRequest._retry = true;
 
     const refreshToken = await storage.getRefreshToken();
@@ -61,24 +164,12 @@ api.interceptors.response.use(
     }
 
     try {
-      // If a refresh is already in flight, wait for it instead of making a new one
       if (!refreshingPromise) {
-        refreshingPromise = axios
-          .post<{ token: string }>(
-            `${API_BASE_URL}/api/auth/refresh`,
-            { refreshToken },
-            { headers: { "Content-Type": "application/json" } }
-          )
-          .then(async ({ data }) => {
-            await storage.setAccessToken(data.token);
-            return data.token;
-          })
-          .finally(() => {
-            refreshingPromise = null;
-          });
+        refreshingPromise = refreshAccessToken();
       }
 
       const newToken = await refreshingPromise;
+      originalRequest.headers = originalRequest.headers || {};
       originalRequest.headers.Authorization = `Bearer ${newToken}`;
       return api(originalRequest);
     } catch (refreshError: any) {

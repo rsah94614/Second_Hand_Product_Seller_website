@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Pressable, TextInput, ScrollView, Alert } from "react-native";
+import { View, Text, Pressable, TextInput, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Button } from "../ui/Button";

@@ -14,7 +14,7 @@ import { getImageUri } from "../../lib/product-image";
 import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
 import { api } from "@/lib/api/client";
 
-type Picked = { uri: string; mimeType: string };
+type Picked = { uri: string; mimeType: string; fileSize?: number | null; fileName?: string | null };
 
 export default function EditProductScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -67,6 +67,8 @@ export default function EditProductScreen() {
       const next = res.assets.map((a) => ({
         uri: a.uri,
         mimeType: a.mimeType || "image/jpeg",
+        fileSize: a.fileSize,
+        fileName: a.fileName,
       }));
       setImages((prev) => [...prev, ...next].slice(0, 5));
     }
@@ -80,6 +82,14 @@ export default function EditProductScreen() {
         : String(product.seller || "");
     if (sellerId !== user.id) {
       Alert.alert("Access", "You can only edit your own listings.");
+      return;
+    }
+    const oversizedImage = images.find((img) => Number(img.fileSize || 0) > 5 * 1024 * 1024);
+    if (oversizedImage) {
+      Alert.alert(
+        "Image Too Large",
+        "One selected image is larger than 5 MB. The backend currently allows up to 5 MB per image."
+      );
       return;
     }
     setSubmitting(true);
