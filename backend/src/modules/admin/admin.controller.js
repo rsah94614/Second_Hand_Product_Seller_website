@@ -802,8 +802,15 @@ const getAuditLogs = async (req, res) => {
 
 const getModerationQueue = async (req, res) => {
   try {
-    const { status, priority, itemType, assignedTo } = req.query;
+    const { status, priority, itemType, assignedTo, cursor, limit = 50 } = req.query;
     const query = {};
+
+    if (cursor) {
+      if (!isValidObjectId(cursor)) {
+        return res.status(400).json({ message: 'Invalid cursor' });
+      }
+      query._id = { $lt: cursor };
+    }
 
     if (status) query.status = status;
     if (priority) query.priority = priority;
@@ -816,10 +823,14 @@ const getModerationQueue = async (req, res) => {
       query.assignedTo = assignedTo;
     }
 
+    const numericLimit = Number(limit);
+
     const items = await ModerationQueue.find(query)
       .populate('assignedTo', 'name email')
-      .sort({ priority: -1, createdAt: -1 })
-      .limit(100);
+      .sort({ _id: -1 })
+      .limit(numericLimit);
+
+    const nextCursor = items.length === numericLimit ? items[items.length - 1]._id.toString() : null;
 
     const stats = await ModerationQueue.aggregate([
       {
@@ -837,11 +848,12 @@ const getModerationQueue = async (req, res) => {
 
     return res.json({
       items,
+      nextCursor,
       stats: {
         pending: statusCounts.pending || 0,
         in_progress: statusCounts.in_progress || 0,
         resolved: statusCounts.resolved || 0,
-        total: items.length,
+        total: statusCounts.pending + statusCounts.in_progress + statusCounts.resolved || 0,
       },
     });
   } catch (error) {
@@ -1218,22 +1230,35 @@ const toggleRule = async (req, res) => {
 
 const getSellerVerifications = async (req, res) => {
   try {
-    const { status } = req.query;
+    const { status, cursor, limit = 50 } = req.query;
     const query = {};
 
-    if (status && ['pending', 'verified', 'rejected'].includes(status)) {
-      query.sellerVerificationStatus = status;
+    if (cursor) {
+      if (!isValidObjectId(cursor)) {
+        return res.status(400).json({ message: 'Invalid cursor' });
+      }
+      query._id = { $lt: cursor };
+    }
+
+    if (status && ['pending', 'verified', 'rejected', 'all'].includes(status)) {
+      if (status !== 'all') {
+        query.sellerVerificationStatus = status;
+      }
     } else {
       // Default to pending
       query.sellerVerificationStatus = 'pending';
     }
 
+    const numericLimit = Number(limit);
+
     const users = await User.find(query)
       .select('name email sellerVerificationStatus sellerVerificationRequestedAt sellerVerificationDate sellerVerificationReason averageRating reviewCount')
-      .sort({ sellerVerificationRequestedAt: -1 })
-      .limit(100);
+      .sort({ _id: -1 })
+      .limit(numericLimit);
 
-    return res.json({ users });
+    const nextCursor = users.length === numericLimit ? users[users.length - 1]._id.toString() : null;
+
+    return res.json({ users, nextCursor });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

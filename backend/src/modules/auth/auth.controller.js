@@ -16,8 +16,6 @@ const {
   otpDebugPayload,
 } = require('./auth.service');
 
-const isMobileClient = (req) =>
-  String(req.get('X-Client') || '').toLowerCase() === 'mobile';
 
 const shouldReturnRefreshToken = (req) => {
   const client = String(req.get('X-Client') || '').toLowerCase();

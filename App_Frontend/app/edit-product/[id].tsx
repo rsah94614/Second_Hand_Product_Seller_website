@@ -12,6 +12,7 @@ import { getProduct, updateProduct } from "../../lib/api/products";
 import { PRODUCT_CONDITIONS } from "../../lib/product-options";
 import { getImageUri } from "../../lib/product-image";
 import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
+import { api } from "@/lib/api/client";
 
 type Picked = { uri: string; mimeType: string };
 
@@ -59,7 +60,7 @@ export default function EditProductScreen() {
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsMultipleSelection: true,
-      quality: 0.85,
+      quality: 0.7,
       selectionLimit: 5,
     });
     if (!res.canceled && res.assets?.length) {
@@ -82,6 +83,8 @@ export default function EditProductScreen() {
       return;
     }
     setSubmitting(true);
+    console.log("[EditProduct] Submitting to:", api.defaults.baseURL);
+    console.log("[EditProduct] Image count:", images.length);
     try {
       const fd = new FormData();
       fd.append("title", form.title.trim());
@@ -96,18 +99,18 @@ export default function EditProductScreen() {
       });
       for (let i = 0; i < images.length; i++) {
         const img = images[i];
+        const mimeType = img.mimeType || "image/jpeg";
+        const ext = mimeType.split("/")[1] || "jpg";
 
         if (Platform.OS === 'web') {
           const res = await fetch(img.uri);
           const blob = await res.blob();
-          const ext = img.mimeType?.split('/')[1] || 'jpg';
           fd.append("images", blob, `img_${i}.${ext}`);
         } else {
-          const ext = img.uri.split(".").pop() || "jpg";
           fd.append("images", {
             uri: img.uri,
             name: `img_${i}.${ext}`,
-            type: img.mimeType,
+            type: mimeType,
           } as unknown as Blob);
         }
       }
@@ -120,6 +123,19 @@ export default function EditProductScreen() {
       }
     } catch (e: any) {
       const parsedError = parseApiError(e, "Update failed.");
+
+      if (e.message === "Network Error") {
+        Alert.alert(
+          "Network Error",
+          "The request failed to reach the server. This often happens due to:\n\n" +
+          "1. Slow mobile hotspot/VoWiFi connection\n" +
+          "2. Large image files (> 10MB total)\n" +
+          "3. Backend server cold start (Render)\n\n" +
+          "Please try again in a few seconds, or try switching your Wi-Fi off/on."
+        );
+        return;
+      }
+
       Alert.alert("Error", formatErrorForDisplay(parsedError));
     } finally {
       setSubmitting(false);

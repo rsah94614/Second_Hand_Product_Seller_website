@@ -4,15 +4,19 @@ import * as storage from "../auth-storage";
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: { "Content-Type": "application/json" },
-  timeout: 30000, // 30s — gives uploads time to complete on slow networks
+  timeout: 60000, // 60s — crucial for Render cold starts and mobile uploads
 });
 
 api.interceptors.request.use(async (config) => {
-  if (config.data instanceof FormData) {
+  const isFormData = config.data instanceof FormData || 
+                    (config.data && typeof config.data === 'object' && typeof config.data.append === 'function');
+
+  if (isFormData) {
+    // In React Native, we must NOT set Content-Type for FormData to let Axios/Fetch set the boundary
     delete config.headers["Content-Type"];
-    // Give multipart uploads extra time — image uploads over mobile hotspot can be slow
-    config.timeout = 120000; // 2 minutes for file uploads
+    config.timeout = 180000; // 3 minutes for large multi-image uploads
+  } else {
+    config.headers["Content-Type"] = "application/json";
   }
   const token = await storage.getAccessToken();
   if (token) {
@@ -29,6 +33,15 @@ let refreshingPromise: Promise<string> | null = null;
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    if (error.message === "Network Error") {
+      console.error("[API] Network Error details:", {
+        url: error.config?.url,
+        method: error.config?.method,
+        headers: error.config?.headers,
+        timeout: error.config?.timeout,
+      });
+    }
+
     const originalRequest = error.config as typeof error.config & {
       _retry?: boolean;
     };

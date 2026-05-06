@@ -68,10 +68,10 @@ const ProductListPage = () => {
     queryFn: getProductCategories,
   });
 
-  const categories = useMemo(
-    () => categoryResponse?.categories?.map((c) => c.name) || DEFAULT_PRODUCT_CATEGORIES,
-    [categoryResponse]
-  );
+  const categories = useMemo(() => {
+    const names = categoryResponse?.categories?.map((c) => c.name) || DEFAULT_PRODUCT_CATEGORIES;
+    return [...new Set(names)];
+  }, [categoryResponse]);
 
   const {
     data,

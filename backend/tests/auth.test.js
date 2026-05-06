@@ -1,6 +1,5 @@
 const assert = require('node:assert/strict');
 const request = require('supertest');
-const User = require('../models/User');
 const { clearDatabase } = require('./helpers/testApp');
 
 const runAuthTests = async (app) => {

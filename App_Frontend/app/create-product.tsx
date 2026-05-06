@@ -12,6 +12,7 @@ import { createProduct, getProductCategories } from "../lib/api/products";
 import { PRODUCT_CONDITIONS } from "../lib/product-options";
 import { Ionicons } from "@expo/vector-icons";
 import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
+import { api } from "@/lib/api/client";
 
 const LISTING_POLICIES = [
   {
@@ -119,7 +120,7 @@ export default function CreateProductScreen() {
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsMultipleSelection: true,
-      quality: 0.85,
+      quality: 0.7,
       selectionLimit: 5 - images.length,
     });
     if (!res.canceled && res.assets?.length) {
@@ -162,6 +163,8 @@ export default function CreateProductScreen() {
       return;
     }
     setSubmitting(true);
+    console.log("[CreateProduct] Submitting to:", api.defaults.baseURL);
+    console.log("[CreateProduct] Image count:", images.length);
     try {
       const fd = new FormData();
       fd.append("title", form.title.trim());
@@ -173,15 +176,14 @@ export default function CreateProductScreen() {
       fd.append("contactInfo", JSON.stringify({ email: form.email.trim() }));
       for (let i = 0; i < images.length; i++) {
         const img = images[i];
+        const mimeType = img.mimeType || "image/jpeg";
+        const ext = mimeType.split("/")[1] || "jpg";
 
         if (Platform.OS === 'web') {
           const res = await fetch(img.uri);
           const blob = await res.blob();
-          const ext = img.mimeType?.split('/')[1] || 'jpg';
           fd.append("images", blob, `img_${i}.${ext}`);
         } else {
-          const mimeType = img.mimeType || "image/jpeg";
-          const ext = mimeType.split("/")[1] || "jpg";
           fd.append("images", {
             uri: img.uri,
             name: `img_${i}.${ext}`,
@@ -199,6 +201,19 @@ export default function CreateProductScreen() {
     } catch (e: any) {
       const parsedError = parseApiError(e, "Could not create listing.");
       const code = parsedError.code;
+
+      // Diagnostic for "Network Error" specifically
+      if (e.message === "Network Error") {
+        Alert.alert(
+          "Network Error",
+          "The request failed to reach the server. This often happens due to:\n\n" +
+          "1. Slow mobile hotspot/VoWiFi connection\n" +
+          "2. Large image files (> 10MB total)\n" +
+          "3. Backend server cold start (Render)\n\n" +
+          "Please try again in a few seconds, or try switching your Wi-Fi off/on."
+        );
+        return;
+      }
 
       if (code === "PROFILE_INCOMPLETE") {
         Alert.alert(
