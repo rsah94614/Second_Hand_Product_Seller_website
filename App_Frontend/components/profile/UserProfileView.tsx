@@ -95,14 +95,14 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
       <View className="overflow-hidden rounded-3xl bg-white dark:bg-slate-900 shadow-sm shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 mb-4">
         <View className="bg-primary-600 dark:bg-primary-900 px-5 pt-5 pb-14 items-center">
           <Pressable onPress={pickAndUploadAvatar} disabled={avatarUploading} className="active:opacity-80">
-            <View className="h-24 w-24 rounded-full border-4 border-white/30 items-center justify-center overflow-hidden bg-primary-500">
+            <View className="h-24 w-24 rounded-full border-4 border-white/30 items-center justify-center overflow-hidden bg-primary-500 dark:bg-primary-600">
               {avatarUri ? (
                 <Image source={{ uri: avatarUri }} style={{ width: 96, height: 96 }} contentFit="cover" />
               ) : (
                 <Text className="text-3xl font-outfit-bl text-white">{userInitials}</Text>
               )}
             </View>
-            <View className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-white items-center justify-center shadow">
+            <View className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-white dark:bg-slate-800 items-center justify-center shadow">
               <Ionicons name="camera" size={14} color="#6366f1" />
             </View>
           </Pressable>
@@ -273,12 +273,28 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
                   { label: "Completion", value: `${reputationData.completionRate}%` },
                   { label: "Rating", value: `${reputationData.averageRating} ★` },
                   { label: "Orders", value: String(reputationData.totalOrders) },
-                ].map((m) => (
-                  <View key={m.label} className="flex-1 min-w-[40%] rounded-2xl bg-slate-50 dark:bg-slate-800/50 p-3">
-                    <Text className="text-[20px] font-outfit-bl text-slate-900 dark:text-white">{m.value}</Text>
-                    <Text className="text-[11px] font-outfit-m text-slate-500 dark:text-slate-400">{m.label}</Text>
-                  </View>
-                ))}
+                ].map((m) => {
+                  const isOrders = m.label === "Orders";
+                  const Card = (
+                    <View className="flex-1 min-w-[40%] rounded-2xl bg-slate-50 dark:bg-slate-800/50 p-3">
+                      <Text className="text-[20px] font-outfit-bl text-slate-900 dark:text-white">{m.value}</Text>
+                      <View className="flex-row items-center gap-1">
+                        <Text className="text-[11px] font-outfit-m text-slate-500 dark:text-slate-400">{m.label}</Text>
+                        {isOrders && <Ionicons name="chevron-forward" size={10} color="#94a3b8" />}
+                      </View>
+                    </View>
+                  );
+
+                  if (isOrders) {
+                    return (
+                      <Pressable key={m.label} onPress={() => router.push("/orders")} className="flex-1 min-w-[40%] active:opacity-70">
+                        {Card}
+                      </Pressable>
+                    );
+                  }
+
+                  return <View key={m.label} className="flex-1 min-w-[40%]">{Card}</View>;
+                })}
               </View>
             </View>
           )}
@@ -311,7 +327,7 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
           onPress={handleToggleTheme}
           rightContent={
             <View className={`w-12 h-6 rounded-full ${colorScheme === "dark" ? "bg-primary-600" : "bg-slate-200 dark:bg-slate-700"} items-center justify-center px-1 flex-row`}>
-              <View className={`h-4 w-4 rounded-full bg-white shadow-sm ${colorScheme === "dark" ? "ml-auto" : "mr-auto"}`} />
+              <View className={`h-4 w-4 rounded-full bg-white dark:bg-slate-200 shadow-sm ${colorScheme === "dark" ? "ml-auto" : "mr-auto"}`} />
             </View>
           }
         />
@@ -321,7 +337,7 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
       <Text className="text-[13px] font-outfit-sb text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-5 mb-2 ml-1">Account</Text>
       <SectionCard>
         <SettingRow href="/wishlist" title="My Wishlist" icon="heart-outline" iconColor="#e11d48" iconBg="bg-red-50 dark:bg-red-950/30" />
-        <SettingRow href="/(tabs)/orders" title="My Orders" icon="receipt-outline" iconColor="#6366f1" iconBg="bg-indigo-50 dark:bg-indigo-950/30" />
+        <SettingRow href="/orders" title="My Orders" icon="receipt-outline" iconColor="#6366f1" iconBg="bg-indigo-50 dark:bg-indigo-950/30" />
         <SettingRow href="/notifications" title="Notifications" icon="notifications-outline" iconColor="#6366f1" iconBg="bg-indigo-50 dark:bg-indigo-950/30" />
         <SettingRow href="/devices" title="Active Devices" icon="phone-portrait-outline" iconColor="#7c3aed" iconBg="bg-violet-50 dark:bg-violet-950/30" />
         <SettingRow href="/dashboard" title="Seller Dashboard" icon="bar-chart-outline" iconColor="#0891b2" iconBg="bg-cyan-50 dark:bg-cyan-950/30" />
@@ -330,7 +346,7 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
       </SectionCard>
 
       {/* ── Sign Out ── */}
-      <View className="mt-6">
+      <View className="mt-6 bg-red-600 rounded-2xl">
         <Button title="Sign Out" variant="outline" onPress={logout} />
       </View>
 

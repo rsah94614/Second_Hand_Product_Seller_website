@@ -1,24 +1,35 @@
 import { useQuery } from "@tanstack/react-query";
-import { Redirect, useLocalSearchParams, router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, ScrollView, Text, View, Platform } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { Screen } from "../../components/ui/Screen";
-import { Button } from "../../components/ui/Button";
-import { Input } from "../../components/ui/Input";
-import { Loading } from "../../components/Loading";
 import { useAuth } from "../../context/AuthContext";
 import { getProduct, updateProduct } from "../../lib/api/products";
 import { PRODUCT_CONDITIONS } from "../../lib/product-options";
 import { getImageUri } from "../../lib/product-image";
 import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
-import { api } from "@/lib/api/client";
 
 type Picked = { uri: string; mimeType: string; fileSize?: number | null; fileName?: string | null };
 
+const getParamValue = (value: string | string[] | undefined) => {
+  if (Array.isArray(value)) return value[0] || "";
+  return value || "";
+};
+
 export default function EditProductScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const { user } = useAuth();
+  const { id } = useLocalSearchParams<{ id?: string | string[] }>();
+  const productId = getParamValue(id);
+  const { user, loading: authLoading } = useAuth();
   const [images, setImages] = useState<Picked[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
@@ -32,10 +43,16 @@ export default function EditProductScreen() {
   });
 
   const { data: product, isLoading } = useQuery({
-    queryKey: ["product", id],
-    queryFn: () => getProduct(id!),
-    enabled: !!id && !!user,
+    queryKey: ["product", productId],
+    queryFn: () => getProduct(productId),
+    enabled: !!productId && !!user,
   });
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace("/(auth)/login" as never);
+    }
+  }, [authLoading, user]);
 
   useEffect(() => {
     if (!product) return;
@@ -52,49 +69,53 @@ export default function EditProductScreen() {
     });
   }, [product]);
 
-  const setF = (key: keyof typeof form, v: string) => setForm((p) => ({ ...p, [key]: v }));
+  const setF = (key: keyof typeof form, value: string) => setForm((prev) => ({ ...prev, [key]: value }));
 
   const pickImages = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") return;
+    if (status !== "granted") {
+      Alert.alert("Permission", "Photo access is required.");
+      return;
+    }
+
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsMultipleSelection: true,
       quality: 0.7,
       selectionLimit: 5,
     });
+
     if (!res.canceled && res.assets?.length) {
-      const next = res.assets.map((a) => ({
-        uri: a.uri,
-        mimeType: a.mimeType || "image/jpeg",
-        fileSize: a.fileSize,
-        fileName: a.fileName,
+      const next = res.assets.map((asset) => ({
+        uri: asset.uri,
+        mimeType: asset.mimeType || "image/jpeg",
+        fileSize: asset.fileSize,
+        fileName: asset.fileName,
       }));
       setImages((prev) => [...prev, ...next].slice(0, 5));
     }
   };
 
   const submit = async () => {
-    if (!id || !product || !user) return;
+    if (!productId || !product || !user) return;
+
     const sellerId =
       product.seller && typeof product.seller === "object"
         ? String((product.seller as { _id?: string })._id)
         : String(product.seller || "");
+
     if (sellerId !== user.id) {
       Alert.alert("Access", "You can only edit your own listings.");
       return;
     }
+
     const oversizedImage = images.find((img) => Number(img.fileSize || 0) > 5 * 1024 * 1024);
     if (oversizedImage) {
-      Alert.alert(
-        "Image Too Large",
-        "One selected image is larger than 5 MB. The backend currently allows up to 5 MB per image."
-      );
+      Alert.alert("Image Too Large", "One selected image is larger than 5 MB.");
       return;
     }
+
     setSubmitting(true);
-    console.log("[EditProduct] Submitting to:", api.defaults.baseURL);
-    console.log("[EditProduct] Image count:", images.length);
     try {
       const fd = new FormData();
       fd.append("title", form.title.trim());
@@ -104,17 +125,19 @@ export default function EditProductScreen() {
       fd.append("price", form.price);
       fd.append("location", form.location.trim());
       fd.append("contactInfo", JSON.stringify({ email: form.email.trim() }));
-      (product.images || []).forEach((im: string | { url?: string }) => {
-        fd.append("existingImages", getImageUri(im));
+
+      (product.images || []).forEach((image: string | { url?: string }) => {
+        fd.append("existingImages", getImageUri(image));
       });
-      for (let i = 0; i < images.length; i++) {
+
+      for (let i = 0; i < images.length; i += 1) {
         const img = images[i];
         const mimeType = img.mimeType || "image/jpeg";
         const ext = mimeType.split("/")[1] || "jpg";
 
-        if (Platform.OS === 'web') {
-          const res = await fetch(img.uri);
-          const blob = await res.blob();
+        if (Platform.OS === "web") {
+          const response = await fetch(img.uri);
+          const blob = await response.blob();
           fd.append("images", blob, `img_${i}.${ext}`);
         } else {
           fd.append("images", {
@@ -124,52 +147,27 @@ export default function EditProductScreen() {
           } as unknown as Blob);
         }
       }
-      await updateProduct(String(id), fd);
-      if (Platform.OS === 'web') {
-        window.alert("Listing updated successfully!");
-        router.back();
-      } else {
-        Alert.alert("Saved", "Listing updated.", [{ text: "OK", onPress: () => router.back() }]);
-      }
-    } catch (e: any) {
-      const parsedError = parseApiError(e, "Update failed.");
 
-      if (e.message === "Network Error") {
-        Alert.alert(
-          "Network Error",
-          "The request failed to reach the server. This often happens due to:\n\n" +
-          "1. Slow mobile hotspot/VoWiFi connection\n" +
-          "2. Large image files (> 10MB total)\n" +
-          "3. Backend server cold start (Render)\n\n" +
-          "Please try again in a few seconds, or try switching your Wi-Fi off/on."
-        );
+      await updateProduct(productId, fd);
+      Alert.alert("Saved", "Listing updated.", [{ text: "OK", onPress: () => router.back() }]);
+    } catch (error: any) {
+      const parsedError = parseApiError(error, "Update failed.");
+      if (error.message === "Network Error") {
+        Alert.alert("Network Error", "Could not reach the server. Check your connection and try again.");
         return;
       }
-
       Alert.alert("Error", formatErrorForDisplay(parsedError));
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (!user) {
-    return <Redirect href="/(auth)/login" />;
-  }
-
-  if (!id || isLoading) {
-    return (
-      <Screen>
-        <Loading />
-      </Screen>
-    );
+  if (authLoading || !user || !productId || isLoading) {
+    return <CenteredMessage loading message={!productId ? "Product not selected." : undefined} />;
   }
 
   if (!product) {
-    return (
-      <Screen>
-        <Text className="p-4">Not found.</Text>
-      </Screen>
-    );
+    return <CenteredMessage message="Product not found." />;
   }
 
   const sellerId =
@@ -178,41 +176,149 @@ export default function EditProductScreen() {
       : String(product.seller || "");
 
   if (sellerId !== user.id) {
-    return (
-      <Screen>
-        <Text className="p-4">You can only edit your own listings.</Text>
-      </Screen>
-    );
+    return <CenteredMessage message="You can only edit your own listings." />;
   }
 
   return (
-    <Screen>
-      <ScrollView className="flex-1 px-4 pt-4" keyboardShouldPersistTaps="handled">
-        <Text className="mb-2 text-sm text-slate-600">
+    <View className="flex-1 bg-slate-50 dark:bg-slate-950">
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 18, paddingBottom: 48 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Text className="text-[14px] font-outfit text-slate-500 dark:text-slate-400 leading-5 mb-3">
           Add new images to replace gallery (optional). Existing images stay if you add none.
         </Text>
-        <Button title={`New photos (${images.length})`} variant="outline" onPress={pickImages} />
-        <Input label="Title" value={form.title} onChangeText={(t) => setF("title", t)} />
-        <Input label="Description" value={form.description} onChangeText={(t) => setF("description", t)} multiline />
-        <Input label="Category" value={form.category} onChangeText={(t) => setF("category", t)} />
-        <Text className="mb-1 text-sm font-medium text-slate-700">Condition</Text>
-        <View className="mb-3 flex-row flex-wrap gap-2">
-          {PRODUCT_CONDITIONS.map((c) => (
-            <Button
-              key={c}
-              title={c}
-              variant={form.condition === c ? "primary" : "outline"}
-              onPress={() => setF("condition", c)}
+
+        <ActionButton title={`New photos (${images.length})`} variant="outline" onPress={pickImages} />
+
+        <Field label="Title" value={form.title} onChangeText={(value) => setF("title", value)} />
+        <Field
+          label="Description"
+          value={form.description}
+          onChangeText={(value) => setF("description", value)}
+          multiline
+        />
+        <Field label="Category" value={form.category} onChangeText={(value) => setF("category", value)} />
+
+        <Text className="mt-4 text-[14px] font-outfit-m text-slate-700 dark:text-slate-300 mb-2">Condition</Text>
+        <View className="flex-row flex-wrap gap-2 mb-1">
+          {PRODUCT_CONDITIONS.map((condition) => (
+            <ActionButton
+              key={condition}
+              title={condition}
+              variant={form.condition === condition ? "primary" : "outline"}
+              compact
+              onPress={() => setF("condition", condition)}
             />
           ))}
         </View>
-        <Input label="Price" value={form.price} onChangeText={(t) => setF("price", t)} keyboardType="numeric" />
-        <Input label="Location" value={form.location} onChangeText={(t) => setF("location", t)} />
-        <Input label="Email" value={form.email} onChangeText={(t) => setF("email", t)} keyboardType="email-address" />
-        <View className="mb-10 mt-4">
-          <Button title="Save changes" onPress={submit} loading={submitting} />
+
+        <Field
+          label="Price"
+          value={form.price}
+          onChangeText={(value) => setF("price", value)}
+          keyboardType="numeric"
+        />
+        <Field label="Location" value={form.location} onChangeText={(value) => setF("location", value)} />
+        <Field
+          label="Email"
+          value={form.email}
+          onChangeText={(value) => setF("email", value)}
+          keyboardType="email-address"
+        />
+
+        <View className="mt-6">
+          <ActionButton title="Save changes" loading={submitting} onPress={submit} />
         </View>
       </ScrollView>
-    </Screen>
+    </View>
+  );
+}
+
+function CenteredMessage({ loading, message }: { loading?: boolean; message?: string }) {
+  return (
+    <View className="flex-1 items-center justify-center bg-slate-50 dark:bg-slate-950 px-6">
+      {loading ? <ActivityIndicator size="large" color="#6366f1" /> : null}
+      {message ? (
+        <Text className="mt-3 text-center text-[16px] font-outfit-sb text-slate-900 dark:text-slate-200">
+          {message}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChangeText,
+  multiline,
+  keyboardType,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (value: string) => void;
+  multiline?: boolean;
+  keyboardType?: "default" | "email-address" | "numeric";
+}) {
+  return (
+    <View className="mt-4">
+      <Text className="text-[14px] font-outfit-m text-slate-700 dark:text-slate-300 mb-2">{label}</Text>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        multiline={multiline}
+        keyboardType={keyboardType || "default"}
+        placeholderTextColor="#94a3b8"
+        className={`rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3.5 text-[16px] font-outfit text-slate-900 dark:text-white ${
+          multiline ? "min-h-[120px] text-top" : "min-h-[54px]"
+        }`}
+        style={multiline ? { textAlignVertical: "top" } : undefined}
+      />
+    </View>
+  );
+}
+
+function ActionButton({
+  title,
+  onPress,
+  variant = "primary",
+  compact,
+  loading,
+}: {
+  title: string;
+  onPress: () => void;
+  variant?: "primary" | "outline";
+  compact?: boolean;
+  loading?: boolean;
+}) {
+  const isOutline = variant === "outline";
+
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={loading}
+      className={`rounded-2xl items-center justify-center px-4.5 py-3 ${
+        compact ? "min-h-[42px] mb-2" : "min-h-[54px]"
+      } ${
+        isOutline
+          ? "border border-slate-300 dark:border-slate-700 bg-transparent active:bg-slate-100 dark:active:bg-slate-800"
+          : "bg-primary-600 active:bg-primary-700"
+      } ${loading ? "opacity-60" : ""}`}
+    >
+      {loading ? (
+        <ActivityIndicator color={isOutline ? "#6366f1" : "#ffffff"} />
+      ) : (
+        <Text
+          className={`text-[15px] font-outfit-sb ${
+            isOutline ? "text-slate-700 dark:text-slate-200" : "text-white"
+          }`}
+        >
+          {title}
+        </Text>
+      )}
+    </Pressable>
   );
 }

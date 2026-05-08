@@ -13,11 +13,10 @@ import {
 } from "react-native";
 import { useState } from "react";
 import * as ImagePicker from "expo-image-picker";
-import { Screen } from "../../components/ui/Screen";
-import { PageHeader } from "../../components/ui/PageHeader";
-import { Loading } from "../../components/Loading";
-import { EmptyState } from "../../components/EmptyState";
-import { useAuth } from "../../context/AuthContext";
+import { Screen } from "../components/ui/Screen";
+import { Loading } from "../components/Loading";
+import { EmptyState } from "../components/EmptyState";
+import { useAuth } from "../context/AuthContext";
 import {
   acceptOrder,
   cancelOrder,
@@ -28,9 +27,9 @@ import {
   reportNoShow,
   scheduleMeetup,
   uploadConfirmationPhoto,
-} from "../../lib/api/orders";
-import { formatInr } from "../../lib/format";
-import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
+} from "../lib/api/orders";
+import { formatInr } from "../lib/format";
+import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
 
 type OrderRow = {
   _id: string;
@@ -287,8 +286,6 @@ export default function OrdersScreen() {
 
   return (
     <Screen>
-      <PageHeader title="My Orders" subtitle="Manage your purchases and sales" />
-
       <FlatList
         data={orders}
         keyExtractor={(o) => o._id}

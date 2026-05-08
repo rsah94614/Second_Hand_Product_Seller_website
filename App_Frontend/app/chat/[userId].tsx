@@ -1,7 +1,8 @@
-import { Redirect, Stack, router, useLocalSearchParams } from "expo-router";
+import { router, useGlobalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
+  ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
   Modal,
@@ -10,11 +11,13 @@ import {
   Text,
   TextInput,
   View,
+  InteractionManager
 } from "react-native";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { Screen } from "../../components/ui/Screen";
+import { Loading } from "../../components/Loading";
 import { useAuth } from "../../context/AuthContext";
 import { useSocket, useSocketStatus } from "../../context/SocketContext";
 import {
@@ -62,7 +65,35 @@ const getName = (value: unknown) =>
 const getMessageTime = (message: Msg) => message.createdAt || message.timestamp || new Date().toISOString();
 
 export default function ChatThreadScreen() {
-  const { userId, name, pinned } = useLocalSearchParams<{ userId: string; name?: string; pinned?: string }>();
+  const [ready, setReady] = useState(false);
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => {
+      setReady(true);
+    });
+    return () => task.cancel();
+  }, []);
+
+  useEffect(() => {
+    if (ready && !authLoading && !user) {
+      router.replace("/(auth)/login");
+    }
+  }, [ready, authLoading, user]);
+
+  if (!ready || authLoading || !user) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#020617" }}>
+        <ActivityIndicator size="large" color="#6366f1" />
+      </View>
+    );
+  }
+
+  return <ChatThreadContent />;
+}
+
+function ChatThreadContent() {
+  const { userId, name, pinned } = useGlobalSearchParams<{ userId: string; name?: string; pinned?: string }>();
   const { user } = useAuth();
   const socket = useSocket();
   const isConnected = useSocketStatus();
@@ -388,10 +419,6 @@ export default function ChatThreadScreen() {
     }
   };
 
-  if (!user) {
-    return <Redirect href="/(auth)/login" />;
-  }
-
   const formatTime = (message: Msg) => {
     const date = new Date(getMessageTime(message));
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -399,17 +426,6 @@ export default function ChatThreadScreen() {
 
   return (
     <Screen className="bg-slate-50 dark:bg-slate-950">
-      <Stack.Screen
-        options={{
-          title: partnerName,
-          headerRight: () => (
-            <Pressable onPress={openActions} className="px-2 py-1 active:opacity-70">
-              <Ionicons name="ellipsis-vertical" size={18} color="#64748b" />
-            </Pressable>
-          ),
-        }}
-      />
-
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -495,7 +511,7 @@ export default function ChatThreadScreen() {
               contentContainerStyle={{ padding: 16, paddingBottom: 8 }}
               onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
               renderItem={({ item: message }) => {
-                const mine = getId(message.sender) === user.id;
+                const mine = getId(message.sender) === user?.id;
                 return (
                   <Pressable
                     onLongPress={() => openMessageActions(message)}

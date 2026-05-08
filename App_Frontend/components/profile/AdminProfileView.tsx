@@ -58,7 +58,7 @@ const AdminProfileView: React.FC<AdminProfileViewProps> = ({
                 <Text className="text-4xl font-outfit-bl text-white">{userInitials}</Text>
               )}
             </View>
-            <View className="absolute bottom-1 right-1 h-8 w-8 rounded-full bg-white items-center justify-center shadow-lg">
+            <View className="absolute bottom-1 right-1 h-8 w-8 rounded-full bg-white dark:bg-slate-800 items-center justify-center shadow-lg">
               <Ionicons name="camera" size={16} color="#e11d48" />
             </View>
           </Pressable>
@@ -79,7 +79,7 @@ const AdminProfileView: React.FC<AdminProfileViewProps> = ({
 
             <View className="flex-row gap-3 w-full">
               <Pressable 
-                onPress={() => router.push("/admin-dashboard")}
+                onPress={() => router.push("/admin")}
                 className="flex-1 bg-slate-900 dark:bg-white py-3 rounded-xl items-center justify-center flex-row gap-2 active:opacity-90"
               >
                 <Ionicons name="apps" size={16} color={colorScheme === 'dark' ? '#0f172a' : '#ffffff'} />
@@ -137,14 +137,15 @@ const AdminProfileView: React.FC<AdminProfileViewProps> = ({
               onPress={handleToggleTheme}
               rightContent={
                 <View className={`w-12 h-6 rounded-full ${colorScheme === "dark" ? "bg-primary-600" : "bg-slate-200 dark:bg-slate-700"} items-center justify-center px-1 flex-row`}>
-                  <View className={`h-4 w-4 rounded-full bg-white shadow-sm ${colorScheme === "dark" ? "ml-auto" : "mr-auto"}`} />
+                  <View className={`h-4 w-4 rounded-full bg-white dark:bg-slate-200 shadow-sm ${colorScheme === "dark" ? "ml-auto" : "mr-auto"}`} />
                 </View>
               }
             />
           </SectionCard>
 
-          <Text className="text-[13px] font-outfit-sb text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-5 mb-2 ml-1">System Security</Text>
+          <Text className="text-[13px] font-outfit-sb text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-5 mb-2 ml-1">Personal Account</Text>
           <SectionCard>
+            <SettingRow href="/orders" title="My Orders" icon="receipt-outline" iconColor="#6366f1" iconBg="bg-indigo-50 dark:bg-indigo-950/30" />
             <SettingRow href="/devices" title="Active Sessions" icon="shield-half-outline" iconColor="#7c3aed" iconBg="bg-violet-50 dark:bg-violet-950/30" />
             <SettingRow href="/notifications" title="System Alerts" icon="notifications-outline" iconColor="#6366f1" iconBg="bg-indigo-50 dark:bg-indigo-950/30" />
           </SectionCard>

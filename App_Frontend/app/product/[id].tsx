@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Stack, useLocalSearchParams, router } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import { useEffect, useState, useMemo } from "react";
 import {
+  ActivityIndicator,
   Alert,
   ScrollView,
   Text,
@@ -11,6 +12,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  InteractionManager,
 } from "react-native";
 import { Image } from "expo-image";
 import { Screen } from "../../components/ui/Screen";
@@ -34,7 +36,34 @@ import { ProductCard, type ProductListItem } from "../../components/ProductCard"
 import { Ionicons } from "@expo/vector-icons";
 import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
 
+const openEditProduct = (productId: string) => {
+  setTimeout(() => {
+    router.push(`/edit-product/${productId}` as never);
+  }, 80);
+};
+
 export default function ProductDetailScreen() {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => {
+      setReady(true);
+    });
+    return () => task.cancel();
+  }, []);
+
+  if (!ready) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#020617" }}>
+        <ActivityIndicator size="large" color="#6366f1" />
+      </View>
+    );
+  }
+
+  return <ProductDetailContent />;
+}
+
+function ProductDetailContent() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user, refreshUser } = useAuth();
   const queryClient = useQueryClient();
@@ -188,8 +217,20 @@ export default function ProductDetailScreen() {
     }
   }, [existingReview]);
 
-  if (!id || isLoading) return <Screen><Loading /></Screen>;
-  if (error || !product) return <Screen><View className="flex-1 justify-center items-center"><Text className="text-xl font-outfit-sb">Product not found.</Text></View></Screen>;
+  if (!id || isLoading) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#020617" }}>
+        <ActivityIndicator size="large" color="#6366f1" />
+      </View>
+    );
+  }
+  if (error || !product) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#020617" }}>
+        <Text style={{ color: "white", fontSize: 18 }}>Product not found.</Text>
+      </View>
+    );
+  }
 
   const images = (product.images || [])
     .map((im: string | { url?: string }) => getImageUri(im))
@@ -217,7 +258,6 @@ export default function ProductDetailScreen() {
 
   return (
     <Screen className="bg-white dark:bg-slate-950" safeAreaTop={false}>
-      <Stack.Screen options={{ title: product?.title || "Product Details" }} />
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 120 }}>
         <View className="relative">
           <Pressable onPress={() => images.length && setImgIdx((i) => (i + 1) % Math.max(images.length, 1))}>
@@ -324,7 +364,15 @@ export default function ProductDetailScreen() {
 
           {isOwner && (
             <View className="mt-8 flex-row gap-3 p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-2xl">
-              <View className="flex-1"><Button title="Edit Listing" variant="outline" onPress={() => router.push(`/edit-product/${id}` as never)} /></View>
+              <View className="flex-1">
+                <Button
+                  title="Edit Listing"
+                  variant="outline"
+                  onPress={() => {
+                    openEditProduct(String(id));
+                  }}
+                />
+              </View>
               <View className="flex-1"><Button title="Delete" variant="danger" loading={delM.isPending} onPress={() => {
                 Alert.alert("Delete listing?", "This cannot be undone.", [
                   { text: "Cancel", style: "cancel" },

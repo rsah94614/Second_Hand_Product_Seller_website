@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Redirect, Stack, useLocalSearchParams, router } from "expo-router";
+import { useGlobalSearchParams, router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, ScrollView, Text, TextInput, View, Pressable } from "react-native";
+import { Alert, ScrollView, Text, TextInput, View, Pressable, InteractionManager, ActivityIndicator } from "react-native";
 import { Image } from "expo-image";
 import { Screen } from "../../components/ui/Screen";
 import { Button } from "../../components/ui/Button";
@@ -14,7 +14,35 @@ import { getImageUri } from "../../lib/product-image";
 import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
 
 export default function PlaceOrderScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const [ready, setReady] = useState(false);
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => {
+      setReady(true);
+    });
+    return () => task.cancel();
+  }, []);
+
+  useEffect(() => {
+    if (ready && !authLoading && !user) {
+      router.replace("/(auth)/login");
+    }
+  }, [ready, authLoading, user]);
+
+  if (!ready || authLoading || !user) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#020617" }}>
+        <ActivityIndicator size="large" color="#6366f1" />
+      </View>
+    );
+  }
+
+  return <PlaceOrderContent />;
+}
+
+function PlaceOrderContent() {
+  const { id } = useGlobalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [qty, setQty] = useState("1");
@@ -48,16 +76,12 @@ export default function PlaceOrderScreen() {
         productId: String(id),
         quantity: Math.max(1, parseInt(qty, 10) || 1),
         shippingDetails: { 
-          ...form,
-          city: "Guwahati",
-          state: "Assam",
-          postalCode: "781014",
-          country: "India"
+          ...form
         },
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-      Alert.alert("Success", "Order placed.", [{ text: "OK", onPress: () => router.replace("/(tabs)/orders") }]);
+      Alert.alert("Success", "Order placed.", [{ text: "OK", onPress: () => router.replace("/orders") }]);
     },
     onError: (e: any) => {
       const parsed = parseApiError(e, "Order failed.");
@@ -82,10 +106,6 @@ export default function PlaceOrderScreen() {
     return true;
   };
 
-  if (!user) {
-    return <Redirect href="/(auth)/login" />;
-  }
-
   if (!id || isLoading || !product) {
     return (
       <Screen>
@@ -100,7 +120,6 @@ export default function PlaceOrderScreen() {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: "Place Order" }} />
       <ScrollView className="flex-1 px-4" keyboardShouldPersistTaps="handled">
         <View className="flex-row gap-3 py-4">
           <Image source={{ uri }} style={{ width: 96, height: 96, borderRadius: 12 }} />

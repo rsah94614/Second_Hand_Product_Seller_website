@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Redirect, router } from "expo-router";
-import { Alert, FlatList, Pressable, Text, View } from "react-native";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import { Alert, FlatList, Pressable, Text, View, InteractionManager, ActivityIndicator } from "react-native";
 import { Image } from "expo-image";
 import { Screen } from "../components/ui/Screen";
 import { Loading } from "../components/Loading";
@@ -13,6 +14,34 @@ import type { ProductImage } from "../lib/types";
 import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
 
 export default function WishlistScreen() {
+  const [ready, setReady] = useState(false);
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => {
+      setReady(true);
+    });
+    return () => task.cancel();
+  }, []);
+
+  useEffect(() => {
+    if (ready && !authLoading && !user) {
+      router.replace("/(auth)/login");
+    }
+  }, [ready, authLoading, user]);
+
+  if (!ready || authLoading || !user) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#020617" }}>
+        <ActivityIndicator size="large" color="#6366f1" />
+      </View>
+    );
+  }
+
+  return <WishlistContent />;
+}
+
+function WishlistContent() {
   const { user, refreshUser } = useAuth();
   const queryClient = useQueryClient();
 
@@ -33,10 +62,6 @@ export default function WishlistScreen() {
       Alert.alert("Error", formatErrorForDisplay(parsed));
     },
   });
-
-  if (!user) {
-    return <Redirect href="/(auth)/login" />;
-  }
 
   if (isLoading) {
     return (

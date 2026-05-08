@@ -89,16 +89,7 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Orders — hidden from tab bar, accessible via /orders route */}
-      <Tabs.Screen
-        name="orders"
-        options={{
-          title: "My Orders",
-          headerShown: false,
-          href: null, // removes from tab bar
-          tabBarIcon: ({ color, size }) => <Ionicons name="receipt" size={size} color={color} />,
-        }}
-      />
+
     </Tabs>
   );
 }

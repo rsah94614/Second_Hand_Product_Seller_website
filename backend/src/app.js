@@ -143,6 +143,18 @@ const createApp = () => {
   // In-memory anti-spam tracker: { userId → { msgs: timestamp[], lastContent: string, repeatCount: int } }
   const chatSpamTracker = new Map();
 
+  // Issue 7: Periodic cleanup of spam tracker to prevent memory leak
+  setInterval(() => {
+    const now = Date.now();
+    for (const [userId, tracker] of chatSpamTracker.entries()) {
+      // If no messages in the last 10 minutes, clear entry
+      const lastMsg = tracker.msgs[tracker.msgs.length - 1];
+      if (!lastMsg || now - lastMsg > 10 * 60 * 1000) {
+        chatSpamTracker.delete(userId);
+      }
+    }
+  }, 5 * 60 * 1000); // Run every 5 minutes
+
   const checkMessageSpam = (senderId, content) => {
     const now = Date.now();
     const BURST_WINDOW_MS = 10_000;  // 10 seconds
@@ -185,13 +197,14 @@ const createApp = () => {
     }
     onlineUsers.get(userId).add(socket.id);
     
-    // Broadcast presence only to users who have chatted with this user
+    // Issue 8: Cache presence partners once on connection to avoid DB spike on disconnect
     (async () => {
       try {
         const partnerIds = await Message.distinct('sender', { receiver: userId });
         const receiverIds = await Message.distinct('receiver', { sender: userId });
-        const uniquePartners = [...new Set([...partnerIds.map(String), ...receiverIds.map(String)])];
-        uniquePartners.forEach(partnerId => {
+        socket.partnerIds = [...new Set([...partnerIds.map(String), ...receiverIds.map(String)])];
+        
+        socket.partnerIds.forEach(partnerId => {
           if (partnerId !== userId) {
             io.to(partnerId).emit('user_online', { userId });
           }
@@ -387,19 +400,14 @@ const createApp = () => {
         userSockets.delete(socket.id);
         if (userSockets.size === 0) {
           onlineUsers.delete(userId);
-          // Scoped offline broadcast
-          (async () => {
-            try {
-              const partnerIds = await Message.distinct('sender', { receiver: userId });
-              const receiverIds = await Message.distinct('receiver', { sender: userId });
-              const uniquePartners = [...new Set([...partnerIds.map(String), ...receiverIds.map(String)])];
-              uniquePartners.forEach(partnerId => {
-                if (partnerId !== userId) {
-                  io.to(partnerId).emit('user_offline', { userId });
-                }
-              });
-            } catch { /* ignore */ }
-          })();
+          // Scoped offline broadcast using cached partner IDs (Issue 8 fix)
+          if (socket.partnerIds) {
+            socket.partnerIds.forEach(partnerId => {
+              if (partnerId !== userId) {
+                io.to(partnerId).emit('user_offline', { userId });
+              }
+            });
+          }
         }
       }
     });

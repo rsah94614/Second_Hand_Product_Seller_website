@@ -92,7 +92,7 @@ export default function CartScreen() {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       setModalOpen(false);
       Alert.alert("Success", "Order placed.");
-      router.push("/(tabs)/orders");
+      router.push("/orders");
     },
     onError: (e: any) => {
       const parsed = parseApiError(e, "Checkout failed. Try again.");

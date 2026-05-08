@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { Redirect, router } from "expo-router";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Modal, ScrollView, Text, View, Pressable, Platform, KeyboardAvoidingView } from "react-native";
+import { Alert, InteractionManager, Modal, ScrollView, Text, View, Pressable, Platform, KeyboardAvoidingView } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
 import { Screen } from "../components/ui/Screen";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
+import { Loading } from "../components/Loading";
 import { useAuth } from "../context/AuthContext";
 import { createProduct, getProductCategories } from "../lib/api/products";
 import { PRODUCT_CONDITIONS } from "../lib/product-options";
@@ -79,8 +80,35 @@ const LISTING_POLICIES = [
 
 type Picked = { uri: string; mimeType: string; fileSize?: number | null; fileName?: string | null };
 
+/**
+ * Thin wrapper with ZERO navigation hooks.
+ * Defers real screen render until after the native slide transition completes
+ * via InteractionManager, preventing NavigationStateContext access during
+ * speculative rendering on React Native + React 19.
+ */
 export default function CreateProductScreen() {
-  const { user } = useAuth();
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => {
+      setReady(true);
+    });
+    return () => task.cancel();
+  }, []);
+
+  if (!ready) {
+    return (
+      <Screen>
+        <Loading />
+      </Screen>
+    );
+  }
+
+  return <CreateProductContent />;
+}
+
+function CreateProductContent() {
+  const { user, loading: authLoading } = useAuth();
   const [images, setImages] = useState<Picked[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [policyOpen, setPolicyOpen] = useState(false);
@@ -108,6 +136,14 @@ export default function CreateProductScreen() {
       }));
     }
   }, [user]);
+
+  // On mobile, <Redirect> reads navigation context during render which crashes
+  // during native transition animations. Use useEffect + router.replace instead.
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace("/(auth)/login");
+    }
+  }, [authLoading, user]);
 
   const setF = (key: keyof typeof form, v: string) => setForm((p) => ({ ...p, [key]: v }));
 
@@ -254,7 +290,8 @@ export default function CreateProductScreen() {
     }
   };
 
-  if (!user) return <Redirect href="/(auth)/login" />;
+
+  if (authLoading || !user) return <Screen><Loading /></Screen>;
   if (user.role !== "user") {
     return <Screen><View className="flex-1 items-center justify-center"><Text className="font-outfit-sb text-lg text-slate-800 dark:text-slate-200">Seller access only.</Text></View></Screen>;
   }
@@ -288,7 +325,7 @@ export default function CreateProductScreen() {
                   </View>
                   {section.items.map((item, i) => (
                     <View key={i} className="flex-row items-start gap-2.5 mb-2">
-                      <View className="mt-2 h-1.5 w-1.5 rounded-full bg-primary-500 shrink-0" />
+                    <View className="mt-2 h-1.5 w-1.5 rounded-full bg-primary-500 dark:bg-primary-400 shrink-0" />
                       <Text className="flex-1 text-[14px] font-outfit text-slate-600 dark:text-slate-400 leading-relaxed">{item}</Text>
                     </View>
                   ))}
