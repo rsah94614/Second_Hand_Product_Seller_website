@@ -10,12 +10,14 @@ import {
   TextInput,
   View,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import { useState } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { Screen } from "../components/ui/Screen";
 import { Loading } from "../components/Loading";
 import { EmptyState } from "../components/EmptyState";
+import { DynamicKeyboardView } from "../components/ui/DynamicKeyboardView";
 import { useAuth } from "../context/AuthContext";
 import {
   acceptOrder,
@@ -495,152 +497,160 @@ export default function OrdersScreen() {
 
       {/* ── Schedule Meetup Modal ─────────────────────────────────────────────── */}
       <Modal visible={scheduleModalOpen} animationType="slide" transparent>
-        <View className="flex-1 justify-end bg-black/60">
-          <View className="rounded-t-3xl bg-white dark:bg-slate-950 p-6 pt-4">
-            <View className="items-center mb-4">
-              <View className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
-            </View>
-            <Text className="text-2xl font-outfit-bl text-slate-900 dark:text-white mb-4">
-              Schedule Meetup
-            </Text>
+        <DynamicKeyboardView>
+          <View className="flex-1 justify-end bg-black/60">
+            <View className="rounded-t-3xl bg-white dark:bg-slate-950 p-6 pt-4">
+              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+                <View className="items-center mb-4">
+                  <View className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+                </View>
+                <Text className="text-2xl font-outfit-bl text-slate-900 dark:text-white mb-4">
+                  Schedule Meetup
+                </Text>
 
-            <View className="mb-3">
-              <Text className="text-sm font-outfit-m text-slate-600 dark:text-slate-300 mb-1">
-                Location *
-              </Text>
-              <TextInput
-                value={scheduleLocation}
-                onChangeText={setScheduleLocation}
-                placeholder="e.g. Main Gate, Library"
-                placeholderTextColor="#94a3b8"
-                className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white"
-              />
-            </View>
-
-            <View className="mb-3">
-              <Text className="text-sm font-outfit-m text-slate-600 dark:text-slate-300 mb-1">
-                Date & Time (optional)
-              </Text>
-              <TextInput
-                value={scheduleScheduledAt}
-                onChangeText={setScheduleScheduledAt}
-                placeholder="YYYY-MM-DD HH:mm"
-                placeholderTextColor="#94a3b8"
-                className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white"
-              />
-            </View>
-
-            <View className="mb-4">
-              <Text className="text-sm font-outfit-m text-slate-600 dark:text-slate-300 mb-1">
-                Notes (optional)
-              </Text>
-              <TextInput
-                value={scheduleNotes}
-                onChangeText={setScheduleNotes}
-                placeholder="Any extra details"
-                placeholderTextColor="#94a3b8"
-                className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white"
-                multiline
-                numberOfLines={2}
-              />
-            </View>
-
-            <View className="flex-row gap-3">
-              <View className="flex-1">
-                <Pressable
-                  onPress={() => setScheduleModalOpen(false)}
-                  className="rounded-xl border border-slate-300 dark:border-slate-700 px-4 py-3 items-center"
-                >
-                  <Text className="text-[15px] font-outfit-sb text-slate-700 dark:text-slate-200">
-                    Cancel
+                <View className="mb-3">
+                  <Text className="text-sm font-outfit-m text-slate-600 dark:text-slate-300 mb-1">
+                    Location *
                   </Text>
-                </Pressable>
-              </View>
-              <View className="flex-1">
-                <Pressable
-                  disabled={scheduleM.isPending || !scheduleLocation.trim()}
-                  onPress={() => {
-                    if (!scheduleLocation.trim()) return;
-                    scheduleM.mutate({
-                      orderId: scheduleOrderId,
-                      location: scheduleLocation.trim(),
-                      scheduledAt: scheduleScheduledAt.trim() || undefined,
-                      notes: scheduleNotes.trim() || undefined,
-                    });
-                  }}
-                  className={`rounded-xl bg-indigo-600 px-4 py-3 items-center ${
-                    scheduleM.isPending || !scheduleLocation.trim() ? "opacity-60" : ""
-                  }`}
-                >
-                  {scheduleM.isPending ? (
-                    <ActivityIndicator color="#fff" size="small" />
-                  ) : (
-                    <Text className="text-[15px] font-outfit-sb text-white">Confirm</Text>
-                  )}
-                </Pressable>
-              </View>
+                  <TextInput
+                    value={scheduleLocation}
+                    onChangeText={setScheduleLocation}
+                    placeholder="e.g. Main Gate, Library"
+                    placeholderTextColor="#94a3b8"
+                    className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white"
+                  />
+                </View>
+
+                <View className="mb-3">
+                  <Text className="text-sm font-outfit-m text-slate-600 dark:text-slate-300 mb-1">
+                    Date & Time (optional)
+                  </Text>
+                  <TextInput
+                    value={scheduleScheduledAt}
+                    onChangeText={setScheduleScheduledAt}
+                    placeholder="YYYY-MM-DD HH:mm"
+                    placeholderTextColor="#94a3b8"
+                    className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white"
+                  />
+                </View>
+
+                <View className="mb-4">
+                  <Text className="text-sm font-outfit-m text-slate-600 dark:text-slate-300 mb-1">
+                    Notes (optional)
+                  </Text>
+                  <TextInput
+                    value={scheduleNotes}
+                    onChangeText={setScheduleNotes}
+                    placeholder="Any extra details"
+                    placeholderTextColor="#94a3b8"
+                    className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white"
+                    multiline
+                    numberOfLines={2}
+                  />
+                </View>
+
+                <View className="flex-row gap-3">
+                  <View className="flex-1">
+                    <Pressable
+                      onPress={() => setScheduleModalOpen(false)}
+                      className="rounded-xl border border-slate-300 dark:border-slate-700 px-4 py-3 items-center"
+                    >
+                      <Text className="text-[15px] font-outfit-sb text-slate-700 dark:text-slate-200">
+                        Cancel
+                      </Text>
+                    </Pressable>
+                  </View>
+                  <View className="flex-1">
+                    <Pressable
+                      disabled={scheduleM.isPending || !scheduleLocation.trim()}
+                      onPress={() => {
+                        if (!scheduleLocation.trim()) return;
+                        scheduleM.mutate({
+                          orderId: scheduleOrderId,
+                          location: scheduleLocation.trim(),
+                          scheduledAt: scheduleScheduledAt.trim() || undefined,
+                          notes: scheduleNotes.trim() || undefined,
+                        });
+                      }}
+                      className={`rounded-xl bg-indigo-600 px-4 py-3 items-center ${
+                        scheduleM.isPending || !scheduleLocation.trim() ? "opacity-60" : ""
+                      }`}
+                    >
+                      {scheduleM.isPending ? (
+                        <ActivityIndicator color="#fff" size="small" />
+                      ) : (
+                        <Text className="text-[15px] font-outfit-sb text-white">Confirm</Text>
+                      )}
+                    </Pressable>
+                  </View>
+                </View>
+              </ScrollView>
             </View>
           </View>
-        </View>
+        </DynamicKeyboardView>
       </Modal>
 
       {/* Fix B1: Cross-platform dispute modal (replaces Alert.prompt) ─────────── */}
       <Modal visible={disputeModalOpen} animationType="slide" transparent onRequestClose={() => setDisputeModalOpen(false)}>
-        <View className="flex-1 justify-end bg-black/60">
-          <View className="rounded-t-3xl bg-white dark:bg-slate-950 p-6 pt-4">
-            <View className="items-center mb-4">
-              <View className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
-            </View>
-            <Text className="text-2xl font-outfit-bl text-slate-900 dark:text-white mb-2">
-              File a Dispute
-            </Text>
-            <Text className="text-[13px] font-outfit text-slate-500 dark:text-slate-400 mb-4">
-              Briefly describe the issue. Our team will review it within 24 hours.
-            </Text>
+        <DynamicKeyboardView>
+          <View className="flex-1 justify-end bg-black/60">
+            <View className="rounded-t-3xl bg-white dark:bg-slate-950 p-6 pt-4">
+              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+                <View className="items-center mb-4">
+                  <View className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+                </View>
+                <Text className="text-2xl font-outfit-bl text-slate-900 dark:text-white mb-2">
+                  File a Dispute
+                </Text>
+                <Text className="text-[13px] font-outfit text-slate-500 dark:text-slate-400 mb-4">
+                  Briefly describe the issue. Our team will review it within 24 hours.
+                </Text>
 
-            <TextInput
-              value={disputeReason}
-              onChangeText={setDisputeReason}
-              placeholder="Describe the problem..."
-              placeholderTextColor="#94a3b8"
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-              className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white mb-4 min-h-[100px]"
-            />
+                <TextInput
+                  value={disputeReason}
+                  onChangeText={setDisputeReason}
+                  placeholder="Describe the problem..."
+                  placeholderTextColor="#94a3b8"
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                  className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white mb-4 min-h-[100px]"
+                />
 
-            <View className="flex-row gap-3">
-              <View className="flex-1">
-                <Pressable
-                  onPress={() => { setDisputeModalOpen(false); setDisputeReason(""); }}
-                  className="rounded-xl border border-slate-300 dark:border-slate-700 px-4 py-3 items-center"
-                >
-                  <Text className="text-[15px] font-outfit-sb text-slate-700 dark:text-slate-200">
-                    Cancel
-                  </Text>
-                </Pressable>
-              </View>
-              <View className="flex-1">
-                <Pressable
-                  disabled={disputeM.isPending || !disputeReason.trim()}
-                  onPress={() => {
-                    if (!disputeReason.trim()) return;
-                    disputeM.mutate({ orderId: disputeOrderId, reason: disputeReason.trim() });
-                  }}
-                  className={`rounded-xl bg-red-600 px-4 py-3 items-center ${
-                    disputeM.isPending || !disputeReason.trim() ? "opacity-60" : ""
-                  }`}
-                >
-                  {disputeM.isPending ? (
-                    <ActivityIndicator color="#fff" size="small" />
-                  ) : (
-                    <Text className="text-[15px] font-outfit-sb text-white">Submit</Text>
-                  )}
-                </Pressable>
-              </View>
+                <View className="flex-row gap-3">
+                  <View className="flex-1">
+                    <Pressable
+                      onPress={() => { setDisputeModalOpen(false); setDisputeReason(""); }}
+                      className="rounded-xl border border-slate-300 dark:border-slate-700 px-4 py-3 items-center"
+                    >
+                      <Text className="text-[15px] font-outfit-sb text-slate-700 dark:text-slate-200">
+                        Cancel
+                      </Text>
+                    </Pressable>
+                  </View>
+                  <View className="flex-1">
+                    <Pressable
+                      disabled={disputeM.isPending || !disputeReason.trim()}
+                      onPress={() => {
+                        if (!disputeReason.trim()) return;
+                        disputeM.mutate({ orderId: disputeOrderId, reason: disputeReason.trim() });
+                      }}
+                      className={`rounded-xl bg-red-600 px-4 py-3 items-center ${
+                        disputeM.isPending || !disputeReason.trim() ? "opacity-60" : ""
+                      }`}
+                    >
+                      {disputeM.isPending ? (
+                        <ActivityIndicator color="#fff" size="small" />
+                      ) : (
+                        <Text className="text-[15px] font-outfit-sb text-white">Submit</Text>
+                      )}
+                    </Pressable>
+                  </View>
+                </View>
+              </ScrollView>
             </View>
           </View>
-        </View>
+        </DynamicKeyboardView>
       </Modal>
     </Screen>
   );

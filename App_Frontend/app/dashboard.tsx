@@ -102,7 +102,7 @@ function SellerDashboardContent() {
   );
 
   return (
-    <Screen className="bg-slate-50 dark:bg-slate-950">
+    <Screen className="bg-slate-50 dark:bg-slate-950" safeAreaTop={false}>
       <ScrollView className="flex-1 px-5 pt-6 pb-12" showsVerticalScrollIndicator={false}>
         <View className="mb-6">
            <Text className="text-[28px] font-outfit-bl text-slate-900 dark:text-white leading-tight">Dashboard</Text>

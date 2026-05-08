@@ -59,7 +59,7 @@ export default function AdminOrdersScreen() {
   }
 
   return (
-    <Screen className="bg-slate-50 dark:bg-slate-950">
+    <Screen className="bg-slate-50 dark:bg-slate-950" safeAreaTop={false}>
       {/* Auto-Complete Banner */}
       <View className="mx-4 mt-3 mb-1 rounded-2xl border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-900/20 px-4 py-3 flex-row items-center justify-between">
         <View className="flex-1 pr-3">

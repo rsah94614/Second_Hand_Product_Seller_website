@@ -14,6 +14,7 @@ import { PRODUCT_CONDITIONS } from "../lib/product-options";
 import { Ionicons } from "@expo/vector-icons";
 import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
 import { api } from "@/lib/api/client";
+import { DynamicKeyboardView } from "../components/ui/DynamicKeyboardView";
 
 const LISTING_POLICIES = [
   {
@@ -297,11 +298,15 @@ function CreateProductContent() {
   }
 
   return (
-    <Screen className="bg-slate-50 dark:bg-slate-950">
+    <Screen className="bg-slate-50 dark:bg-slate-950" safeAreaTop={false} safeAreaBottom={false}>
       {/* Listing Policies Modal */}
       <Modal visible={policyOpen} animationType="slide" transparent onRequestClose={() => setPolicyOpen(false)}>
         <View className="flex-1 justify-end bg-black/60">
-          <View className="h-[88%] rounded-t-3xl bg-white dark:bg-slate-950 overflow-hidden">
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={{ flex: 1, justifyContent: "flex-end" }}
+          >
+            <View className="h-[88%] rounded-t-3xl bg-white dark:bg-slate-950 overflow-hidden">
             {/* Header */}
             <View className="flex-row items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
               <View>
@@ -338,13 +343,11 @@ function CreateProductContent() {
               <Button title="Got it" onPress={() => setPolicyOpen(false)} />
             </View>
           </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        className="flex-1"
-      >
+      <DynamicKeyboardView>
         <ScrollView className="flex-1 px-5 pt-6 pb-12" keyboardShouldPersistTaps="handled">
           <View className="flex-row items-center gap-3 mb-2">
             <Text className="text-[28px] font-outfit-bl text-slate-900 dark:text-white leading-tight flex-1">Create Listing</Text>
@@ -446,7 +449,7 @@ function CreateProductContent() {
             <Button title="Publish Listing" onPress={submit} loading={submitting} />
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </DynamicKeyboardView>
     </Screen>
   );
 }

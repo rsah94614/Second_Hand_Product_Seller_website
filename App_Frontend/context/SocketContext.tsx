@@ -27,8 +27,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       auth: { token: `Bearer ${token}` },
       transports: ["websocket"],
       reconnection: true,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 10,
       reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
     });
 
     active.on("connect_error", () => setIsConnected(false));
@@ -58,8 +59,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         auth: { token: `Bearer ${token}` },
         transports: ["websocket"],
         reconnection: true,
-        reconnectionAttempts: 5,
+        reconnectionAttempts: 10,
         reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
       });
 
       if (cancelled) {

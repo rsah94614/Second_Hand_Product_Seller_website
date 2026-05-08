@@ -4,6 +4,7 @@ import { ScrollView, Text, View, Pressable } from "react-native";
 import { Screen } from "../../components/ui/Screen";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
+import { DynamicKeyboardView } from "../../components/ui/DynamicKeyboardView";
 import { useAuth } from "../../context/AuthContext";
 
 export default function ResetPasswordScreen() {
@@ -34,7 +35,8 @@ export default function ResetPasswordScreen() {
 
   return (
     <Screen>
-      <ScrollView className="flex-1 px-6 pt-12" keyboardShouldPersistTaps="handled">
+      <DynamicKeyboardView>
+        <ScrollView className="flex-1 px-6 pt-12" keyboardShouldPersistTaps="handled">
         <View className="mb-10">
            <View className="h-16 w-16 bg-primary-100 dark:bg-primary-900/40 rounded-3xl items-center justify-center mb-6">
               <Text className="text-3xl">🔒</Text>
@@ -79,7 +81,8 @@ export default function ResetPasswordScreen() {
              </Pressable>
            </Link>
         </View>
-      </ScrollView>
+        </ScrollView>
+      </DynamicKeyboardView>
     </Screen>
   );
 }

@@ -44,7 +44,7 @@ export default function AdminReportsScreen() {
   }
 
   return (
-    <Screen className="bg-slate-50 dark:bg-slate-950">
+    <Screen className="bg-slate-50 dark:bg-slate-950" safeAreaTop={false}>
       <FlatList
         data={reports}
         keyExtractor={(r) => String(r._id)}

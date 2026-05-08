@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Alert, FlatList, Pressable, Text, TextInput, View } from "react-native";
+import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from "react-native";
 import { Screen } from "../../components/ui/Screen";
 import { Loading } from "../../components/Loading";
 import { createAdminCategory, deleteAdminCategory, getAdminCategories } from "../../lib/api/admin";
@@ -32,7 +32,11 @@ export default function AdminCategoriesScreen() {
   const categories = (data as { categories?: { _id: string; name: string }[] })?.categories || [];
 
   return (
-    <Screen className="bg-slate-50 dark:bg-slate-950">
+    <Screen className="bg-slate-50 dark:bg-slate-950" safeAreaTop={false} safeAreaBottom={false}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
       <View className="flex-row gap-2 px-4 pt-3 pb-2">
         <TextInput
           value={name}
@@ -82,6 +86,7 @@ export default function AdminCategoriesScreen() {
           </View>
         )}
       />
+      </KeyboardAvoidingView>
     </Screen>
   );
 }

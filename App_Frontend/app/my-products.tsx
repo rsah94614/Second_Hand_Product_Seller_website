@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Alert, FlatList, Pressable, Text, View, InteractionManager, ActivityIndicator } from "react-native";
 import { Image } from "expo-image";
 import { Screen } from "../components/ui/Screen";
-import { Loading } from "../components/Loading";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/EmptyState";
 import { useAuth } from "../context/AuthContext";

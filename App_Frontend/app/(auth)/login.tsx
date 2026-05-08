@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Link, router, useLocalSearchParams } from "expo-router";
 import { Screen } from "../../components/ui/Screen";
+import { DynamicKeyboardView } from "../../components/ui/DynamicKeyboardView";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { useAuth } from "../../context/AuthContext";
@@ -43,7 +44,8 @@ export default function LoginScreen() {
 
   return (
     <Screen>
-      <ScrollView className="flex-1 px-6 pt-12" keyboardShouldPersistTaps="handled">
+      <DynamicKeyboardView>
+        <ScrollView className="flex-1 px-6 pt-12" keyboardShouldPersistTaps="handled">
         <View className="mb-10">
 
            <Text className="text-4xl font-outfit-bl text-slate-900 dark:text-white leading-tight">
@@ -103,6 +105,7 @@ export default function LoginScreen() {
         </View>
         <View className="h-20" />
       </ScrollView>
+      </DynamicKeyboardView>
     </Screen>
   );
 }

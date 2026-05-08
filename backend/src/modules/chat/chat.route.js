@@ -1,7 +1,7 @@
 const express = require('express');
 const auth = require('../../shared/middleware/auth.middleware');
 const chatController = require('./chat.controller');
-const { reportLimiter } = require('../../shared/middleware/rateLimiter.middleware');
+const { reportLimiter, imageUploadLimiter } = require('../../shared/middleware/rateLimiter.middleware');
 const upload = require('../../shared/middleware/upload.middleware');
 
 const router = express.Router();
@@ -16,6 +16,7 @@ router.delete('/pin/:userId', auth, chatController.unpinConversation);
 router.get('/:userId', auth, chatController.getMessages);
 
 // ── Image Sharing (Phase 3) ───────────────────────────────────────────────────
-router.post('/upload-image', auth, upload.single('image'), chatController.uploadChatImage);
+// imageUploadLimiter: max 20 uploads/hour per authenticated user
+router.post('/upload-image', auth, imageUploadLimiter, upload.single('image'), chatController.uploadChatImage);
 
 module.exports = router;

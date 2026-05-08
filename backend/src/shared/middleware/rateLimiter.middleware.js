@@ -94,6 +94,24 @@ const chatStartLimiter = rateLimit({
   skip: skipRateLimit,
 });
 
+// ─── Image upload limiter (per user) ─────────────────────────────────────────
+// Max 20 image uploads per user per hour (production)
+// Keyed by authenticated user ID to prevent per-IP bypass via proxies
+const imageUploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: isDev ? 200 : 20,
+  keyGenerator: (req) => {
+    // Use authenticated user ID when available; fall back to IP (handled by express-rate-limit default)
+    if (req.user) return req.user._id.toString();
+    // Return undefined to let express-rate-limit use its default IP key generator
+    return undefined;
+  },
+  message: { message: 'You have uploaded too many images recently. Please wait before uploading again.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => skipRateLimit() || !req.user,
+});
+
 module.exports = {
   apiLimiter,
   loginLimiter,
@@ -103,4 +121,5 @@ module.exports = {
   listingCreateLimiter,
   reportLimiter,
   chatStartLimiter,
+  imageUploadLimiter,
 };

@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -18,6 +18,7 @@ import { getProduct, updateProduct } from "../../lib/api/products";
 import { PRODUCT_CONDITIONS } from "../../lib/product-options";
 import { getImageUri } from "../../lib/product-image";
 import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
+import { DynamicKeyboardView } from "../../components/ui/DynamicKeyboardView";
 
 type Picked = { uri: string; mimeType: string; fileSize?: number | null; fileName?: string | null };
 
@@ -181,6 +182,7 @@ export default function EditProductScreen() {
 
   return (
     <View className="flex-1 bg-slate-50 dark:bg-slate-950">
+      <DynamicKeyboardView>
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 18, paddingBottom: 48 }}
@@ -233,6 +235,7 @@ export default function EditProductScreen() {
           <ActionButton title="Save changes" loading={submitting} onPress={submit} />
         </View>
       </ScrollView>
+      </DynamicKeyboardView>
     </View>
   );
 }

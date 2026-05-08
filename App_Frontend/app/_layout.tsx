@@ -105,7 +105,6 @@ export default function RootLayout() {
                 options={{ title: "Notification Preferences" }}
               />
               <Stack.Screen name="devices" options={{ title: "Active Devices" }} />
-              <Stack.Screen name="products" options={{ title: "Browse Products" }} />
               <Stack.Screen name="notifications" options={{ title: "Notifications" }} />
               <Stack.Screen name="my-products" options={{ title: "My Listings" }} />
               <Stack.Screen name="create-product" options={{ title: "Create Listing" }} />

@@ -8,7 +8,9 @@ const { runOrderTests } = require('./orders.test');
 const { runProductFeatureTests } = require('./products.test');
 const { runSearchTests } = require('./search.test');
 const { runChatTests } = require('./chat.test');
+const { runSocketDeliveryTests } = require('./socket-delivery.test');
 const { runUserFeatureTests } = require('./users.test');
+const { runVerifyTask6Simple } = require('./verify-task6-simple');
 
 const tests = [
   ['Auth API', runAuthTests],
@@ -17,6 +19,8 @@ const tests = [
   ['Orders API', runOrderTests],
   ['Search API', runSearchTests],
   ['Chat API', runChatTests],
+  ['Socket Delivery Tests', runSocketDeliveryTests],
+  ['Task 6: markConversationAsRead Socket Event', runVerifyTask6Simple],
   ['Cart API', runCartTests],
   ['Admin API', runAdminTests],
   ['Categories API', runCategoryTests],

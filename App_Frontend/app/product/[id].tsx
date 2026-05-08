@@ -10,15 +10,13 @@ import {
   Pressable,
   Modal,
   TextInput,
-  KeyboardAvoidingView,
-  Platform,
   InteractionManager,
 } from "react-native";
 import { Image } from "expo-image";
 import { Screen } from "../../components/ui/Screen";
+import { DynamicKeyboardView } from "../../components/ui/DynamicKeyboardView";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
-import { Loading } from "../../components/Loading";
 import { useAuth } from "../../context/AuthContext";
 import { addToCart, getCart } from "../../lib/api/cart";
 import {
@@ -257,8 +255,9 @@ function ProductDetailContent() {
   const isExpiringSoon = Boolean(product.isExpiringSoon);
 
   return (
-    <Screen className="bg-white dark:bg-slate-950" safeAreaTop={false}>
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 120 }}>
+    <Screen className="bg-white dark:bg-slate-950" safeAreaTop={false} safeAreaBottom={false}>
+      <DynamicKeyboardView>
+        <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 120 }} keyboardShouldPersistTaps="handled">
         <View className="relative">
           <Pressable onPress={() => images.length && setImgIdx((i) => (i + 1) % Math.max(images.length, 1))}>
             <Image source={{ uri: mainUri }} style={{ width: "100%", aspectRatio: 1 }} contentFit="cover" transition={300} />
@@ -459,6 +458,7 @@ function ProductDetailContent() {
           </View>
         </View>
       </ScrollView>
+      </DynamicKeyboardView>
 
       {user && available && !isOwner && (
         <View className="absolute bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 px-4 py-4 pb-8">
@@ -498,10 +498,7 @@ function ProductDetailContent() {
       )}
 
       <Modal visible={reportModalOpen} animationType="slide" transparent>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          className="flex-1"
-        >
+        <DynamicKeyboardView style={{ flex: 1 }}>
           <View className="flex-1 justify-end bg-black/60">
             <View className="rounded-t-3xl bg-slate-50 dark:bg-slate-950 p-6 pt-4 pb-12">
               <View className="flex-row justify-between items-center mb-6">
@@ -555,7 +552,7 @@ function ProductDetailContent() {
               />
             </View>
           </View>
-        </KeyboardAvoidingView>
+        </DynamicKeyboardView>
       </Modal>
     </Screen>
   );

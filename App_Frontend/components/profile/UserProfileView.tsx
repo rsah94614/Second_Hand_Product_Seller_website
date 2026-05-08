@@ -150,12 +150,12 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
                       <Text className="text-[11px] font-outfit-sb text-slate-400 uppercase tracking-widest mb-1">{f.label}</Text>
                       <View className="flex-row items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-xl px-3 py-2.5">
                         <Ionicons name={f.icon} size={15} color="#94a3b8" />
-                        <TextInput 
-                          value={editCampus[f.key as keyof CampusInfo]} 
-                          onChangeText={(t) => setEditCampus((p: CampusInfo) => ({ ...p, [f.key]: t }))} 
-                          className="flex-1 text-[15px] font-outfit text-slate-800 dark:text-white" 
-                          placeholder={f.placeholder} 
-                          placeholderTextColor="#94a3b8" 
+                        <TextInput
+                          value={editCampus[f.key as keyof CampusInfo]}
+                          onChangeText={(t) => setEditCampus((p: CampusInfo) => ({ ...p, [f.key]: t }))}
+                          className="flex-1 text-[15px] font-outfit text-slate-800 dark:text-white"
+                          placeholder={f.placeholder}
+                          placeholderTextColor="#94a3b8"
                         />
                       </View>
                     </View>

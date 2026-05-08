@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Link, router } from "expo-router";
 import { Screen } from "../../components/ui/Screen";
+import { DynamicKeyboardView } from "../../components/ui/DynamicKeyboardView";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { useAuth } from "../../context/AuthContext";
@@ -128,11 +129,12 @@ export default function RegisterScreen() {
 
   return (
     <Screen>
-      <ScrollView
-        className="flex-1 px-6 pt-10"
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
+      <DynamicKeyboardView>
+        <ScrollView
+          className="flex-1 px-6 pt-10"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
         <View className="mb-8">
           <Text className="text-3xl font-outfit-bl text-slate-900 dark:text-white leading-tight">
             Create an Account
@@ -346,6 +348,7 @@ export default function RegisterScreen() {
           </Link>
         </View>
       </ScrollView>
+      </DynamicKeyboardView>
     </Screen>
   );
 }

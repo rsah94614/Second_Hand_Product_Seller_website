@@ -76,7 +76,7 @@ export default function AdminSellerVerificationsScreen() {
   }
 
   return (
-    <Screen className="bg-slate-50 dark:bg-slate-950">
+    <Screen className="bg-slate-50 dark:bg-slate-950" safeAreaTop={false}>
       {/* Filter tabs */}
       <View className="flex-row gap-2 px-4 pt-4 pb-3">
         {FILTERS.map((f) => (
