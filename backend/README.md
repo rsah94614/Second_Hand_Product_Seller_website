@@ -37,11 +37,19 @@ CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 CLIENT_URL=http://localhost:5173
 EMAIL_USER=your-email@example.com
-EMAIL_PASS=your-email-app-password
+EMAIL_PASS=your-email-app-password-without-spaces
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
 COOKIE_SAME_SITE=strict
 COOKIE_SECURE=false
 ADMIN_EMAIL=admin@example.com
 ```
+
+For Gmail, create an app password from your Google account and save it without
+spaces in your deployment environment variables. The backend also strips
+accidental spaces for Gmail SMTP passwords, which helps when copying the app
+password into hosts such as Render.
 
 ## Installation & Deployment
 

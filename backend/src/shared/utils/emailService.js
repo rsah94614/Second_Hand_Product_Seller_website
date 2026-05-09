@@ -1,10 +1,39 @@
 const nodemailer = require('nodemailer');
 
+const parseBoolean = (value, fallback) => {
+  if (value === undefined || value === null || value === '') return fallback;
+  return String(value).toLowerCase() === 'true';
+};
+
+const parseNumber = (value, fallback) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const getEmailConfig = () => {
+  const host = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
+  const port = parseNumber(process.env.SMTP_PORT, 587);
+  const secure = parseBoolean(process.env.SMTP_SECURE, port === 465);
+  const user = (process.env.EMAIL_USER || '').trim();
+  const rawPass = (process.env.EMAIL_PASS || '').trim();
+  const pass = host.toLowerCase().includes('gmail.com') ? rawPass.replace(/\s+/g, '') : rawPass;
+
+  return {
+    host,
+    port,
+    secure,
+    user,
+    pass,
+  };
+};
+
 /**
  * Create email transporter with proper configuration
  */
 const createTransporter = () => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+  const config = getEmailConfig();
+
+  if (!config.user || !config.pass) {
     if (process.env.NODE_ENV === 'production') {
       throw new Error('SMTP credentials are missing');
     }
@@ -12,20 +41,21 @@ const createTransporter = () => {
   }
 
   return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    requireTLS: !config.secure,
     pool: true, // Use connection pooling
     maxConnections: 5,
     maxMessages: 100,
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+      user: config.user,
+      pass: config.pass,
     },
     // Increased timeouts to prevent blocking the event loop for too long
-    connectionTimeout: 25000, // 25 seconds
-    greetingTimeout: 20000,
-    socketTimeout: 25000,
+    connectionTimeout: parseNumber(process.env.SMTP_CONNECTION_TIMEOUT_MS, 30000),
+    greetingTimeout: parseNumber(process.env.SMTP_GREETING_TIMEOUT_MS, 30000),
+    socketTimeout: parseNumber(process.env.SMTP_SOCKET_TIMEOUT_MS, 30000),
   });
 };
 
@@ -52,6 +82,7 @@ const emailTemplate = (title, content) => `
  */
 const sendEmail = async (to, subject, html) => {
   const transporter = createTransporter();
+  const { user } = getEmailConfig();
   
   if (!transporter) {
     console.warn('[Email Service] Skipping send: EMAIL_USER or EMAIL_PASS not found in environment.');
@@ -61,7 +92,7 @@ const sendEmail = async (to, subject, html) => {
   }
 
   const mailOptions = {
-    from: `"CampusMitra" <${process.env.EMAIL_USER}>`,
+    from: `"CampusMitra" <${user}>`,
     to,
     subject,
     html,
@@ -227,10 +258,10 @@ const sendLockoutEmail = async (toEmail, unlockTime) => {
 };
 
 const verifyTransporter = async () => {
-  const transporter = createTransporter();
-  if (!transporter) return;
-
   try {
+    const transporter = createTransporter();
+    if (!transporter) return;
+
     await transporter.verify();
     console.log('[Email Service] SMTP connection established successfully');
   } catch (error) {

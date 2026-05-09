@@ -42,8 +42,11 @@ const validateEnvironment = () => {
     errors.push('Cloudinary credentials are required in production.');
   }
 
-  if (isProduction && (!process.env.EMAIL_USER || !process.env.EMAIL_PASS)) {
-    warnings.push('EMAIL_USER or EMAIL_PASS is missing. Password reset emails will fail.');
+  if (
+    isProduction &&
+    (!(process.env.EMAIL_USER || '').trim() || !(process.env.EMAIL_PASS || '').trim())
+  ) {
+    warnings.push('EMAIL_USER or EMAIL_PASS is missing. OTP and password reset emails will fail.');
   }
 
   warnings.forEach((warning) => {

@@ -158,18 +158,20 @@ const requestSignupOtp = async (req, res) => {
     );
     console.log(`[Auth] OTP DB operations took: ${Date.now() - start}ms`);
 
-    // Dispatch email asynchronously - don't await to keep response fast and avoid timeouts
-    console.log(`[Auth] Dispatching signup OTP email to ${normalizedEmail} in background...`);
-    sendSignupOtpEmail(normalizedEmail, code)
-      .then(() => {
-        console.log(`[Auth] Background email dispatch SUCCESS for: ${normalizedEmail}`);
-      })
-      .catch(error => {
-        console.error(`[Auth] Background email dispatch FAILED for ${normalizedEmail}:`, error.message);
-        if (process.env.NODE_ENV !== 'production') {
-          console.log(`\n[DEV ONLY] SIGNUP OTP FOR ${normalizedEmail}: ${code} (Email failed but code is valid)\n`);
-        }
+    try {
+      console.log(`[Auth] Dispatching signup OTP email to ${normalizedEmail}...`);
+      await sendSignupOtpEmail(normalizedEmail, code);
+      console.log(`[Auth] Signup OTP email dispatch SUCCESS for: ${normalizedEmail}`);
+    } catch (error) {
+      await RegistrationOtp.deleteOne({ email: normalizedEmail, codeHash: hashOtpCode(code) });
+      console.error(`[Auth] Signup OTP email dispatch FAILED for ${normalizedEmail}:`, error.message);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`\n[DEV ONLY] SIGNUP OTP FOR ${normalizedEmail}: ${code} (Email failed but code was not saved)\n`);
+      }
+      return res.status(503).json({
+        message: 'Could not send verification code right now. Please try again later.',
       });
+    }
 
     if (process.env.NODE_ENV !== 'production') {
       console.log(`\n[DEV ONLY] SIGNUP OTP FOR ${normalizedEmail}: ${code}\n`);

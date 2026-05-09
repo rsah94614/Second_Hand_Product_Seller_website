@@ -130,7 +130,8 @@ const UserProfileView = ({
             </div>
             {showTradingInfo && (
               <div className="p-4 rounded-2xl bg-white border border-indigo-100 shadow-xs mb-4">
-                <p className="text-[11px] font-bold text-indigo-900 uppercase tracking-wider mb-1">How Trading Eligibility Works</p>
+                <p className="text-[11px] font-bold text-indigo-900 uppercase tracking-wider mb-1">Trading unlocks at 60% completion</p>
+                <p className="text-[10px] text-indigo-700/70 leading-tight mb-3">Complete the fields below to increase your score and unlock trading features.</p>
                 <div className="space-y-1.5">
                   {[
                     { label: 'Email Verified', key: 'Email verification' },

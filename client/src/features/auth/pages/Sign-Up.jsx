@@ -15,6 +15,8 @@ const SignUpPage = () => {
     location: '',
     otp: '',
     profileRole: 'student',
+    termsAccepted: false,
+    privacyAccepted: false,
   });
   const [campusData, setCampusData] = useState({
     collegeName: '',
@@ -129,9 +131,18 @@ const SignUpPage = () => {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
+    if (!formData.termsAccepted) {
+      newErrors.termsAccepted = 'You must accept the Terms and Conditions';
+    }
+    if (!formData.privacyAccepted) {
+      newErrors.privacyAccepted = 'You must accept the Privacy Policy';
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       if (newErrors.otp) toast.error(newErrors.otp);
+      else if (newErrors.termsAccepted) toast.error(newErrors.termsAccepted);
+      else if (newErrors.privacyAccepted) toast.error(newErrors.privacyAccepted);
       return;
     }
 
@@ -249,7 +260,7 @@ const SignUpPage = () => {
               </div>
 
               {/* Password Fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
                   <div className="relative">
@@ -295,7 +306,7 @@ const SignUpPage = () => {
 
               {/* Campus Role Selection */}
               <div className="pt-2">
-                <label className="block text-sm font-medium text-gray-700 mb-3">I am a...</label>
+                <label className="block text-sm font-medium text-gray-800 mb-3">I am a...</label>
                 <div className="flex flex-wrap gap-2">
                   {[
                     { id: 'student', label: 'Student', icon: GraduationCap },
@@ -308,7 +319,7 @@ const SignUpPage = () => {
                       onClick={() => setFormData(prev => ({ ...prev, profileRole: role.id }))}
                       className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all border ${formData.profileRole === role.id
                           ? 'bg-primary-600 border-primary-600 text-white shadow-md shadow-primary-600/20'
-                          : 'bg-white border-gray-200 text-gray-600 hover:border-primary-400 hover:text-primary-600'
+                          : 'bg-white border-gray-600 text-gray-600 hover:border-primary-400 hover:text-primary-600'
                         }`}
                     >
                       <role.icon className="w-3 h-3" />
@@ -350,7 +361,7 @@ const SignUpPage = () => {
                         name="year"
                         value={campusData.year}
                         onChange={handleCampusChange}
-                        className="w-full h-11 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full h-11 rounded-xl border border-gray-800 bg-white px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
                       >
                         <option value="">Select Year</option>
                         <option value="1st">1st Year</option>
@@ -380,10 +391,43 @@ const SignUpPage = () => {
                     </div>
                   )}
                 </div>
+              {/* Terms and Privacy */}
+              <div className="space-y-3 pt-4 border-t border-gray-100">
+                <div className="flex items-start gap-3 group">
+                  <div className="flex items-center h-5">
+                    <input
+                      id="termsAccepted"
+                      name="termsAccepted"
+                      type="checkbox"
+                      checked={formData.termsAccepted}
+                      onChange={(e) => setFormData(prev => ({ ...prev, termsAccepted: e.target.checked }))}
+                      className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer transition-colors"
+                    />
+                  </div>
+                  <label htmlFor="termsAccepted" className="text-xs text-gray-600 leading-tight cursor-pointer group-hover:text-gray-900 transition-colors">
+                    I agree to the <Link to="/terms" className="text-primary-600 font-semibold hover:underline">Terms of Service</Link> and certify that I am a verified student/staff of the campus.
+                  </label>
+                </div>
+
+                <div className="flex items-start gap-3 group">
+                  <div className="flex items-center h-5">
+                    <input
+                      id="privacyAccepted"
+                      name="privacyAccepted"
+                      type="checkbox"
+                      checked={formData.privacyAccepted}
+                      onChange={(e) => setFormData(prev => ({ ...prev, privacyAccepted: e.target.checked }))}
+                      className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer transition-colors"
+                    />
+                  </div>
+                  <label htmlFor="privacyAccepted" className="text-xs text-gray-600 leading-tight cursor-pointer group-hover:text-gray-900 transition-colors">
+                    I have read and accept the <Link to="/privacy" className="text-primary-600 font-semibold hover:underline">Privacy Policy</Link> regarding my personal data.
+                  </label>
+                </div>
               </div>
 
-
             </div>
+          </div>
 
             <div className="pt-2">
               <Button type="submit" disabled={isLoading} className="w-full h-12 text-base font-semibold shadow-md hover:shadow-lg transition-all rounded-xl">
