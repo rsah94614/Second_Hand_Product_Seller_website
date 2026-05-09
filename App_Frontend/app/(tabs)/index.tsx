@@ -314,14 +314,6 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* ── Feature tags ── */}
-        {/* <View className="flex-row flex-wrap gap-2 px-5 mb-4">
-          {["Fresh listings", "Budget-friendly picks", "Student-to-student deals"].map((tag) => (
-            <View key={tag} className="rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-1.5">
-              <Text className="text-[12px] font-outfit-m text-slate-500 dark:text-slate-400">{tag}</Text>
-            </View>
-          ))}
-        </View> */}
       </ScrollView>
     </Screen>
   );

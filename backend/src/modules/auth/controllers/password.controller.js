@@ -6,7 +6,11 @@ const { validatePasswordStrength, isCommonPassword } = require('../../../shared/
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
+    console.log(`[Auth] Forgot password requested for: ${email}`);
+    const start = Date.now();
     const user = await User.findOne({ email });
+    console.log(`[Auth] User find took: ${Date.now() - start}ms`);
+
     if (!user) {
       return res.status(404).json({ message: 'No user found with this email address' });
     }
@@ -15,19 +19,18 @@ const forgotPassword = async (req, res) => {
     user.resetPasswordToken = resetToken;
     user.resetPasswordExpires = Date.now() + 3600000;
     await user.save();
+    console.log(`[Auth] User save took: ${Date.now() - start}ms (total)`);
 
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
     const resetUrl = new URL(`/reset-password?token=${resetToken}`, clientUrl).toString();
 
-    try {
-      await sendResetEmail(email, resetUrl);
-      return res.json({ message: 'Password reset link securely sent to your email.' });
-    } catch (error) {
-      user.resetPasswordToken = undefined;
-      user.resetPasswordExpires = undefined;
-      await user.save();
-      return res.status(500).json({ message: 'Could not dispatch email. Ensure SMTP credentials are set.' });
-    }
+    // Dispatch email asynchronously - don't await to keep response fast
+    console.log('[Auth] Dispatching reset email in background...');
+    sendResetEmail(email, resetUrl).catch(err => {
+      console.error('[Auth] Background email dispatch failed (Forgot Password):', err.message);
+    });
+
+    return res.json({ message: 'If an account with that email exists, a password reset link has been sent.' });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

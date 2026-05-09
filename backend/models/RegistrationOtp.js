@@ -15,7 +15,7 @@ const registrationOtpSchema = new mongoose.Schema({
   expiresAt: {
     type: Date,
     required: true,
-    index: { expires: '0' }, // TTL index
+    index: { expires: 0 }, // TTL index
   },
   requestedAt: {
     type: Date,

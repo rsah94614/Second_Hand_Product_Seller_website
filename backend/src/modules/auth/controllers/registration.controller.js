@@ -128,6 +128,8 @@ const requestSignupOtp = async (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
+    console.log(`[Auth] Signup OTP requested for: ${normalizedEmail}`);
+    const start = Date.now();
 
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
@@ -154,17 +156,23 @@ const requestSignupOtp = async (req, res) => {
       },
       { upsert: true }
     );
+    console.log(`[Auth] OTP DB operations took: ${Date.now() - start}ms`);
 
-    try {
-      await sendSignupOtpEmail(normalizedEmail, code);
-    } catch (error) {
-      console.error('Failed to send signup OTP Email:', error);
-      if (process.env.NODE_ENV !== 'production') {
-        console.log(`\n[DEV ONLY] SIGNUP OTP FOR ${normalizedEmail}: ${code}\n`);
-      }
-      if (process.env.NODE_ENV === 'production') {
-        return res.status(500).json({ message: 'Failed to send verification code. Please try again.' });
-      }
+    // Dispatch email asynchronously - don't await to keep response fast and avoid timeouts
+    console.log(`[Auth] Dispatching signup OTP email to ${normalizedEmail} in background...`);
+    sendSignupOtpEmail(normalizedEmail, code)
+      .then(() => {
+        console.log(`[Auth] Background email dispatch SUCCESS for: ${normalizedEmail}`);
+      })
+      .catch(error => {
+        console.error(`[Auth] Background email dispatch FAILED for ${normalizedEmail}:`, error.message);
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`\n[DEV ONLY] SIGNUP OTP FOR ${normalizedEmail}: ${code} (Email failed but code is valid)\n`);
+        }
+      });
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`\n[DEV ONLY] SIGNUP OTP FOR ${normalizedEmail}: ${code}\n`);
     }
 
     return res.json(buildOtpResponse({ message: 'Verification code sent to your email address.', email: normalizedEmail }, code));

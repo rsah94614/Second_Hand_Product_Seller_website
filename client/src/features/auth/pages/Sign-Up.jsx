@@ -119,11 +119,13 @@ const SignUpPage = () => {
 
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 8) {
+    }
+
+    if (formData.password && formData.password.length < 8) {
       newErrors.password = 'Password must be at least 8 characters long';
     }
 
-    if (formData.password !== formData.confirmPassword) {
+    if (formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
@@ -194,7 +196,7 @@ const SignUpPage = () => {
                     autoComplete="name"
                     value={formData.name}
                     onChange={handleChange}
-                    className={`pl-10 pr-10 bg-white placeholder:text-gray-600 ${errors.name ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800'
+                    className={`pl-10 pr-10 bg-white placeholder:text-gray-600 ${errors.name ? 'border-red-500 ring-1 ring-red-500' : ''
                       }`}
                     placeholder="Enter your full name"
                   />
@@ -207,8 +209,8 @@ const SignUpPage = () => {
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                   Email address
                 </label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
+                <div className="space-y-3">
+                  <div className="relative">
                     <Input
                       id="email"
                       name="email"
@@ -217,14 +219,14 @@ const SignUpPage = () => {
                       value={formData.email}
                       onChange={handleChange}
                       disabled={isOtpSent && timer > 0}
-                      className={`pl-10 pr-10 bg-white placeholder:text-gray-600 ${errors.email ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-800'
+                      className={`pl-10 pr-10 bg-white placeholder:text-gray-600 ${errors.email ? 'border-red-500 ring-1 ring-red-500' : ''
                         }`}
                       placeholder="Enter your email"
                     />
                     <Mail className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${errors.email ? 'text-red-500' : 'text-gray-600'}`} />
                   </div>
-                  <Button type="button" onClick={handleSendOtp} disabled={isSendingOtp || timer > 0} className="h-11 px-6 text-xs font-bold bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all shadow-sm shadow-primary-600/20 whitespace-nowrap">
-                    {timer > 0 ? `Resend in ${timer}s` : isOtpSent ? 'Resend' : 'Send Code'}
+                  <Button type="button" onClick={handleSendOtp} disabled={isSendingOtp || timer > 0} className="w-full h-11 px-6 text-sm font-bold bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all shadow-sm shadow-primary-600/20">
+                    {timer > 0 ? `Resend code in ${timer}s` : isOtpSent ? 'Resend Verification Code' : 'Send Verification Code'}
                   </Button>
                 </div>
                 {errors.email && <p className="mt-1 text-[11px] font-bold text-red-600 animate-fade-in">{errors.email}</p>}
@@ -252,7 +254,7 @@ const SignUpPage = () => {
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
                   <div className="relative">
                     <Input id="password" name="password" type={showPassword ? 'text' : 'password'} value={formData.password} onChange={handleChange}
-                      className="pl-10 pr-10 bg-white border-gray-800" placeholder="Password" />
+                      className="pl-10 pr-10 bg-white" placeholder="Password" />
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -263,7 +265,7 @@ const SignUpPage = () => {
                   <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
                   <div className="relative">
                     <Input id="confirmPassword" name="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} value={formData.confirmPassword} onChange={handleChange}
-                      className={`pl-10 pr-10 bg-white border-gray-800 ${errors.confirmPassword ? 'border-red-500 ring-1 ring-red-500' : ''}`} placeholder="Confirm Password" />
+                      className={`pl-10 pr-10 bg-white ${errors.confirmPassword ? 'border-red-500 ring-1 ring-red-500' : ''}`} placeholder="Confirm Password" />
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
                     <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
                       {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -284,7 +286,7 @@ const SignUpPage = () => {
                     type="text"
                     value={formData.location}
                     onChange={handleChange}
-                    className="pl-10 pr-10 bg-white border-gray-800 placeholder:text-gray-600"
+                    className="pl-10 pr-10 bg-white placeholder:text-gray-600"
                     placeholder="Enter your address (if day scholar) or hostel"
                   />
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 w-5 h-5" />
@@ -333,7 +335,7 @@ const SignUpPage = () => {
                       type="text"
                       value={campusData.department}
                       onChange={handleCampusChange}
-                      className="bg-white border-gray-800 placeholder:text-gray-600 text-sm"
+                      className="bg-white placeholder:text-gray-600 text-sm"
                       placeholder="Enter Department"
                     />
                   </div>
@@ -348,7 +350,7 @@ const SignUpPage = () => {
                         name="year"
                         value={campusData.year}
                         onChange={handleCampusChange}
-                        className="w-full h-11 rounded-lg border border-gray-800 bg-white px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full h-11 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
                       >
                         <option value="">Select Year</option>
                         <option value="1st">1st Year</option>
@@ -372,7 +374,7 @@ const SignUpPage = () => {
                         type="text"
                         value={campusData.hostel}
                         onChange={handleCampusChange}
-                        className="bg-white border-gray-800 placeholder:text-gray-600 text-sm"
+                        className="bg-white placeholder:text-gray-600 text-sm"
                         placeholder="Hostel name (if applicable)"
                       />
                     </div>

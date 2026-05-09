@@ -66,30 +66,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    let mounted = true;
     (async () => {
-      const token = await storage.getAccessToken();
-      const refreshToken = await storage.getRefreshToken();
+      try {
+        const token = await storage.getAccessToken();
+        const refreshToken = await storage.getRefreshToken();
 
-      if (token) {
-        await fetchUser();
-      } else if (refreshToken) {
-        try {
-          const { data } = await axios.post<{ token: string }>(
-            `${API_BASE_URL}/api/auth/refresh`,
-            { refreshToken },
-            { headers: { "Content-Type": "application/json" } }
-          );
-          await storage.setAccessToken(data.token);
+        if (token) {
           await fetchUser();
-        } catch {
-          await storage.clearTokens();
-          setUser(null);
-          setLoading(false);
+        } else if (refreshToken) {
+          try {
+            const { data } = await axios.post<{ token: string }>(
+              `${API_BASE_URL}/api/auth/refresh`,
+              { refreshToken },
+              { headers: { "Content-Type": "application/json" } }
+            );
+            await storage.setAccessToken(data.token);
+            await fetchUser();
+          } catch {
+            await storage.clearTokens();
+            if (mounted) setUser(null);
+          }
         }
-      } else {
-        setLoading(false);
+      } catch (err) {
+        console.error("[Auth] Init failed", err);
+      } finally {
+        if (mounted) setLoading(false);
       }
     })();
+    return () => { mounted = false; };
   }, [fetchUser]);
 
   const login = useCallback(async (email: string, password: string) => {

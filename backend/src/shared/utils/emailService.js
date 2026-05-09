@@ -12,11 +12,20 @@ const createTransporter = () => {
   }
 
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    pool: true, // Use connection pooling
+    maxConnections: 5,
+    maxMessages: 100,
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
+    // Increased timeouts to prevent blocking the event loop for too long
+    connectionTimeout: 25000, // 25 seconds
+    greetingTimeout: 20000,
+    socketTimeout: 25000,
   });
 };
 
@@ -45,10 +54,9 @@ const sendEmail = async (to, subject, html) => {
   const transporter = createTransporter();
   
   if (!transporter) {
-    console.warn('[DEV WARNING] EMAIL_USER or EMAIL_PASS not found in .env variables.');
+    console.warn('[Email Service] Skipping send: EMAIL_USER or EMAIL_PASS not found in environment.');
     console.warn(`[DEV ONLY] Email to ${to}:`);
     console.warn(`Subject: ${subject}`);
-    console.warn(`Content: ${html.substring(0, 200)}...`);
     return;
   }
 
@@ -60,11 +68,17 @@ const sendEmail = async (to, subject, html) => {
   };
 
   try {
+    const start = Date.now();
     await transporter.sendMail(mailOptions);
-    console.log(`Email successfully sent to ${to}: ${subject}`);
+    console.log(`[Email Service] Success: Email sent to ${to} in ${Date.now() - start}ms`);
   } catch (error) {
-    console.error(`Failed to send email to ${to}:`, error);
-    throw new Error('Failed to send email');
+    console.error(`[Email Service] ERROR sending to ${to}:`, {
+      message: error.message,
+      code: error.code,
+      responseCode: error.responseCode,
+      command: error.command,
+    });
+    throw new Error(`Email dispatch failed: ${error.message}`);
   }
 };
 
@@ -212,6 +226,18 @@ const sendLockoutEmail = async (toEmail, unlockTime) => {
   );
 };
 
+const verifyTransporter = async () => {
+  const transporter = createTransporter();
+  if (!transporter) return;
+
+  try {
+    await transporter.verify();
+    console.log('[Email Service] SMTP connection established successfully');
+  } catch (error) {
+    console.error('[Email Service] SMTP connection verification failed:', error.message);
+  }
+};
+
 module.exports = {
   sendEmail,
   sendResetEmail,
@@ -220,4 +246,5 @@ module.exports = {
   sendNotificationEmail,
   sendLockoutEmail,
   sendSignupOtpEmail,
+  verifyTransporter,
 };

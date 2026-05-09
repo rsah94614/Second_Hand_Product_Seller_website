@@ -55,12 +55,12 @@ const resendVerificationEmail = async (req, res) => {
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
     const verificationUrl = new URL(`/verify-email?token=${emailVerificationToken}`, clientUrl).toString();
 
-    try {
-      await sendVerificationEmail(user.email, verificationUrl, user.name);
-      return res.json({ message: 'Verification email sent successfully' });
-    } catch (error) {
-      return res.status(500).json({ message: 'Failed to send verification email. Please try again.' });
-    }
+    // Dispatch email asynchronously - don't await to keep response fast
+    sendVerificationEmail(user.email, verificationUrl, user.name).catch(error => {
+      console.error('Background email dispatch failed (Resend Verification):', error.message);
+    });
+
+    return res.json({ message: 'Verification email sent successfully' });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
