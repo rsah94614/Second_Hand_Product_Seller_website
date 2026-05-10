@@ -65,7 +65,7 @@ function WishlistContent() {
 
   if (isLoading) {
     return (
-      <Screen>
+      <Screen safeAreaTop={false}>
         <Loading />
       </Screen>
     );
@@ -73,7 +73,7 @@ function WishlistContent() {
 
   if (isError) {
     return (
-      <Screen>
+      <Screen safeAreaTop={false}>
         <EmptyState
           title="Could not load wishlist"
           message="Please try again and we will fetch your saved items."
@@ -87,7 +87,7 @@ function WishlistContent() {
   const items = data?.products || data || [];
 
   return (
-    <Screen>
+    <Screen safeAreaTop={false}>
       <FlatList
         data={items}
         keyExtractor={(p: { _id: string }) => p._id}

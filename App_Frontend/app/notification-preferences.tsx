@@ -10,6 +10,7 @@ import {
 } from "../lib/api/notifications";
 import { Ionicons } from "@expo/vector-icons";
 import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
+import { useToast } from "../components/ui/AppToast";
 
 type PrefKey =
   | "emailNotifications"
@@ -49,6 +50,7 @@ function Toggle({ value, onChange, disabled }: { value: boolean; onChange: (v: b
 
 export default function NotificationPreferencesScreen() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: prefs, isLoading } = useQuery({
@@ -61,6 +63,7 @@ export default function NotificationPreferencesScreen() {
     mutationFn: (payload: Record<string, boolean>) => updateNotificationPreferences(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notification-preferences"] });
+      showToast("Notification preferences saved.", { duration: 1800 });
     },
     onError: (e: any) => {
       const parsed = parseApiError(e, "Failed to save preferences.");

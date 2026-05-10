@@ -13,6 +13,7 @@ import {
 import { blockUser as apiBlockUser } from "../api/users";
 import { parseApiError, formatErrorForDisplay } from "../utils/errorHandler";
 import type { Msg } from "../types";
+import { useToast } from "../../components/ui/AppToast";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const generateIdempotencyKey = (): string => {
@@ -38,6 +39,7 @@ const offlineQueue: {
 // ── Hook ──────────────────────────────────────────────────────────────────────
 export function useChatThread(partnerId: string) {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const socket = useSocket();
   const isConnected = useSocketStatus();
 
@@ -53,7 +55,7 @@ export function useChatThread(partnerId: string) {
 
   // ── Load messages ───────────────────────────────────────────────────────────
   const load = useCallback(async () => {
-    if (!partnerId || !user || !isConnected) return;
+    if (!partnerId || !user) return;
     setLoading(true);
     setLoadError(false);
     try {
@@ -86,7 +88,7 @@ export function useChatThread(partnerId: string) {
     } finally {
       setLoading(false);
     }
-  }, [isConnected, partnerId, socket, user]);
+  }, [partnerId, socket, user]);
 
   useEffect(() => {
     load();
@@ -255,33 +257,34 @@ export function useChatThread(partnerId: string) {
         await pinConversation(partnerId);
       }
       setIsPinned((prev) => !prev);
+      showToast(isPinned ? "Conversation unpinned." : "Conversation pinned.");
     } catch (error: any) {
       const parsed = parseApiError(error, "Failed to update pin.");
       Alert.alert("Error", formatErrorForDisplay(parsed), [{ text: "OK" }], { cancelable: true });
     } finally {
       setPinBusy(false);
     }
-  }, [partnerId, pinBusy, isPinned]);
+  }, [partnerId, pinBusy, isPinned, showToast]);
 
   const block = useCallback(async () => {
     try {
       await apiBlockUser(partnerId);
-      Alert.alert("Blocked", "User blocked successfully.", [{ text: "OK" }], { cancelable: true });
+      showToast("User blocked successfully.");
     } catch (error: any) {
       const parsed = parseApiError(error, "Failed to block user.");
       Alert.alert("Error", formatErrorForDisplay(parsed), [{ text: "OK" }], { cancelable: true });
     }
-  }, [partnerId]);
+  }, [partnerId, showToast]);
 
   const report = useCallback(async (reason: string, details: string) => {
     try {
       await reportChatUser(partnerId, { reason, details });
-      Alert.alert("Reported", "User reported successfully.", [{ text: "OK" }], { cancelable: true });
+      showToast("User reported successfully.");
     } catch (error: any) {
       const parsed = parseApiError(error, "Failed to report user.");
       Alert.alert("Error", formatErrorForDisplay(parsed), [{ text: "OK" }], { cancelable: true });
     }
-  }, [partnerId]);
+  }, [partnerId, showToast]);
 
   const emitTyping = useCallback(() => {
     if (socket && isConnected) {

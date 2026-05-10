@@ -88,62 +88,62 @@ export default function OrdersScreen() {
 
         <View className="flex-row bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl mb-4">
           {(["buying", "selling"] as const).map((tab) => (
-            <Pressable
-              key={tab}
-              onPress={() => setActiveTab(tab)}
+              <Pressable
+                key={tab}
+                onPress={() => setActiveTab(tab)}
               className={`flex-1 py-2.5 items-center rounded-xl ${
                 activeTab === tab ? "bg-white dark:bg-slate-700 shadow-sm" : ""
               }`}
-            >
-              <Text
+              >
+                <Text
                 className={`text-[14px] font-outfit-sb capitalize ${
                   activeTab === tab ? "text-primary-600 dark:text-primary-300" : "text-slate-500 dark:text-slate-400"
                 }`}
-              >
-                {tab}
-              </Text>
-            </Pressable>
+                >
+                  {tab}
+                </Text>
+              </Pressable>
           ))}
         </View>
       </View>
 
-      <FlatList
-        data={filteredOrders}
-        keyExtractor={(item) => item._id}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
-        showsVerticalScrollIndicator={false}
-        refreshing={isRefetching}
-        onRefresh={refetch}
-        ListEmptyComponent={
-          <EmptyState
-            title={activeTab === "buying" ? "No purchases yet" : "No sales yet"}
-            message={
-              activeTab === "buying"
-                ? "When you buy something, your orders will appear here."
-                : "When someone buys your items, those orders will appear here."
-            }
-          />
-        }
-        renderItem={({ item }) => (
-          <OrderCard
-            order={item}
-            currentId={currentId}
-            onAccept={(id) => acceptM.mutate(id)}
-            onCancel={(id) => cancelM.mutate(id)}
-            onSchedule={(id) => setScheduleOrderId(id)}
-            onDeliver={(id) => deliverM.mutate(id)}
-            onComplete={(id) => completeM.mutate(id)}
-            onNoShow={(id) => noShowM.mutate({ orderId: id, noShowBy: activeTab === "buying" ? "seller" : "buyer" })}
-            onDispute={(id) => setDisputeOrderId(id)}
-            onPhoto={handlePickPhoto}
-            isAccepting={acceptM.variables === item._id && acceptM.isPending}
-            isCancelling={cancelM.variables === item._id && cancelM.isPending}
-            isDelivering={deliverM.variables === item._id && deliverM.isPending}
-            isCompleting={completeM.variables === item._id && completeM.isPending}
-            isNoShow={noShowM.variables?.orderId === item._id && noShowM.isPending}
-          />
-        )}
-      />
+        <FlatList
+          data={filteredOrders}
+          keyExtractor={(item) => item._id}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
+          showsVerticalScrollIndicator={false}
+          refreshing={isRefetching}
+          onRefresh={refetch}
+          ListEmptyComponent={
+            <EmptyState
+              title={activeTab === "buying" ? "No purchases yet" : "No sales yet"}
+              message={
+                activeTab === "buying"
+                  ? "When you buy something, your orders will appear here."
+                  : "When someone buys your items, those orders will appear here."
+              }
+            />
+          }
+          renderItem={({ item }) => (
+            <OrderCard
+              order={item}
+              currentId={currentId}
+              onAccept={(id) => acceptM.mutate(id)}
+              onCancel={(id) => cancelM.mutate(id)}
+              onSchedule={(id) => setScheduleOrderId(id)}
+              onDeliver={(id) => deliverM.mutate(id)}
+              onComplete={(id) => completeM.mutate(id)}
+              onNoShow={(id) => noShowM.mutate({ orderId: id, noShowBy: activeTab === "buying" ? "seller" : "buyer" })}
+              onDispute={(id) => setDisputeOrderId(id)}
+              onPhoto={handlePickPhoto}
+              isAccepting={acceptM.variables === item._id && acceptM.isPending}
+              isCancelling={cancelM.variables === item._id && cancelM.isPending}
+              isDelivering={deliverM.variables === item._id && deliverM.isPending}
+              isCompleting={completeM.variables === item._id && completeM.isPending}
+              isNoShow={noShowM.variables?.orderId === item._id && noShowM.isPending}
+            />
+          )}
+        />
 
       <ScheduleModal
         visible={!!scheduleOrderId}

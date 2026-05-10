@@ -20,6 +20,7 @@ import {
 
 import { AuthProvider } from "../context/AuthContext";
 import { SocketProvider } from "../context/SocketContext";
+import { ToastProvider } from "../components/ui/AppToast";
 
 import { useColorScheme } from "nativewind";
 import { ThemeProvider, DefaultTheme, DarkTheme } from "@react-navigation/native";
@@ -84,39 +85,41 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <SocketProvider>
-            <Stack
-              screenOptions={{
-                headerTitleStyle: { fontFamily: "Outfit-SemiBold", fontSize: 17 },
-                headerTintColor: sharedTintColor,
-                headerStyle: sharedHeaderStyle,
-                headerShadowVisible: false,
-                contentStyle: {
-                  backgroundColor: isDark ? "#020617" : "#f8fafc",
-                },
-                animation: stackAnimation,
-                gestureEnabled: true,
-              }}
-            >
-              <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: "none" }} />
-              <Stack.Screen name="(auth)" options={{ headerShown: false, animation: stackAnimation }} />
-              <Stack.Screen name="admin" options={{ headerShown: false, animation: stackAnimation }} />
-              <Stack.Screen
-                name="notification-preferences"
-                options={{ title: "Notification Preferences" }}
-              />
-              <Stack.Screen name="devices" options={{ title: "Active Devices" }} />
-              <Stack.Screen name="notifications" options={{ title: "Notifications" }} />
-              <Stack.Screen name="my-products" options={{ title: "My Listings" }} />
-              <Stack.Screen name="create-product" options={{ title: "Create Listing" }} />
-              <Stack.Screen name="dashboard" options={{ title: "Dashboard" }} />
-              <Stack.Screen name="wishlist" options={{ title: "Wishlist" }} />
-              <Stack.Screen name="edit-product/[id]" options={{ title: "Edit Listing", animation: "none" }} />
-              <Stack.Screen name="product/[id]" options={{ title: "Product Details" }} />
-              <Stack.Screen name="order/[id]" options={{ title: "Place Order" }} />
-              <Stack.Screen name="orders" options={{ title: "My Orders" }} />
-              <Stack.Screen name="chat/[userId]" options={{ title: "Chat" }} />
-              <Stack.Screen name="review/[sellerId]" options={{ title: "Review" }} />
-            </Stack>
+            <ToastProvider>
+              <Stack
+                screenOptions={{
+                  headerTitleStyle: { fontFamily: "Outfit-SemiBold", fontSize: 17 },
+                  headerTintColor: sharedTintColor,
+                  headerStyle: sharedHeaderStyle,
+                  headerShadowVisible: false,
+                  contentStyle: {
+                    backgroundColor: isDark ? "#020617" : "#f8fafc",
+                  },
+                  animation: stackAnimation,
+                  gestureEnabled: true,
+                }}
+              >
+                <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: "none" }} />
+                <Stack.Screen name="(auth)" options={{ headerShown: false, animation: stackAnimation }} />
+                <Stack.Screen name="admin" options={{ headerShown: false, animation: stackAnimation }} />
+                <Stack.Screen
+                  name="notification-preferences"
+                  options={{ title: "Notification Preferences" }}
+                />
+                <Stack.Screen name="devices" options={{ title: "Active Devices" }} />
+                <Stack.Screen name="notifications" options={{ title: "Notifications" }} />
+                <Stack.Screen name="my-products" options={{ title: "My Listings" }} />
+                <Stack.Screen name="create-product" options={{ title: "Create Listing" }} />
+                <Stack.Screen name="dashboard" options={{ title: "Dashboard" }} />
+                <Stack.Screen name="wishlist" options={{ title: "Wishlist" }} />
+                <Stack.Screen name="edit-product/[id]" options={{ title: "Edit Listing", animation: "none" }} />
+                <Stack.Screen name="product/[id]" options={{ title: "Product Details" }} />
+                <Stack.Screen name="order/[id]" options={{ title: "Place Order" }} />
+                <Stack.Screen name="orders" options={{ title: "My Orders" }} />
+                <Stack.Screen name="chat/[userId]" options={{ title: "Chat" }} />
+                <Stack.Screen name="review/[sellerId]" options={{ title: "Review" }} />
+              </Stack>
+            </ToastProvider>
           </SocketProvider>
         </AuthProvider>
       </QueryClientProvider>

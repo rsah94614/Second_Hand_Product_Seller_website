@@ -3,7 +3,7 @@ import { View, Text, Pressable, TextInput, Modal, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
-import { DynamicKeyboardView } from "../ui/DynamicKeyboardView";
+import { KeyboardAwareWrapper } from "../ui/KeyboardAwareWrapper";
 
 type Props = {
   visible: boolean;
@@ -20,9 +20,11 @@ export function ReportModal({ visible, onClose, onSubmit, loading, hasSeller }: 
     setForm({ targetType: 'product', reason: '', details: '' });
   };
 
+  if (!visible) return null;
+
   return (
-    <Modal visible={visible} animationType="slide" transparent onShow={handleOpen} onRequestClose={onClose}>
-      <DynamicKeyboardView style={{ flex: 1 }}>
+    <Modal visible={true} animationType="slide" transparent onShow={handleOpen} onRequestClose={onClose}>
+      <KeyboardAwareWrapper useSafeArea={false} style={{ flex: 1 }}>
         <View className="flex-1 justify-end bg-black/60">
           <View className="rounded-t-3xl bg-slate-50 dark:bg-slate-950 p-6 pt-4 pb-12">
             <View className="flex-row justify-between items-center mb-6">
@@ -33,14 +35,14 @@ export function ReportModal({ visible, onClose, onSubmit, loading, hasSeller }: 
             </View>
 
             <View className="flex-row gap-3 mb-6">
-              <Pressable 
+              <Pressable
                 onPress={() => setForm(prev => ({ ...prev, targetType: "product" }))}
                 className={`flex-1 py-3 rounded-xl border ${form.targetType === "product" ? "bg-primary-50 border-primary-200 dark:bg-primary-900/30 dark:border-primary-800" : "bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800"}`}
               >
                 <Text className={`text-center font-outfit-sb ${form.targetType === "product" ? "text-primary-700 dark:text-primary-400" : "text-slate-600 dark:text-slate-400"}`}>Report Listing</Text>
               </Pressable>
               {hasSeller && (
-                <Pressable 
+                <Pressable
                   onPress={() => setForm(prev => ({ ...prev, targetType: "user" }))}
                   className={`flex-1 py-3 rounded-xl border ${form.targetType === "user" ? "bg-primary-50 border-primary-200 dark:bg-primary-900/30 dark:border-primary-800" : "bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800"}`}
                 >
@@ -80,7 +82,7 @@ export function ReportModal({ visible, onClose, onSubmit, loading, hasSeller }: 
             />
           </View>
         </View>
-      </DynamicKeyboardView>
+      </KeyboardAwareWrapper>
     </Modal>
   );
 }

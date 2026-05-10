@@ -1,4 +1,4 @@
-import { useGlobalSearchParams, router } from "expo-router";
+import { useGlobalSearchParams, Redirect } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
   InteractionManager,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Screen } from "../../components/ui/Screen";
@@ -40,11 +41,9 @@ export default function ChatThreadScreen() {
     return () => task.cancel();
   }, []);
 
-  useEffect(() => {
-    if (ready && !authLoading && !user) {
-      router.replace("/(auth)/login");
-    }
-  }, [ready, authLoading, user]);
+  if (ready && !authLoading && !user) {
+    return <Redirect href="/(auth)/login" />;
+  }
 
   if (!ready || authLoading || !user) {
     return (
@@ -159,7 +158,7 @@ function ChatThreadContent() {
           </Text>
         </View>
       ) : (
-        <DynamicKeyboardView>
+        <DynamicKeyboardView offset={Platform.OS === 'ios' ? 90 : 90}>
           <FlatList
             ref={listRef}
             data={messages}

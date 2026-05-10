@@ -13,9 +13,11 @@ import {
 import { getOrders } from "../api/orders";
 import { toggleWishlist, submitSellerReview, getProfileCompletion } from "../api/users";
 import { parseApiError, formatErrorForDisplay } from "../utils/errorHandler";
+import { useToast } from "../../components/ui/AppToast";
 
 export function useProductDetails(id: string) {
   const { user, refreshUser } = useAuth();
+  const { showToast } = useToast();
   const queryClient = useQueryClient();
 
   const [quantity, setQuantity] = useState(1);
@@ -96,7 +98,7 @@ export function useProductDetails(id: string) {
     mutationFn: () => addToCart(id, quantity),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
-      Alert.alert("Added", "Item added to cart.");
+      showToast("Item added to cart.");
     },
     onError: (e: any) => {
       const parsed = parseApiError(e, "Could not add to cart.");
@@ -109,6 +111,7 @@ export function useProductDetails(id: string) {
     onSuccess: async () => {
       await refreshUser();
       queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+      showToast(isWishlisted ? "Removed from wishlist." : "Saved to wishlist.");
     },
     onError: (e: any) => {
       const parsed = parseApiError(e, "Could not update wishlist.");
@@ -120,7 +123,7 @@ export function useProductDetails(id: string) {
     mutationFn: (payload: { targetType: string; reason: string; details: string }) =>
       reportProduct(id, payload),
     onSuccess: () => {
-      Alert.alert("Report sent", "Thank you for reporting this listing.");
+      showToast("Report sent. Thank you for helping keep the marketplace safe.");
       setReportForm({ targetType: 'product', reason: '', details: '' });
     },
     onError: (e: any) => {
@@ -137,7 +140,7 @@ export function useProductDetails(id: string) {
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["product", id] });
-      Alert.alert("Success", "Review submitted successfully.");
+      showToast("Review submitted successfully.");
       setReviewForm(prev => ({ ...prev, comment: "" }));
     },
     onError: (e: any) => {
@@ -150,6 +153,7 @@ export function useProductDetails(id: string) {
     mutationFn: () => deleteProduct(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      showToast("Listing deleted.");
       router.back();
     },
     onError: (e: any) => {

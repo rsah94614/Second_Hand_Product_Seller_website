@@ -11,6 +11,7 @@ import { useAuth } from "../../context/AuthContext";
 import { saveThemePreference } from "../../lib/theme-storage";
 import { getUserProfile, uploadUserAvatar, getMyReputation, getMySellerVerification, requestSellerVerification, getProfileCompletion } from "../../lib/api/users";
 import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
+import { useToast } from "../../components/ui/AppToast";
 
 // Modular Views
 import UserProfileView from "../../components/profile/UserProfileView";
@@ -33,6 +34,7 @@ export default function ProfileScreen() {
     updateProfile,
     refreshUser: refreshAuthUser,
   } = useAuth();
+  const { showToast } = useToast();
   const { colorScheme, toggleColorScheme } = useColorScheme();
   const [editMode, setEditMode] = useState(false);
   const [editName, setEditName] = useState(user?.name || "");
@@ -56,6 +58,8 @@ export default function ProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [showTradingInfo, setShowTradingInfo] = useState(false);
+  const [showReputationInfo, setShowReputationInfo] = useState(false);
+  const [showVerificationInfo, setShowVerificationInfo] = useState(false);
 
   const {
     data: profileData,
@@ -90,7 +94,7 @@ export default function ProfileScreen() {
   const verificationMutation = useMutation({
     mutationFn: requestSellerVerification,
     onSuccess: () => {
-      Alert.alert("Submitted", "Your seller verification request has been submitted.");
+      showToast("Your seller verification request has been submitted.");
       refetchVerification();
     },
     onError: (e: any) => {
@@ -115,6 +119,7 @@ export default function ProfileScreen() {
       setEditMode(false);
       await refetchTrust();
       if (user?.role !== 'admin') await refetchCompletion();
+      showToast("Profile updated successfully.");
     } catch (e: any) {
       const parsedError = parseApiError(e, "Could not update profile. Please try again.");
       Alert.alert("Error", formatErrorForDisplay(parsedError));
@@ -192,6 +197,7 @@ export default function ProfileScreen() {
       await uploadUserAvatar(user.id, fd);
       await refreshAuthUser();
       await refetchTrust();
+      showToast("Profile photo updated.");
     } catch (e: any) {
       const parsedError = parseApiError(e, "Could not upload profile photo.");
       Alert.alert("Upload failed", formatErrorForDisplay(parsedError));
@@ -228,6 +234,7 @@ export default function ProfileScreen() {
     handleToggleTheme,
     logout: async () => {
        await logout();
+       showToast("Signed out successfully.");
        router.replace("/");
     },
     router,
@@ -252,6 +259,10 @@ export default function ProfileScreen() {
           setEditCampus={setEditCampus}
           showTradingInfo={showTradingInfo}
           setShowTradingInfo={setShowTradingInfo}
+          showReputationInfo={showReputationInfo}
+          setShowReputationInfo={setShowReputationInfo}
+          showVerificationInfo={showVerificationInfo}
+          setShowVerificationInfo={setShowVerificationInfo}
           verificationMutation={verificationMutation}
           toneForLabelColor={toneForLabelColor}
         />

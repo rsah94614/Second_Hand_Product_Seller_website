@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
 import { api } from "@/lib/api/client";
 import { DynamicKeyboardView } from "../components/ui/DynamicKeyboardView";
+import { useToast } from "../components/ui/AppToast";
 
 const LISTING_POLICIES = [
   {
@@ -110,6 +111,7 @@ export default function CreateProductScreen() {
 
 function CreateProductContent() {
   const { user, loading: authLoading } = useAuth();
+  const { showToast } = useToast();
   const [images, setImages] = useState<Picked[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [policyOpen, setPolicyOpen] = useState(false);
@@ -248,12 +250,8 @@ function CreateProductContent() {
         }
       }
       await createProduct(fd);
-      if (Platform.OS === 'web') {
-        window.alert("Listing created successfully!");
-        router.back();
-      } else {
-        Alert.alert("Success", "Listing created.", [{ text: "OK", onPress: () => router.back() }]);
-      }
+      showToast("Listing created successfully.");
+      router.back();
     } catch (e: any) {
       const parsedError = parseApiError(e, "Could not create listing.");
       const code = parsedError.code;
@@ -294,7 +292,7 @@ function CreateProductContent() {
 
   if (authLoading || !user) return <Screen><Loading /></Screen>;
   if (user.role !== "user") {
-    return <Screen><View className="flex-1 items-center justify-center"><Text className="font-outfit-sb text-lg text-slate-800 dark:text-slate-200">Seller access only.</Text></View></Screen>;
+    return <Screen safeAreaTop={false}><View className="flex-1 items-center justify-center"><Text className="font-outfit-sb text-lg text-slate-800 dark:text-slate-200">Seller access only.</Text></View></Screen>;
   }
 
   return (

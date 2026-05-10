@@ -49,6 +49,10 @@ interface UserProfileViewProps {
   pickAndUploadAvatar: () => Promise<void>;
   showTradingInfo: boolean;
   setShowTradingInfo: (val: boolean) => void;
+  showReputationInfo: boolean;
+  setShowReputationInfo: (val: boolean) => void;
+  showVerificationInfo: boolean;
+  setShowVerificationInfo: (val: boolean) => void;
   verificationMutation: any;
   toneForLabelColor: (color: string) => { bg: string; text: string };
   colorScheme: "light" | "dark" | null | undefined;
@@ -82,6 +86,10 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
   pickAndUploadAvatar,
   showTradingInfo,
   setShowTradingInfo,
+  showReputationInfo,
+  setShowReputationInfo,
+  showVerificationInfo,
+  setShowVerificationInfo,
   verificationMutation,
   toneForLabelColor,
   colorScheme,
@@ -266,34 +274,60 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
         <>
           {reputationData && (
             <View className="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm shadow-slate-200/50 dark:shadow-none mb-4">
-              <Text className="text-[13px] font-outfit-sb text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Reputation</Text>
-              <View className="flex-row flex-wrap gap-3 mb-3">
+              <View className="flex-row items-center justify-between mb-3">
+                <View className="flex-row items-center gap-1.5">
+                  <Text className="text-[13px] font-outfit-sb text-slate-500 dark:text-slate-400 uppercase tracking-widest">Reputation</Text>
+                  <Pressable onPress={() => setShowReputationInfo(!showReputationInfo)} hitSlop={10}><Ionicons name="information-circle-outline" size={16} color="#6366f1" /></Pressable>
+                </View>
+              </View>
+
+              {showReputationInfo && (
+                <View className="mb-4 p-3 rounded-2xl bg-indigo-50/50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-900/40">
+                  <Text className="text-[11px] font-outfit-sb text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-1.5">Improve Your Score</Text>
+                  <View className="gap-2">
+                    {[
+                      { icon: "checkmark-circle-outline", text: "Complete deals without cancelling" },
+                      { icon: "star-outline", text: "Encourage buyers to leave positive reviews" },
+                      { icon: "time-outline", text: "Reply to chat messages within 2 hours" },
+                      { icon: "cart-outline", text: "Successfully finish more orders" },
+                    ].map((item, idx) => (
+                      <View key={idx} className="flex-row items-center gap-2">
+                        <Ionicons name={item.icon as any} size={12} color="#6366f1" />
+                        <Text className="text-[12px] font-outfit text-slate-600 dark:text-slate-400">{item.text}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+              <View className="flex-row flex-wrap gap-2 justify-between">
                 {[
-                  { label: "Score", value: `${reputationData.score}/100` },
-                  { label: "Completion", value: `${reputationData.completionRate}%` },
-                  { label: "Rating", value: `${reputationData.averageRating} ★` },
-                  { label: "Orders", value: String(reputationData.totalOrders) },
+                  { label: "Score", value: `${reputationData.reputation?.score ?? 0}/100`, icon: "shield-outline" },
+                  { label: "Rate", value: `${reputationData.reputation?.completionRate ?? 0}%`, icon: "trending-up-outline" },
+                  { label: "Rating", value: `${reputationData.reputation?.averageRating ?? 0} ★`, icon: "star-outline" },
+                  { label: "Orders", value: String(reputationData.reputation?.totalOrders ?? 0), icon: "cart-outline" },
                 ].map((m) => {
                   const isOrders = m.label === "Orders";
                   const Card = (
-                    <View className="flex-1 min-w-[40%] rounded-2xl bg-slate-50 dark:bg-slate-800/50 p-3">
-                      <Text className="text-[20px] font-outfit-bl text-slate-900 dark:text-white">{m.value}</Text>
-                      <View className="flex-row items-center gap-1">
-                        <Text className="text-[11px] font-outfit-m text-slate-500 dark:text-slate-400">{m.label}</Text>
-                        {isOrders && <Ionicons name="chevron-forward" size={10} color="#94a3b8" />}
+                    <View className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-3 border border-slate-100 dark:border-slate-800/50">
+                      <View className="flex-row items-center gap-1.5 mb-1">
+                        <Ionicons name={m.icon as any} size={12} color="#6366f1" />
+                        <Text className="text-[11px] font-outfit-m text-slate-500 dark:text-slate-400 uppercase tracking-wider">{m.label}</Text>
                       </View>
+                      <Text className="text-[18px] font-outfit-bl text-slate-900 dark:text-white" numberOfLines={1}>{m.value}</Text>
                     </View>
                   );
 
-                  if (isOrders) {
-                    return (
-                      <Pressable key={m.label} onPress={() => router.push("/orders")} className="flex-1 min-w-[40%] active:opacity-70">
-                        {Card}
-                      </Pressable>
-                    );
-                  }
-
-                  return <View key={m.label} className="flex-1 min-w-[40%]">{Card}</View>;
+                  return (
+                    <View key={m.label} style={{ width: '48.5%' }} className="mb-2">
+                      {isOrders ? (
+                        <Pressable onPress={() => router.push("/orders")} className="active:opacity-70">
+                          {Card}
+                        </Pressable>
+                      ) : (
+                        Card
+                      )}
+                    </View>
+                  );
                 })}
               </View>
             </View>
@@ -301,10 +335,34 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
 
           <View className="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm shadow-slate-200/50 dark:shadow-none mb-4">
             <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-[13px] font-outfit-sb text-slate-500 dark:text-slate-400 uppercase tracking-widest">Seller Verification</Text>
+              <View className="flex-row items-center gap-1.5">
+                <Text className="text-[13px] font-outfit-sb text-slate-500 dark:text-slate-400 uppercase tracking-widest">Seller Verification</Text>
+                <Pressable onPress={() => setShowVerificationInfo(!showVerificationInfo)} hitSlop={10}><Ionicons name="information-circle-outline" size={16} color="#6366f1" /></Pressable>
+              </View>
               {verificationData?.sellerVerificationStatus === "verified" && <View className="bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full"><Text className="text-[11px] font-outfit-b text-emerald-600 dark:text-emerald-400">✓ Verified</Text></View>}
               {verificationData?.sellerVerificationStatus === "pending" && <View className="bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full"><Text className="text-[11px] font-outfit-b text-amber-600 dark:text-amber-400">Pending</Text></View>}
             </View>
+
+            {showVerificationInfo && (
+              <View className="mb-4 p-3 rounded-2xl bg-indigo-50/50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-900/40">
+                <Text className="text-[11px] font-outfit-sb text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-1.5">Verification Criteria</Text>
+                <Text className="text-[12px] font-outfit text-slate-500 dark:text-slate-400 mb-3 leading-5">Verified sellers earn a badge that builds trust. To apply, you must meet these minimum requirements:</Text>
+                <View className="gap-2 mb-2">
+                  {[
+                    { label: "Email Verified", done: user.emailVerified },
+                    { label: "Min. 5 Completed Orders", done: (reputationData?.reputation?.totalOrders ?? 0) >= 5 },
+                    { label: "Min. 4.0 Average Rating", done: (reputationData?.reputation?.averageRating ?? 0) >= 4.0 },
+                    { label: "Account in Good Standing", done: !user.isSuspended },
+                  ].map((item, idx) => (
+                    <View key={idx} className="flex-row items-center justify-between px-3 py-1.5 rounded-xl bg-white/50 dark:bg-slate-800/50">
+                      <Text className="text-[12px] font-outfit text-slate-600 dark:text-slate-300">{item.label}</Text>
+                      <Ionicons name={item.done ? "checkmark-circle" : "close-circle"} size={14} color={item.done ? "#10b981" : "#f43f5e"} />
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
             {(!verificationData?.sellerVerificationStatus || verificationData?.sellerVerificationStatus === "none" || verificationData?.sellerVerificationStatus === "rejected") && (
               <>
                 <Text className="text-[13px] font-outfit text-slate-500 dark:text-slate-400 mb-3">Get a verified badge to build buyer trust.</Text>

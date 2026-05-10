@@ -80,17 +80,18 @@ export function ChatInputArea({
           )}
         </Pressable>
 
-        <View className="flex-1 min-h-[44px] max-h-32 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 px-4 py-2.5 justify-center">
+        <View className="flex-1 min-h-[44px] max-h-32 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 justify-center">
           <TextInput
             value={text}
             onChangeText={(t) => {
               setText(t);
               onTyping();
             }}
-            placeholder={isConnected ? "Message..." : "Waiting for connection..."}
+            placeholder="Message..."
             placeholderTextColor="#94a3b8"
             multiline
-            className="text-[15px] font-outfit text-slate-900 dark:text-white"
+            className="px-4 py-2.5 text-[15px] font-outfit text-slate-900 dark:text-white"
+            style={{ textAlignVertical: 'center', paddingTop: 10, paddingBottom: 10 }}
           />
         </View>
 

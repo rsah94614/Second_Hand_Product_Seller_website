@@ -8,6 +8,7 @@ import { DynamicKeyboardView } from "../../components/ui/DynamicKeyboardView";
 import { useAuth } from "../../context/AuthContext";
 import { submitSellerReview } from "../../lib/api/users";
 import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
+import { useToast } from "../../components/ui/AppToast";
 
 export default function ReviewSellerScreen() {
   const [ready, setReady] = useState(false);
@@ -39,6 +40,7 @@ export default function ReviewSellerScreen() {
 
 function ReviewSellerContent() {
   const { sellerId, orderId } = useGlobalSearchParams<{ sellerId: string; orderId?: string }>();
+  const { showToast } = useToast();
   const [rating, setRating] = useState("5");
   const [comment, setComment] = useState("");
 
@@ -48,9 +50,10 @@ function ReviewSellerContent() {
         orderId: String(orderId || ""),
         rating: Math.min(5, Math.max(1, parseInt(rating, 10) || 5)),
         comment: comment.trim(),
-      }),
+    }),
     onSuccess: () => {
-      Alert.alert("Thanks", "Review submitted.", [{ text: "OK", onPress: () => router.back() }]);
+      showToast("Review submitted.");
+      router.back();
     },
     onError: (e: any) => {
       const parsed = parseApiError(e, "Could not submit review.");

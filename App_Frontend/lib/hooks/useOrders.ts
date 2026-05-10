@@ -14,9 +14,11 @@ import {
 } from "../api/orders";
 import { parseApiError, formatErrorForDisplay } from "../utils/errorHandler";
 import type { OrderRow } from "../types";
+import { useToast } from "../../components/ui/AppToast";
 
 export function useOrders() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const queryClient = useQueryClient();
 
   const { data, isLoading, isError, refetch, isRefetching } = useQuery({
@@ -31,7 +33,10 @@ export function useOrders() {
 
   const cancelM = useMutation({
     mutationFn: (orderId: string) => cancelOrder(orderId),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      showToast("Order cancelled.");
+      invalidate();
+    },
     onError: (e: any) => {
       const parsed = parseApiError(e, "Failed to cancel order.");
       Alert.alert("Error", formatErrorForDisplay(parsed));
@@ -40,7 +45,10 @@ export function useOrders() {
 
   const acceptM = useMutation({
     mutationFn: (orderId: string) => acceptOrder(orderId),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      showToast("Order accepted.");
+      invalidate();
+    },
     onError: (e: any) => {
       const parsed = parseApiError(e, "Failed to accept order.");
       Alert.alert("Error", formatErrorForDisplay(parsed));
@@ -54,7 +62,10 @@ export function useOrders() {
         scheduledAt: payload.scheduledAt || undefined,
         notes: payload.notes || undefined,
       }),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      showToast("Meetup scheduled.");
+      invalidate();
+    },
     onError: (e: any) => {
       const parsed = parseApiError(e, "Failed to schedule meetup.");
       Alert.alert("Error", formatErrorForDisplay(parsed));
@@ -63,7 +74,10 @@ export function useOrders() {
 
   const deliverM = useMutation({
     mutationFn: (orderId: string) => markOrderDelivered(orderId),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      showToast("Order marked as delivered.");
+      invalidate();
+    },
     onError: (e: any) => {
       const parsed = parseApiError(e, "Failed to mark as delivered.");
       Alert.alert("Error", formatErrorForDisplay(parsed));
@@ -73,7 +87,10 @@ export function useOrders() {
   const noShowM = useMutation({
     mutationFn: (payload: { orderId: string; noShowBy: "buyer" | "seller" }) => 
       reportNoShow(payload.orderId, { noShowBy: payload.noShowBy }),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      showToast("No-show report submitted.");
+      invalidate();
+    },
     onError: (e: any) => {
       const parsed = parseApiError(e, "Failed to report no-show.");
       Alert.alert("Error", formatErrorForDisplay(parsed));
@@ -82,7 +99,10 @@ export function useOrders() {
 
   const completeM = useMutation({
     mutationFn: (orderId: string) => completeOrder(orderId),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      showToast("Order completed.");
+      invalidate();
+    },
     onError: (e: any) => {
       const parsed = parseApiError(e, "Failed to complete order.");
       Alert.alert("Error", formatErrorForDisplay(parsed));
@@ -95,7 +115,10 @@ export function useOrders() {
       formData.append("reason", payload.reason);
       return createDispute(payload.orderId, formData);
     },
-    onSuccess: invalidate,
+    onSuccess: () => {
+      showToast("Dispute submitted.");
+      invalidate();
+    },
     onError: (e: any) => {
       const parsed = parseApiError(e, "Failed to submit dispute.");
       Alert.alert("Error", formatErrorForDisplay(parsed));
@@ -104,7 +127,10 @@ export function useOrders() {
 
   const photoM = useMutation({
     mutationFn: (payload: { orderId: string; formData: FormData }) => uploadConfirmationPhoto(payload.orderId, payload.formData),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      showToast("Confirmation photo uploaded.");
+      invalidate();
+    },
     onError: (e: any) => {
       const parsed = parseApiError(e, "Failed to upload photo.");
       Alert.alert("Error", formatErrorForDisplay(parsed));

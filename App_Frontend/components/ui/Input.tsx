@@ -82,6 +82,7 @@ export function Input({
         {secureTextEntry ? (
           <Pressable 
             className="absolute right-4 top-0 bottom-0 justify-center h-full"
+            style={{ zIndex: 10, elevation: 2 }}
             onPress={() => setShowPassword(!showPassword)}
           >
             <Ionicons name={showPassword ? "eye-off" : "eye"} size={22} color="#94a3b8" />

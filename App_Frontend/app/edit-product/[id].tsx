@@ -13,11 +13,13 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "../../context/AuthContext";
-import { getProduct, updateProduct } from "../../lib/api/products";
+import { getProduct, updateProduct, getProductCategories } from "../../lib/api/products";
 import { PRODUCT_CONDITIONS } from "../../lib/product-options";
 import { getImageUri } from "../../lib/product-image";
 import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
 import { DynamicKeyboardView } from "../../components/ui/DynamicKeyboardView";
+import { Screen } from "../../components/ui/Screen";
+import { useToast } from "../../components/ui/AppToast";
 
 type Picked = { uri: string; mimeType: string; fileSize?: number | null; fileName?: string | null };
 
@@ -30,6 +32,7 @@ export default function EditProductScreen() {
   const { id } = useLocalSearchParams<{ id?: string | string[] }>();
   const productId = getParamValue(id);
   const { user, loading: authLoading } = useAuth();
+  const { showToast } = useToast();
   const [images, setImages] = useState<Picked[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
@@ -46,6 +49,11 @@ export default function EditProductScreen() {
     queryKey: ["product", productId],
     queryFn: () => getProduct(productId),
     enabled: !!productId && !!user,
+  });
+
+  const { data: catRes } = useQuery({
+    queryKey: ["product-categories"],
+    queryFn: getProductCategories,
   });
 
   useEffect(() => {
@@ -149,7 +157,8 @@ export default function EditProductScreen() {
       }
 
       await updateProduct(productId, fd);
-      Alert.alert("Saved", "Listing updated.", [{ text: "OK", onPress: () => router.back() }]);
+      showToast("Listing updated.");
+      router.back();
     } catch (error: any) {
       const parsedError = parseApiError(error, "Update failed.");
       if (error.message === "Network Error") {
@@ -180,7 +189,7 @@ export default function EditProductScreen() {
   }
 
   return (
-    <View className="flex-1 bg-slate-50 dark:bg-slate-950">
+    <Screen safeAreaTop={false} className="flex-1">
       <DynamicKeyboardView>
       <ScrollView
         className="flex-1"
@@ -201,18 +210,51 @@ export default function EditProductScreen() {
           onChangeText={(value) => setF("description", value)}
           multiline
         />
-        <Field label="Category" value={form.category} onChangeText={(value) => setF("category", value)} />
+        <Text className="mt-4 text-[14px] font-outfit-m text-slate-700 dark:text-slate-300 mb-2">Category</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2 -mx-4 px-4">
+          <View className="flex-row gap-2.5">
+            {(catRes?.categories?.map((c: { name: string }) => c.name) || ["Books & Study Materials", "Electronics", "Cycles", "Other"]).map((cat: string) => (
+              <Pressable
+                key={cat}
+                onPress={() => setF("category", cat)}
+                className={`px-4 py-2.5 rounded-xl border ${
+                  form.category === cat 
+                    ? "bg-primary-600 border-primary-600 dark:bg-primary-500 dark:border-primary-500" 
+                    : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                }`}
+              >
+                <Text 
+                  className={`text-[13px] font-outfit-sb tracking-wide ${
+                    form.category === cat ? "text-white" : "text-slate-700 dark:text-slate-300"
+                  }`}
+                >
+                  {cat}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </ScrollView>
 
         <Text className="mt-4 text-[14px] font-outfit-m text-slate-700 dark:text-slate-300 mb-2">Condition</Text>
-        <View className="flex-row flex-wrap gap-2 mb-1">
-          {PRODUCT_CONDITIONS.map((condition) => (
-            <ActionButton
-              key={condition}
-              title={condition}
-              variant={form.condition === condition ? "primary" : "outline"}
-              compact
-              onPress={() => setF("condition", condition)}
-            />
+        <View className="flex-row flex-wrap gap-2.5 mb-2">
+          {PRODUCT_CONDITIONS.map((c) => (
+            <Pressable
+              key={c}
+              onPress={() => setF("condition", c)}
+              className={`px-4 py-2.5 rounded-xl border ${
+                form.condition === c 
+                  ? "bg-primary-600 border-primary-600 dark:bg-primary-500 dark:border-primary-500" 
+                  : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+              }`}
+            >
+              <Text 
+                className={`text-[13px] font-outfit-sb tracking-wide ${
+                  form.condition === c ? "text-white" : "text-slate-700 dark:text-slate-300"
+                }`}
+              >
+                {c}
+              </Text>
+            </Pressable>
           ))}
         </View>
 
@@ -235,7 +277,7 @@ export default function EditProductScreen() {
         </View>
       </ScrollView>
       </DynamicKeyboardView>
-    </View>
+    </Screen>
   );
 }
 
@@ -302,7 +344,7 @@ function ActionButton({
     <Pressable
       onPress={onPress}
       disabled={loading}
-      className={`rounded-2xl items-center justify-center px-4.5 py-3 ${
+      className={`rounded-2xl items-center justify-center px-4 py-3 ${
         compact ? "min-h-[42px] mb-2" : "min-h-[54px]"
       } ${
         isOutline

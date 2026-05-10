@@ -12,6 +12,7 @@ import { placeOrder } from "../../lib/api/orders";
 import { formatInr } from "../../lib/format";
 import { getImageUri } from "../../lib/product-image";
 import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
+import { useToast } from "../../components/ui/AppToast";
 
 export default function PlaceOrderScreen() {
   const [ready, setReady] = useState(false);
@@ -44,6 +45,7 @@ export default function PlaceOrderScreen() {
 function PlaceOrderContent() {
   const { id } = useGlobalSearchParams<{ id: string }>();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const queryClient = useQueryClient();
   const [qty, setQty] = useState("1");
   const [form, setForm] = useState({
@@ -81,7 +83,8 @@ function PlaceOrderContent() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-      Alert.alert("Success", "Order placed.", [{ text: "OK", onPress: () => router.replace("/orders") }]);
+      showToast("Order placed successfully.");
+      router.replace("/orders");
     },
     onError: (e: any) => {
       const parsed = parseApiError(e, "Order failed.");

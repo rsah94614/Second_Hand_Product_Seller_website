@@ -6,6 +6,7 @@ import { DynamicKeyboardView } from "../../components/ui/DynamicKeyboardView";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../components/ui/AppToast";
 
 const YEAR_OPTIONS = ["1st", "2nd", "3rd", "4th", "5th", "Alumni", "Faculty"] as const;
 const PROFILE_ROLES = [
@@ -26,6 +27,7 @@ function ErrorBanner({ message }: { message: string }) {
 
 export default function RegisterScreen() {
   const { register, sendSignupOtp } = useAuth();
+  const { showToast } = useToast();
 
   const [error, setError] = useState("");
   const [form, setForm] = useState({
@@ -78,6 +80,7 @@ export default function RegisterScreen() {
     if (res.success) {
       setOtpSent(true);
       setTimer(60);
+      showToast("Verification code sent to your email.");
       if (__DEV__ && res.code) console.log(`[DEBUG] OTP: ${res.code}`);
     } else {
       setError(res.message || "Could not send verification code.");
@@ -121,7 +124,8 @@ export default function RegisterScreen() {
     setLoading(false);
 
     if (res.success) {
-      router.replace(`/login?email=${encodeURIComponent(form.email.trim())}` as never);
+      showToast(res.message || "Registration successful!");
+      router.replace("/" as never);
     } else {
       setError(res.message || "Registration failed. Please try again.");
     }
@@ -159,8 +163,7 @@ export default function RegisterScreen() {
           <Text className="mb-2 text-sm font-outfit-m text-slate-700 dark:text-slate-300">
             Email Address
           </Text>
-          <View className="flex-row gap-2 items-stretch">
-            {/* Email input — matches Input component styling */}
+          <View className="relative justify-center">
             <TextInput
               value={form.email}
               onChangeText={(t) => { setError(""); setForm((p) => ({ ...p, email: t })); }}
@@ -169,27 +172,27 @@ export default function RegisterScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               editable={!otpSent || timer === 0}
-              className={`flex-1 rounded-2xl border px-4 py-4 text-[16px] font-outfit text-slate-900 dark:text-white ${otpSent && timer > 0
-                ? "border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/50"
-                : "border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900"
-                }`}
+              className={`rounded-2xl border px-4 py-4 pr-[100px] text-[16px] font-outfit text-slate-900 dark:text-white ${
+                otpSent && timer > 0
+                  ? "border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/50"
+                  : "border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900"
+              }`}
             />
-            {/* Send Code button — same height as input */}
             <Pressable
               onPress={handleSendOtp}
               disabled={otpSending || timer > 0}
-              className={`rounded-2xl px-4 items-center justify-center min-w-[90px] ${timer > 0
-                ? "bg-slate-200 dark:bg-slate-800"
-                : otpSending
-                  ? "bg-primary-400 dark:bg-primary-700"
-                  : "bg-primary-600 dark:bg-primary-500"
-                }`}
+              className={`absolute right-2 top-2 bottom-2 px-3 rounded-xl items-center justify-center min-w-[80px] ${
+                timer > 0
+                  ? "bg-slate-200 dark:bg-slate-800"
+                  : otpSending
+                    ? "bg-primary-400 dark:bg-primary-700"
+                    : "bg-primary-600 dark:bg-primary-500"
+              }`}
             >
               <Text
-                className={`text-[13px] font-outfit-sb ${timer > 0
-                  ? "text-slate-500 dark:text-slate-400"
-                  : "text-white"
-                  }`}
+                className={`text-[12px] font-outfit-sb ${
+                  timer > 0 ? "text-slate-500 dark:text-slate-400" : "text-white"
+                }`}
               >
                 {otpSending ? "Sending…" : timer > 0 ? `${timer}s` : otpSent ? "Resend" : "Send Code"}
               </Text>

@@ -12,6 +12,7 @@ import { getImageUri } from "../lib/product-image";
 import type { ProductImage } from "../lib/types";
 import { Ionicons } from "@expo/vector-icons";
 import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
+import { useToast } from "../components/ui/AppToast";
 
 const openEditProduct = (productId: string) => {
   setTimeout(() => {
@@ -102,7 +103,7 @@ function SellerDashboardContent() {
   );
 
   return (
-    <Screen className="bg-slate-50 dark:bg-slate-950" safeAreaTop={false}>
+    <Screen safeAreaTop={false} className="bg-slate-50 dark:bg-slate-950">
       <ScrollView className="flex-1 px-5 pt-6 pb-12" showsVerticalScrollIndicator={false}>
         <View className="mb-6">
            <Text className="text-[28px] font-outfit-bl text-slate-900 dark:text-white leading-tight">Dashboard</Text>
@@ -215,6 +216,7 @@ function ProductRow({
     images?: ProductImage[];
   };
   const uri = getImageUri(p.images?.[0]);
+  const { showToast } = useToast();
 
   const markSold = () => {
     Alert.alert("Mark sold?", `Mark "${p.title}" as sold?`, [
@@ -225,6 +227,7 @@ function ProductRow({
         onPress: async () => {
           try {
             await patchProduct(p._id, { isSold: true, isActive: false });
+            showToast("Listing marked as sold.");
             onSold();
           } catch (e: any) {
             const parsed = parseApiError(e, "Failed to mark as sold.");

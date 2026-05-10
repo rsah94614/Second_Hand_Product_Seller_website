@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import { getMyDevices, removeDevice, trustDevice } from "../lib/api/users";
 import { Ionicons } from "@expo/vector-icons";
 import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
+import { useToast } from "../components/ui/AppToast";
 
 type Device = {
   _id: string;
@@ -29,6 +30,7 @@ const deviceIcon = (type?: string): keyof typeof Ionicons.glyphMap => {
 
 export default function DevicesScreen() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const queryClient = useQueryClient();
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
@@ -39,7 +41,10 @@ export default function DevicesScreen() {
 
   const removeMutation = useMutation({
     mutationFn: (deviceId: string) => removeDevice(deviceId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["my-devices"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-devices"] });
+      showToast("Device removed.");
+    },
     onError: (e: any) => {
       const parsed = parseApiError(e, "Failed to remove device.");
       Alert.alert("Error", formatErrorForDisplay(parsed));
@@ -48,7 +53,10 @@ export default function DevicesScreen() {
 
   const trustMutation = useMutation({
     mutationFn: (deviceId: string) => trustDevice(deviceId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["my-devices"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-devices"] });
+      showToast("Device marked as trusted.");
+    },
     onError: (e: any) => {
       const parsed = parseApiError(e, "Failed to trust device.");
       Alert.alert("Error", formatErrorForDisplay(parsed));

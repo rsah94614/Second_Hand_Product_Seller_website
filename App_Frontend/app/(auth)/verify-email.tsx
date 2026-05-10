@@ -4,10 +4,12 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { Screen } from "../../components/ui/Screen";
 import { Button } from "../../components/ui/Button";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../components/ui/AppToast";
 
 export default function VerifyEmailScreen() {
   const { token: tokenParam } = useLocalSearchParams<{ token?: string }>();
   const { verifyEmail, resendVerificationEmail } = useAuth();
+  const { showToast } = useToast();
   const [status, setStatus] = useState<"verifying" | "success" | "error">("verifying");
   const [message, setMessage] = useState("");
   const [resending, setResending] = useState(false);
@@ -29,6 +31,7 @@ export default function VerifyEmailScreen() {
       if (result.success) {
         setStatus("success");
         setMessage(result.message || "Email verified successfully.");
+        showToast(result.message || "Email verified successfully.");
         setTimeout(() => {
           router.replace("/" as never);
         }, 2000);
@@ -41,7 +44,7 @@ export default function VerifyEmailScreen() {
     return () => {
       active = false;
     };
-  }, [tokenParam, verifyEmail]);
+  }, [tokenParam, verifyEmail, showToast]);
 
   const handleResend = async () => {
     setResending(true);
@@ -50,6 +53,7 @@ export default function VerifyEmailScreen() {
 
     if (result.success) {
       setMessage(result.message || "Verification email sent.");
+      showToast(result.message || "Verification email sent.");
     } else {
       setMessage(result.message || "Failed to resend verification email.");
     }

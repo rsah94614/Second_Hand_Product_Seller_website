@@ -1,42 +1,46 @@
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import type { ReactNode } from "react";
-import type { ViewStyle } from "react-native";
 import { KeyboardAwareWrapper } from "./KeyboardAwareWrapper";
+import type { ReactNode } from "react";
+import { type ViewStyle } from "react-native";
 
 /**
  * Props for the DynamicKeyboardView component
  */
 interface DynamicKeyboardViewProps {
-  /** The content to wrap with keyboard avoidance */
+  /** The content to be wrapped by the keyboard avoiding view */
   children: ReactNode;
-  /** Optional custom style for the wrapper */
+  /** Optional custom styles for the wrapper view */
   style?: ViewStyle;
-  /** Optional custom offset for keyboard avoidance (overrides dynamic calculation) */
+  /** Optional custom offset to override the default dynamic calculation */
   offset?: number;
+}
+
+/**
+ * A safe version of useHeaderHeight that returns 0 instead of throwing
+ * if the navigation context is missing.
+ */
+function useSafeHeaderHeight() {
+  try {
+    return useHeaderHeight();
+  } catch (e) {
+    return 0;
+  }
 }
 
 /**
  * DynamicKeyboardView Component
  *
- * A wrapper component for screens with headers that need keyboard handling.
- * This component automatically gets the header height and safe area insets,
- * then passes them to KeyboardAwareWrapper for proper keyboard avoidance.
+ * A specialized wrapper that automatically calculates the necessary keyboard
+ * offset based on the current navigation header height and safe area insets.
+ * This ensures that input fields are correctly visible when the keyboard
+ * appears, without hardcoding offsets for different screens.
  *
- * This component is designed for non-tab screens that have headers and need
- * to handle keyboard appearance correctly. It combines dynamic header height
- * detection with safe area awareness to ensure input fields remain visible
- * when the virtual keyboard appears.
- *
- * Platform-specific behavior:
- * - iOS: Uses dynamic offset calculated as headerHeight + safeAreaInsets.top + 10px buffer
- * - Android: Uses 0px offset as Android handles keyboard with adjustResize
+ * It wraps the KeyboardAwareWrapper and provides it with the dynamic values.
  *
  * @example
  * ```tsx
- * // Basic usage in a screen with a header
- * export function MyScreen() {
- *   return (
+ * <Screen>
  *     <DynamicKeyboardView>
  *       <ScrollView>
  *         <TextInput placeholder="Enter text" />
@@ -82,22 +86,14 @@ export function DynamicKeyboardView({
   style,
   offset,
 }: DynamicKeyboardViewProps) {
-  // Get dynamic header height from react-navigation
-  const headerHeight = useHeaderHeight();
-
-  // Get safe area insets from react-native-safe-area-context
+  const headerHeight = useSafeHeaderHeight();
   const safeAreaInsets = useSafeAreaInsets();
 
   return (
     <KeyboardAwareWrapper
-      headerHeight={headerHeight}
-      safeAreaInsets={{
-        top: safeAreaInsets.top,
-        bottom: safeAreaInsets.bottom,
-      }}
-      offset={offset}
-      useSafeArea={false}
       style={style}
+      offset={offset ?? (headerHeight + safeAreaInsets.top + 10)}
+      useSafeArea={false}
     >
       {children}
     </KeyboardAwareWrapper>

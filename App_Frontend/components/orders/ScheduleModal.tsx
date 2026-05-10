@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, Pressable, TextInput, Modal, ActivityIndicator, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { DynamicKeyboardView } from "../ui/DynamicKeyboardView";
+import { KeyboardAwareWrapper } from "../ui/KeyboardAwareWrapper";
 
 type Props = {
   visible: boolean;
@@ -21,10 +21,12 @@ export function ScheduleModal({ visible, onClose, onSubmit, loading }: Props) {
     setNotes("");
   };
 
+  if (!visible) return null;
+
   return (
-    <Modal visible={visible} transparent animationType="slide" onShow={handleOpen} onRequestClose={onClose}>
+    <Modal visible={true} transparent animationType="slide" onShow={handleOpen} onRequestClose={onClose}>
       <View className="flex-1 bg-black/50 justify-end">
-        <DynamicKeyboardView>
+        <KeyboardAwareWrapper useSafeArea={false}>
           <View className="bg-white dark:bg-slate-900 rounded-t-[32px] overflow-hidden">
             <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
               <View className="p-6 pb-10">
@@ -84,7 +86,7 @@ export function ScheduleModal({ visible, onClose, onSubmit, loading }: Props) {
               </View>
             </ScrollView>
           </View>
-        </DynamicKeyboardView>
+        </KeyboardAwareWrapper>
       </View>
     </Modal>
   );

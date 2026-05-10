@@ -6,9 +6,11 @@ import { DynamicKeyboardView } from "../../components/ui/DynamicKeyboardView";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../components/ui/AppToast";
 
 export default function LoginScreen() {
   const { login, user } = useAuth();
+  const { showToast } = useToast();
   const { email: emailParam } = useLocalSearchParams<{ email?: string }>();
   const [email, setEmail] = useState(typeof emailParam === "string" ? emailParam : "");
   const [password, setPassword] = useState("");
@@ -36,6 +38,7 @@ export default function LoginScreen() {
     const res = await login(email, password);
     setLoading(false);
     if (res.success) {
+      showToast("Signed in successfully.");
       router.replace("/" as never);
     } else {
       setErrorMessage(res.message || "Sign in failed. Please try again.");

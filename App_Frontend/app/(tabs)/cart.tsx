@@ -23,6 +23,7 @@ import { formatInr } from "../../lib/format";
 import { getImageUri } from "../../lib/product-image";
 import type { ProductImage } from "../../lib/types";
 import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
+import { useToast } from "../../components/ui/AppToast";
 
 type CartItem = {
   _id?: string;
@@ -40,6 +41,7 @@ type CartItem = {
 
 export default function CartScreen() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
   const [shipping, setShipping] = useState<ShippingDetails>({
@@ -71,6 +73,7 @@ export default function CartScreen() {
     mutationFn: removeFromCart,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
+      showToast("Item removed from cart.");
     },
   });
 
@@ -91,7 +94,7 @@ export default function CartScreen() {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       setModalOpen(false);
-      Alert.alert("Success", "Order placed.");
+      showToast("Order placed successfully.");
       router.push("/orders");
     },
     onError: (e: any) => {

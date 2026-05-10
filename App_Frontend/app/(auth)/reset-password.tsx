@@ -6,10 +6,12 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { DynamicKeyboardView } from "../../components/ui/DynamicKeyboardView";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../components/ui/AppToast";
 
 export default function ResetPasswordScreen() {
   const { token: tokenParam } = useLocalSearchParams<{ token?: string }>();
   const { resetPassword } = useAuth();
+  const { showToast } = useToast();
   const [token, setToken] = useState(typeof tokenParam === "string" ? tokenParam : "");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,6 +28,7 @@ export default function ResetPasswordScreen() {
     if (res.success) {
       setIsError(false);
       setMessage(res.message || "Password updated successfully.");
+      showToast(res.message || "Password updated successfully.");
       setTimeout(() => router.replace("/login"), 1500);
     } else {
       setIsError(true);

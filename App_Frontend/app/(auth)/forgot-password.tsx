@@ -6,9 +6,11 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { DynamicKeyboardView } from "../../components/ui/DynamicKeyboardView";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../components/ui/AppToast";
 
 export default function ForgotPasswordScreen() {
   const { forgotPassword } = useAuth();
+  const { showToast } = useToast();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -23,6 +25,7 @@ export default function ForgotPasswordScreen() {
     if (res.success) {
       setIsError(false);
       setMessage(res.message || "Reset link sent. Check your email.");
+      showToast(res.message || "Reset link sent. Check your email.");
     } else {
       setIsError(true);
       setMessage(res.message || "Could not send reset email.");

@@ -25,7 +25,6 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     const active = io(SOCKET_URL, {
       auth: { token: `Bearer ${token}` },
-      transports: ["websocket"],
       reconnection: true,
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,
@@ -57,7 +56,6 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
       const active = io(SOCKET_URL, {
         auth: { token: `Bearer ${token}` },
-        transports: ["websocket"],
         reconnection: true,
         reconnectionAttempts: 10,
         reconnectionDelay: 1000,
