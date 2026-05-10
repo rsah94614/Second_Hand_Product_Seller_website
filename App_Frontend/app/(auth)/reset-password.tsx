@@ -4,7 +4,7 @@ import { ScrollView, Text, View, Pressable } from "react-native";
 import { Screen } from "../../components/ui/Screen";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
-import { DynamicKeyboardView } from "../../components/ui/DynamicKeyboardView";
+import { KeyboardShiftView } from "../../components/ui/KeyboardShiftView";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../components/ui/AppToast";
 
@@ -32,13 +32,14 @@ export default function ResetPasswordScreen() {
       setTimeout(() => router.replace("/login"), 1500);
     } else {
       setIsError(true);
+      setIsError(true);
       setMessage(res.message || "Reset failed. The link may have expired.");
     }
   };
 
   return (
     <Screen>
-      <DynamicKeyboardView>
+      <KeyboardShiftView>
         <ScrollView className="flex-1 px-6 pt-12" keyboardShouldPersistTaps="handled">
         <View className="mb-10">
            <View className="h-16 w-16 bg-primary-100 dark:bg-primary-900/40 rounded-3xl items-center justify-center mb-6">
@@ -85,7 +86,7 @@ export default function ResetPasswordScreen() {
            </Link>
         </View>
         </ScrollView>
-      </DynamicKeyboardView>
+      </KeyboardShiftView>
     </Screen>
   );
 }

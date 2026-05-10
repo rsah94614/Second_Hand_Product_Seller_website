@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Link, router } from "expo-router";
 import { Screen } from "../../components/ui/Screen";
-import { DynamicKeyboardView } from "../../components/ui/DynamicKeyboardView";
+import { KeyboardShiftView } from "../../components/ui/KeyboardShiftView";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { useAuth } from "../../context/AuthContext";
@@ -133,7 +133,7 @@ export default function RegisterScreen() {
 
   return (
     <Screen>
-      <DynamicKeyboardView>
+      <KeyboardShiftView>
         <ScrollView
           className="flex-1 px-6 pt-10"
           keyboardShouldPersistTaps="handled"
@@ -351,7 +351,7 @@ export default function RegisterScreen() {
           </Link>
         </View>
       </ScrollView>
-      </DynamicKeyboardView>
+      </KeyboardShiftView>
     </Screen>
   );
 }

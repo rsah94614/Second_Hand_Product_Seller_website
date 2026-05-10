@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Alert, ScrollView, Text, TextInput, View, InteractionManager, ActivityIndicator } from "react-native";
 import { Screen } from "../../components/ui/Screen";
 import { Button } from "../../components/ui/Button";
-import { DynamicKeyboardView } from "../../components/ui/DynamicKeyboardView";
+import { KeyboardShiftView } from "../../components/ui/KeyboardShiftView";
 import { useAuth } from "../../context/AuthContext";
 import { submitSellerReview } from "../../lib/api/users";
 import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
@@ -75,7 +75,7 @@ function ReviewSellerContent() {
 
   return (
     <Screen className="bg-slate-50 dark:bg-slate-950" safeAreaTop={false} safeAreaBottom={false}>
-      <DynamicKeyboardView>
+      <KeyboardShiftView>
         <ScrollView className="flex-1" keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1 }}>
           <View className="p-4">
             <View className="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm shadow-slate-200/50 dark:shadow-none">
@@ -106,7 +106,7 @@ function ReviewSellerContent() {
             </View>
           </View>
         </ScrollView>
-      </DynamicKeyboardView>
+      </KeyboardShiftView>
     </Screen>
   );
 }

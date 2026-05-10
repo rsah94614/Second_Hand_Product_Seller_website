@@ -53,6 +53,14 @@ export function useChatThread(partnerId: string) {
 
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // ── Load messages ───────────────────────────────────────────────────────────
   const load = useCallback(async () => {
     if (!partnerId || !user) return;
@@ -287,7 +295,7 @@ export function useChatThread(partnerId: string) {
   }, [partnerId, showToast]);
 
   const emitTyping = useCallback(() => {
-    if (socket && isConnected) {
+    if (socket && isConnected && partnerId) {
       socket.emit("typing", { receiverId: partnerId });
     }
   }, [socket, isConnected, partnerId]);

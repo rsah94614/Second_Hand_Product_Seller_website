@@ -19,6 +19,7 @@
         "backgroundImage": "./assets/images/android-icon-background.png"
       },
       "edgeToEdgeEnabled": true,
+      "softwareKeyboardLayoutMode": "nothing",
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.RECORD_AUDIO"
@@ -42,14 +43,14 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
+          "imageWidth": 250,
           "resizeMode": "contain",
-          "backgroundColor": "#f8fafc",
+          "backgroundColor": "#ffffff",
           "dark": {
             "image": "./assets/images/splash-icon.png",
-            "imageWidth": 200,
+            "imageWidth": 250,
             "resizeMode": "contain",
-            "backgroundColor": "#020617"
+            "backgroundColor": "#0f172a"
           }
         }
       ]

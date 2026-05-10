@@ -9,12 +9,13 @@ import {
   Text,
   TextInput,
   View,
+  KeyboardAvoidingView,
   InteractionManager,
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Screen } from "../../components/ui/Screen";
-import { DynamicKeyboardView } from "../../components/ui/DynamicKeyboardView";
+import { KeyboardShiftView } from "../../components/ui/KeyboardShiftView";
 import { useColorScheme } from "nativewind";
 import { useAuth } from "../../context/AuthContext";
 import { useChatThread, getId } from "../../lib/hooks/useChatThread";
@@ -158,12 +159,14 @@ function ChatThreadContent() {
           </Text>
         </View>
       ) : (
-        <DynamicKeyboardView offset={Platform.OS === 'ios' ? 90 : 90}>
+        <KeyboardShiftView>
           <FlatList
             ref={listRef}
             data={messages}
             keyExtractor={(item) => item._id}
             contentContainerStyle={{ paddingVertical: 16, paddingHorizontal: 12 }}
+            keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+            keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             onContentSizeChange={() => {
               if (messages.length > 0) {
@@ -237,12 +240,16 @@ function ChatThreadContent() {
             sendingImage={false} // Will add state to hook if needed
             isConnected={isConnected}
           />
-        </DynamicKeyboardView>
+        </KeyboardShiftView>
       )}
 
       {/* Report Modal */}
       <Modal visible={reportOpen} transparent animationType="slide" onRequestClose={() => setReportOpen(false)}>
         <View className="flex-1 bg-black/50 justify-end">
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={{ flex: 1, justifyContent: "flex-end" }}
+          >
           <View className="bg-white dark:bg-slate-900 rounded-t-[32px] p-6 pb-10">
             <View className="flex-row items-center justify-between mb-6">
               <Text className="text-[20px] font-outfit-b text-slate-900 dark:text-white">Report User</Text>
@@ -306,6 +313,7 @@ function ChatThreadContent() {
               </View>
             </View>
           </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
     </Screen>

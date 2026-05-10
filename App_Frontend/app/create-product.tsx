@@ -14,7 +14,7 @@ import { PRODUCT_CONDITIONS } from "../lib/product-options";
 import { Ionicons } from "@expo/vector-icons";
 import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
 import { api } from "@/lib/api/client";
-import { DynamicKeyboardView } from "../components/ui/DynamicKeyboardView";
+import { KeyboardShiftView } from "../components/ui/KeyboardShiftView";
 import { useToast } from "../components/ui/AppToast";
 
 const LISTING_POLICIES = [
@@ -345,7 +345,7 @@ function CreateProductContent() {
         </View>
       </Modal>
 
-      <DynamicKeyboardView>
+      <KeyboardShiftView>
         <ScrollView className="flex-1 px-5 pt-6 pb-12" keyboardShouldPersistTaps="handled">
           <View className="flex-row items-center gap-3 mb-2">
             <Text className="text-[28px] font-outfit-bl text-slate-900 dark:text-white leading-tight flex-1">Create Listing</Text>
@@ -447,7 +447,7 @@ function CreateProductContent() {
             <Button title="Publish Listing" onPress={submit} loading={submitting} />
           </View>
         </ScrollView>
-      </DynamicKeyboardView>
+      </KeyboardShiftView>
     </Screen>
   );
 }

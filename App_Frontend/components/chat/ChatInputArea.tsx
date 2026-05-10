@@ -1,7 +1,8 @@
-import React from "react";
-import { View, TextInput, Pressable, ActivityIndicator, Keyboard } from "react-native";
+import React, { useRef } from "react";
+import { View, TextInput, Pressable, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Props = {
   text: string;
@@ -26,6 +27,16 @@ export function ChatInputArea({
   sendingImage,
   isConnected,
 }: Props) {
+  const insets = useSafeAreaInsets();
+  const lastTypingAtRef = useRef(0);
+
+  const notifyTyping = () => {
+    const now = Date.now();
+    if (now - lastTypingAtRef.current < 1200) return;
+    lastTypingAtRef.current = now;
+    onTyping();
+  };
+
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -34,7 +45,7 @@ export function ChatInputArea({
     });
 
     if (!result.canceled && result.assets[0]) {
-      onSendImage(result.assets[0].uri, result.assets[0].type || "image/jpeg");
+      onSendImage(result.assets[0].uri, result.assets[0].mimeType || "image/jpeg");
     }
   };
 
@@ -42,11 +53,13 @@ export function ChatInputArea({
     if (!text.trim()) return;
     onSend(text);
     setText("");
-    Keyboard.dismiss();
   };
 
   return (
-    <View className="px-4 py-3 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
+    <View
+      className="px-4 pt-3 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800"
+      style={{ paddingBottom: Math.max(insets.bottom, 12) }}
+    >
       {editingMessageId && (
         <View className="flex-row items-center justify-between bg-slate-50 dark:bg-slate-800/50 px-3 py-2 rounded-xl mb-3 border-l-4 border-primary-500">
           <View className="flex-1">
@@ -85,13 +98,16 @@ export function ChatInputArea({
             value={text}
             onChangeText={(t) => {
               setText(t);
-              onTyping();
+              notifyTyping();
             }}
-            placeholder="Message..."
+            placeholder={isConnected ? "Message..." : "Message when back online..."}
             placeholderTextColor="#94a3b8"
             multiline
+            scrollEnabled
+            maxLength={2000}
+            blurOnSubmit={false}
             className="px-4 py-2.5 text-[15px] font-outfit text-slate-900 dark:text-white"
-            style={{ textAlignVertical: 'center', paddingTop: 10, paddingBottom: 10 }}
+            style={{ minHeight: 44, maxHeight: 96, textAlignVertical: "top", paddingTop: 10, paddingBottom: 10 }}
           />
         </View>
 

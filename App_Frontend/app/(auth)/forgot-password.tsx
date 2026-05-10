@@ -4,7 +4,7 @@ import { Link } from "expo-router";
 import { Screen } from "../../components/ui/Screen";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
-import { DynamicKeyboardView } from "../../components/ui/DynamicKeyboardView";
+import { KeyboardShiftView } from "../../components/ui/KeyboardShiftView";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../components/ui/AppToast";
 
@@ -28,13 +28,14 @@ export default function ForgotPasswordScreen() {
       showToast(res.message || "Reset link sent. Check your email.");
     } else {
       setIsError(true);
+      setIsError(true);
       setMessage(res.message || "Could not send reset email.");
     }
   };
 
   return (
     <Screen>
-      <DynamicKeyboardView>
+      <KeyboardShiftView>
         <ScrollView className="flex-1 px-6 pt-12" keyboardShouldPersistTaps="handled">
         <View className="mb-10">
           <View className="h-16 w-16 bg-primary-100 dark:bg-primary-900/40 rounded-3xl items-center justify-center mb-6">
@@ -75,7 +76,7 @@ export default function ForgotPasswordScreen() {
           </Link>
         </View>
         </ScrollView>
-      </DynamicKeyboardView>
+      </KeyboardShiftView>
     </Screen>
   );
 }

@@ -17,7 +17,7 @@ import { getProduct, updateProduct, getProductCategories } from "../../lib/api/p
 import { PRODUCT_CONDITIONS } from "../../lib/product-options";
 import { getImageUri } from "../../lib/product-image";
 import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
-import { DynamicKeyboardView } from "../../components/ui/DynamicKeyboardView";
+import { KeyboardShiftView } from "../../components/ui/KeyboardShiftView";
 import { Screen } from "../../components/ui/Screen";
 import { useToast } from "../../components/ui/AppToast";
 
@@ -190,7 +190,7 @@ export default function EditProductScreen() {
 
   return (
     <Screen safeAreaTop={false} className="flex-1">
-      <DynamicKeyboardView>
+      <KeyboardShiftView>
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 18, paddingBottom: 48 }}
@@ -276,7 +276,7 @@ export default function EditProductScreen() {
           <ActionButton title="Save changes" loading={submitting} onPress={submit} />
         </View>
       </ScrollView>
-      </DynamicKeyboardView>
+      </KeyboardShiftView>
     </Screen>
   );
 }

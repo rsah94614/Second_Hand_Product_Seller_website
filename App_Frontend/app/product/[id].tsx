@@ -10,7 +10,7 @@ import {
   InteractionManager,
 } from "react-native";
 import { Screen } from "../../components/ui/Screen";
-import { DynamicKeyboardView } from "../../components/ui/DynamicKeyboardView";
+import { KeyboardShiftView } from "../../components/ui/KeyboardShiftView";
 import { Button } from "../../components/ui/Button";
 import { useProductDetails } from "../../lib/hooks/useProductDetails";
 import { ProductGallery } from "../../components/product/ProductGallery";
@@ -98,7 +98,7 @@ function ProductDetailContent() {
 
   return (
     <Screen className="bg-white dark:bg-slate-950" safeAreaTop={false} safeAreaBottom={false}>
-      <DynamicKeyboardView>
+      <KeyboardShiftView>
         <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 150 }} keyboardShouldPersistTaps="handled">
           <ProductGallery
             images={product.images || []}
@@ -202,7 +202,7 @@ function ProductDetailContent() {
             </View>
           </View>
         </ScrollView>
-      </DynamicKeyboardView>
+      </KeyboardShiftView>
 
       {user && available && !isOwner && (
         <BottomActions
