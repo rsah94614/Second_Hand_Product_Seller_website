@@ -20,6 +20,12 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     // Don't create a duplicate if already connected
     if (socketRef.current?.connected) return;
 
+    // Close any stale/disconnected socket before creating a new one
+    if (socketRef.current) {
+      socketRef.current.close();
+      socketRef.current = null;
+    }
+
     const token = await storage.getAccessToken();
     if (!token) return;
 

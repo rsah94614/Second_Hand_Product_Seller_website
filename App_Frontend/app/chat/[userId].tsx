@@ -9,7 +9,6 @@ import {
   Text,
   TextInput,
   View,
-  KeyboardAvoidingView,
   InteractionManager,
   Platform,
 } from "react-native";
@@ -246,74 +245,72 @@ function ChatThreadContent() {
       {/* Report Modal */}
       <Modal visible={reportOpen} transparent animationType="slide" onRequestClose={() => setReportOpen(false)}>
         <View className="flex-1 bg-black/50 justify-end">
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
+          <KeyboardShiftView
             style={{ flex: 1, justifyContent: "flex-end" }}
           >
-          <View className="bg-white dark:bg-slate-900 rounded-t-[32px] p-6 pb-10">
-            <View className="flex-row items-center justify-between mb-6">
-              <Text className="text-[20px] font-outfit-b text-slate-900 dark:text-white">Report User</Text>
-              <Pressable onPress={() => setReportOpen(false)} className="h-8 w-8 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
-                <Ionicons name="close" size={20} color="#64748b" />
-              </Pressable>
-            </View>
+            <View className="bg-white dark:bg-slate-900 rounded-t-[32px] p-6 pb-10">
+              <View className="flex-row items-center justify-between mb-6">
+                <Text className="text-[20px] font-outfit-b text-slate-900 dark:text-white">Report User</Text>
+                <Pressable onPress={() => setReportOpen(false)} className="h-8 w-8 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+                  <Ionicons name="close" size={20} color="#64748b" />
+                </Pressable>
+              </View>
 
-            <Text className="text-[14px] font-outfit-sb text-slate-700 dark:text-slate-300 mb-3">Reason for reporting</Text>
-            <View className="flex-row flex-wrap gap-2 mb-6">
-              {["spam", "harassment", "fraud", "other"].map((r) => (
-                <Pressable
-                  key={r}
-                  onPress={() => setReportReason(r)}
-                  className={`px-4 py-2 rounded-xl border ${
-                    reportReason === r
+              <Text className="text-[14px] font-outfit-sb text-slate-700 dark:text-slate-300 mb-3">Reason for reporting</Text>
+              <View className="flex-row flex-wrap gap-2 mb-6">
+                {["spam", "harassment", "fraud", "other"].map((r) => (
+                  <Pressable
+                    key={r}
+                    onPress={() => setReportReason(r)}
+                    className={`px-4 py-2 rounded-xl border ${reportReason === r
                       ? "bg-primary-50 border-primary-500 dark:bg-primary-900/30"
                       : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900"
-                  }`}
-                >
-                  <Text className={`text-[13px] font-outfit-m capitalize ${reportReason === r ? "text-primary-700 dark:text-primary-400" : "text-slate-600 dark:text-slate-400"}`}>
-                    {r}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            <Text className="text-[14px] font-outfit-sb text-slate-700 dark:text-slate-300 mb-3">Additional Details</Text>
-            <TextInput
-              multiline
-              numberOfLines={4}
-              value={reportDetails}
-              onChangeText={setReportDetails}
-              placeholder="Please provide more information..."
-              placeholderTextColor="#94a3b8"
-              className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 text-[15px] font-outfit text-slate-900 dark:text-white mb-8 min-h-[100px] border border-slate-100 dark:border-slate-800"
-            />
-
-            <View className="flex-row gap-3">
-              <View className="flex-1">
-                <Pressable
-                  onPress={() => setReportOpen(false)}
-                  className="h-12 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 active:bg-slate-200"
-                >
-                  <Text className="text-[15px] font-outfit-sb text-slate-700 dark:text-slate-200">Cancel</Text>
-                </Pressable>
+                      }`}
+                  >
+                    <Text className={`text-[13px] font-outfit-m capitalize ${reportReason === r ? "text-primary-700 dark:text-primary-400" : "text-slate-600 dark:text-slate-400"}`}>
+                      {r}
+                    </Text>
+                  </Pressable>
+                ))}
               </View>
-              <View className="flex-1">
-                <Pressable
-                  disabled={reportSubmitting}
-                  onPress={async () => {
-                    setReportSubmitting(true);
-                    await report(reportReason, reportDetails);
-                    setReportSubmitting(false);
-                    setReportOpen(false);
-                  }}
-                  className="h-12 items-center justify-center rounded-2xl bg-red-600 active:bg-red-700"
-                >
-                  {reportSubmitting ? <ActivityIndicator color="#fff" /> : <Text className="text-[15px] font-outfit-sb text-white">Submit Report</Text>}
-                </Pressable>
+
+              <Text className="text-[14px] font-outfit-sb text-slate-700 dark:text-slate-300 mb-3">Additional Details</Text>
+              <TextInput
+                multiline
+                numberOfLines={4}
+                value={reportDetails}
+                onChangeText={setReportDetails}
+                placeholder="Please provide more information..."
+                placeholderTextColor="#94a3b8"
+                className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 text-[15px] font-outfit text-slate-900 dark:text-white mb-8 min-h-[100px] border border-slate-100 dark:border-slate-800"
+              />
+
+              <View className="flex-row gap-3">
+                <View className="flex-1">
+                  <Pressable
+                    onPress={() => setReportOpen(false)}
+                    className="h-12 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 active:bg-slate-200"
+                  >
+                    <Text className="text-[15px] font-outfit-sb text-slate-700 dark:text-slate-200">Cancel</Text>
+                  </Pressable>
+                </View>
+                <View className="flex-1">
+                  <Pressable
+                    disabled={reportSubmitting}
+                    onPress={async () => {
+                      setReportSubmitting(true);
+                      await report(reportReason, reportDetails);
+                      setReportSubmitting(false);
+                      setReportOpen(false);
+                    }}
+                    className="h-12 items-center justify-center rounded-2xl bg-red-600 active:bg-red-700"
+                  >
+                    {reportSubmitting ? <ActivityIndicator color="#fff" /> : <Text className="text-[15px] font-outfit-sb text-white">Submit Report</Text>}
+                  </Pressable>
+                </View>
               </View>
             </View>
-          </View>
-          </KeyboardAvoidingView>
+          </KeyboardShiftView>
         </View>
       </Modal>
     </Screen>

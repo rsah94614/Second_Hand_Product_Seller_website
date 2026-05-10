@@ -1,19 +1,19 @@
-import { Animated, Keyboard, type KeyboardEvent, Platform, View, type ViewStyle } from "react-native";
-import { useHeaderHeight } from "@react-navigation/elements";
+/**
+ * KeyboardShiftView
+ *
+ * Listens to raw Keyboard events and animates bottom padding to push
+ * content above the keyboard. Works with softwareKeyboardLayoutMode: "nothing"
+ * on Android so there is zero conflict with the OS resize behavior.
+ */
+
+import { Animated, Keyboard, type KeyboardEvent, Platform, type ViewStyle } from "react-native";
 import { type ReactNode, useEffect, useRef } from "react";
 
 interface KeyboardShiftViewProps {
   children: ReactNode;
   style?: ViewStyle;
+  /** Extra spacing to add on top of the raw keyboard height (default: 0) */
   extraOffset?: number;
-}
-
-function useSafeHeaderHeight() {
-  try {
-    return useHeaderHeight();
-  } catch {
-    return 0;
-  }
 }
 
 export function KeyboardShiftView({
@@ -21,15 +21,11 @@ export function KeyboardShiftView({
   style,
   extraOffset = 0,
 }: KeyboardShiftViewProps) {
-  const headerHeight = useSafeHeaderHeight();
   const bottomPad = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Android and iOS behave differently – get the right events
     const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
     const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-    
-    // Some Android devices fire frame change events instead of show/hide reliably
     const changeEvent = Platform.OS === "ios" ? "keyboardWillChangeFrame" : "keyboardDidChangeFrame";
 
     const animateTo = (height: number) => {
@@ -58,7 +54,7 @@ export function KeyboardShiftView({
       hideSub.remove();
       changeSub.remove();
     };
-  }, [bottomPad, extraOffset, headerHeight]);
+  }, [bottomPad, extraOffset]);
 
   return (
     <Animated.View style={[{ flex: 1, paddingBottom: bottomPad }, style]}>

@@ -212,17 +212,19 @@ function CreateProductContent() {
       return;
     }
     setSubmitting(true);
-    console.log("[CreateProduct] Submitting to:", api.defaults.baseURL);
-    console.log("[CreateProduct] Image count:", images.length);
-    console.log(
-      "[CreateProduct] Image meta:",
-      images.map((img) => ({
-        uri: img.uri,
-        mimeType: img.mimeType,
-        fileSize: img.fileSize,
-        fileName: img.fileName,
-      }))
-    );
+    if (__DEV__) {
+      console.log("[CreateProduct] Submitting to:", api.defaults.baseURL);
+      console.log("[CreateProduct] Image count:", images.length);
+      console.log(
+        "[CreateProduct] Image meta:",
+        images.map((img) => ({
+          uri: img.uri,
+          mimeType: img.mimeType,
+          fileSize: img.fileSize,
+          fileName: img.fileName,
+        }))
+      );
+    }
     try {
       const fd = new FormData();
       fd.append("title", form.title.trim());

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, Pressable, TextInput, Modal, ActivityIndicator, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { KeyboardAwareWrapper } from "../ui/KeyboardAwareWrapper";
+import { KeyboardShiftView } from "../ui/KeyboardShiftView";
 
 type Props = {
   visible: boolean;
@@ -22,7 +22,7 @@ export function DisputeModal({ visible, onClose, onSubmit, loading }: Props) {
   return (
     <Modal visible={true} transparent animationType="slide" onShow={handleOpen} onRequestClose={onClose}>
       <View className="flex-1 bg-black/50 justify-end">
-        <KeyboardAwareWrapper useSafeArea={false}>
+        <KeyboardShiftView>
           <View className="bg-white dark:bg-slate-900 rounded-t-[32px] overflow-hidden">
             <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
               <View className="p-6 pb-10">
@@ -62,7 +62,7 @@ export function DisputeModal({ visible, onClose, onSubmit, loading }: Props) {
               </View>
             </ScrollView>
           </View>
-        </KeyboardAwareWrapper>
+        </KeyboardShiftView>
       </View>
     </Modal>
   );

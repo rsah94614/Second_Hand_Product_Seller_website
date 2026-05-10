@@ -133,7 +133,7 @@ export const uploadFormData = async <T = any>(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.message === "Network Error") {
+    if (error.message === "Network Error" && __DEV__) {
       console.error("[API] Network Error details:", {
         url: error.config?.url,
         method: error.config?.method,

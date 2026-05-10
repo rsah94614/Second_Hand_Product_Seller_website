@@ -114,9 +114,8 @@ export function ChatInputArea({
         <Pressable
           onPress={handleSend}
           disabled={!text.trim()}
-          className={`h-11 w-11 items-center justify-center rounded-2xl ${
-            text.trim() ? "bg-primary-600 shadow-md shadow-primary-200" : "bg-slate-200 dark:bg-slate-800"
-          }`}
+          className={`h-11 w-11 items-center justify-center rounded-2xl ${text.trim() ? "bg-primary-600 shadow-md shadow-primary-200" : "bg-slate-200 dark:bg-slate-800"
+            }`}
         >
           <Ionicons
             name={editingMessageId ? "checkmark" : "send"}

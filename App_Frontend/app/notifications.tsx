@@ -9,7 +9,6 @@ import {
   getNotifications,
   markAllNotificationsRead,
   markNotificationRead,
-  snoozeNotification,
 } from "../lib/api/notifications";
 import { notificationLinkToHref } from "../lib/notificationLink";
 import { Ionicons } from "@expo/vector-icons";
