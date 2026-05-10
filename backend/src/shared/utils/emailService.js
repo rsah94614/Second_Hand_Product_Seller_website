@@ -11,19 +11,26 @@ const parseNumber = (value, fallback) => {
 };
 
 const getEmailConfig = () => {
+  const provider = (process.env.EMAIL_PROVIDER || 'smtp').trim().toLowerCase();
   const host = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
   const port = parseNumber(process.env.SMTP_PORT, 587);
   const secure = parseBoolean(process.env.SMTP_SECURE, port === 465);
   const user = (process.env.EMAIL_USER || '').trim();
   const rawPass = (process.env.EMAIL_PASS || '').trim();
   const pass = host.toLowerCase().includes('gmail.com') ? rawPass.replace(/\s+/g, '') : rawPass;
+  const fromEmail = (process.env.EMAIL_FROM || user).trim();
+  const fromName = (process.env.EMAIL_FROM_NAME || 'CampusMitra').trim();
 
   return {
+    provider,
     host,
     port,
     secure,
     user,
     pass,
+    fromEmail,
+    fromName,
+    brevoApiKey: (process.env.BREVO_API_KEY || '').trim(),
   };
 };
 
@@ -53,9 +60,9 @@ const createTransporter = () => {
       pass: config.pass,
     },
     // Increased timeouts to prevent blocking the event loop for too long
-    connectionTimeout: parseNumber(process.env.SMTP_CONNECTION_TIMEOUT_MS, 30000),
-    greetingTimeout: parseNumber(process.env.SMTP_GREETING_TIMEOUT_MS, 30000),
-    socketTimeout: parseNumber(process.env.SMTP_SOCKET_TIMEOUT_MS, 30000),
+    connectionTimeout: parseNumber(process.env.SMTP_CONNECTION_TIMEOUT_MS, 10000),
+    greetingTimeout: parseNumber(process.env.SMTP_GREETING_TIMEOUT_MS, 10000),
+    socketTimeout: parseNumber(process.env.SMTP_SOCKET_TIMEOUT_MS, 10000),
   });
 };
 
@@ -77,12 +84,64 @@ const emailTemplate = (title, content) => `
   </div>
 `;
 
+const sendEmailWithBrevo = async (to, subject, html, config) => {
+  if (!config.brevoApiKey) {
+    throw new Error('BREVO_API_KEY is missing');
+  }
+
+  if (!config.fromEmail) {
+    throw new Error('EMAIL_FROM is required for Brevo email delivery');
+  }
+
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+      'api-key': config.brevoApiKey,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      sender: {
+        name: config.fromName,
+        email: config.fromEmail,
+      },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+    }),
+  });
+
+  if (!response.ok) {
+    let details = '';
+    try {
+      const data = await response.json();
+      details = data?.message || JSON.stringify(data);
+    } catch {
+      details = await response.text().catch(() => '');
+    }
+    throw new Error(`Brevo API failed with ${response.status}${details ? `: ${details}` : ''}`);
+  }
+};
+
 /**
  * Send email with fallback to console in development
  */
 const sendEmail = async (to, subject, html) => {
+  const config = getEmailConfig();
+
+  if (config.provider === 'brevo') {
+    try {
+      const start = Date.now();
+      await sendEmailWithBrevo(to, subject, html, config);
+      console.log(`[Email Service] Success: Brevo email sent to ${to} in ${Date.now() - start}ms`);
+      return;
+    } catch (error) {
+      console.error(`[Email Service] ERROR sending Brevo email to ${to}:`, error.message);
+      throw new Error(`Email dispatch failed: ${error.message}`);
+    }
+  }
+
   const transporter = createTransporter();
-  const { user } = getEmailConfig();
   
   if (!transporter) {
     console.warn('[Email Service] Skipping send: EMAIL_USER or EMAIL_PASS not found in environment.');
@@ -92,7 +151,7 @@ const sendEmail = async (to, subject, html) => {
   }
 
   const mailOptions = {
-    from: `"CampusMitra" <${user}>`,
+    from: `"${config.fromName}" <${config.fromEmail}>`,
     to,
     subject,
     html,
@@ -259,6 +318,16 @@ const sendLockoutEmail = async (toEmail, unlockTime) => {
 
 const verifyTransporter = async () => {
   try {
+    const config = getEmailConfig();
+    if (config.provider === 'brevo') {
+      if (!config.brevoApiKey || !config.fromEmail) {
+        console.error('[Email Service] Brevo email configuration is incomplete');
+        return;
+      }
+      console.log('[Email Service] Brevo email provider configured');
+      return;
+    }
+
     const transporter = createTransporter();
     if (!transporter) return;
 

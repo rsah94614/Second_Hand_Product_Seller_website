@@ -7,7 +7,7 @@ export const loginUser = (email, password) =>
   authApi.post('/api/auth/login', { email, password }).then((res) => res.data);
 
 export const requestSignupOtp = (email) =>
-  authApi.post('/api/auth/otp/request-signup', { email }).then((res) => res.data);
+  authApi.post('/api/auth/otp/request-signup', { email }, { timeout: 60000 }).then((res) => res.data);
 
 export const registerUser = (userData) =>
   authApi.post('/api/auth/register', userData).then((res) => res.data);

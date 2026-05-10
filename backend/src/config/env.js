@@ -11,6 +11,7 @@ const validateEnvironment = () => {
   const errors = [];
   const warnings = [];
   const isProduction = process.env.NODE_ENV === 'production';
+  const emailProvider = (process.env.EMAIL_PROVIDER || 'smtp').trim().toLowerCase();
 
   if (!process.env.JWT_SECRET) {
     errors.push('JWT_SECRET is required.');
@@ -42,11 +43,19 @@ const validateEnvironment = () => {
     errors.push('Cloudinary credentials are required in production.');
   }
 
-  if (
+  if (isProduction && emailProvider === 'brevo') {
+    if (!(process.env.BREVO_API_KEY || '').trim()) {
+      warnings.push('BREVO_API_KEY is missing. OTP and password reset emails will fail.');
+    }
+
+    if (!(process.env.EMAIL_FROM || process.env.EMAIL_USER || '').trim()) {
+      warnings.push('EMAIL_FROM is missing. Brevo email delivery will fail.');
+    }
+  } else if (
     isProduction &&
     (!(process.env.EMAIL_USER || '').trim() || !(process.env.EMAIL_PASS || '').trim())
   ) {
-    warnings.push('EMAIL_USER or EMAIL_PASS is missing. OTP and password reset emails will fail.');
+    warnings.push('EMAIL_USER or EMAIL_PASS is missing. SMTP OTP and password reset emails will fail.');
   }
 
   warnings.forEach((warning) => {
