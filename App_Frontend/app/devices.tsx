@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Redirect } from "expo-router";
+import { router } from "expo-router";
+import { useEffect } from "react";
 import { Alert, FlatList, Pressable, Text, View } from "react-native";
 import { Screen } from "../components/ui/Screen";
 import { Loading } from "../components/Loading";
@@ -7,6 +8,8 @@ import { EmptyState } from "../components/EmptyState";
 import { useAuth } from "../context/AuthContext";
 import { getMyDevices, removeDevice, trustDevice } from "../lib/api/users";
 import { Ionicons } from "@expo/vector-icons";
+import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
+import { useToast } from "../components/ui/AppToast";
 
 type Device = {
   _id: string;
@@ -27,7 +30,8 @@ const deviceIcon = (type?: string): keyof typeof Ionicons.glyphMap => {
 };
 
 export default function DevicesScreen() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { showToast } = useToast();
   const queryClient = useQueryClient();
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
@@ -38,17 +42,35 @@ export default function DevicesScreen() {
 
   const removeMutation = useMutation({
     mutationFn: (deviceId: string) => removeDevice(deviceId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["my-devices"] }),
-    onError: () => Alert.alert("Error", "Failed to remove device."),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-devices"] });
+      showToast("Device removed.");
+    },
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Failed to remove device.");
+      Alert.alert("Error", formatErrorForDisplay(parsed));
+    },
   });
 
   const trustMutation = useMutation({
     mutationFn: (deviceId: string) => trustDevice(deviceId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["my-devices"] }),
-    onError: () => Alert.alert("Error", "Failed to trust device."),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-devices"] });
+      showToast("Device marked as trusted.");
+    },
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Failed to trust device.");
+      Alert.alert("Error", formatErrorForDisplay(parsed));
+    },
   });
 
-  if (!user) return <Redirect href="/(auth)/login" />;
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace("/(auth)/login");
+    }
+  }, [authLoading, user]);
+
+  if (authLoading || !user) return <Screen safeAreaTop={false}><Loading /></Screen>;
 
   if (isLoading) {
     return <Screen safeAreaTop={false}><Loading /></Screen>;

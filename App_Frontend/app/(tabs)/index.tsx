@@ -47,9 +47,9 @@ function SectionHeader({
   accentColor?: string;
 }) {
   return (
-    <View className="flex-row items-end justify-between px-5 mb-3">
+    <View className="flex-row items-center justify-between px-5 mb-3">
       <View className="flex-1 pr-4">
-        <Text className="text-[18px] font-outfit-b text-slate-900 dark:text-white leading-tight">{title}</Text>
+        <Text className="text-[19px] font-outfit-b text-slate-900 dark:text-white leading-tight">{title}</Text>
         {subtitle ? (
           <Text className="text-[12px] font-outfit text-slate-500 dark:text-slate-400 mt-0.5" numberOfLines={2}>{subtitle}</Text>
         ) : null}
@@ -170,9 +170,9 @@ export default function HomeScreen() {
         {/* Search bar */}
         <Pressable
           onPress={handleSearch}
-          className="flex-row items-center gap-2 rounded-2xl bg-black/10 border border-white/20 pl-4 pr-3 h-12 active:bg-black/20"
+          className="flex-row items-center gap-2.5 rounded-2xl bg-black/10 border border-white/20 pl-4 pr-4 h-12 active:bg-black/20"
         >
-          <Ionicons name="search" size={17} color="rgba(255,255,255,0.7)" />
+          <Ionicons name="search" size={18} color="rgba(255,255,255,0.7)" />
           <TextInput
             value={search}
             onChangeText={setSearch}
@@ -181,6 +181,7 @@ export default function HomeScreen() {
             placeholderTextColor="rgba(255,255,255,0.6)"
             className="flex-1 text-[14px] font-outfit text-white"
             returnKeyType="search"
+            style={{ paddingVertical: 0 }}
           />
         </Pressable>
       </View>
@@ -192,39 +193,41 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetchLatest} />}
       >
         {/* ── Hero Banner ── */}
-        <View className="mx-4 mt-4 mb-5 rounded-3xl overflow-hidden bg-slate-900" style={{ minHeight: 170 }}>
+        <View className="mx-4 mt-4 mb-5 rounded-3xl overflow-hidden bg-slate-900" style={{ minHeight: 200 }}>
           <View className="absolute inset-0 bg-indigo-950 opacity-95" />
           <View
-            className="absolute top-[-40%] left-[-10%] w-[60%] h-[200%] rounded-full opacity-40"
-            style={{ backgroundColor: "rgba(99,102,241,0.35)" }}
+            className="absolute top-[-50px] left-[-50px] w-48 h-48 rounded-full opacity-30"
+            style={{ backgroundColor: "rgba(99,102,241,0.4)" }}
           />
           <View
-            className="absolute bottom-[-30%] right-[-10%] w-[50%] h-[160%] rounded-full opacity-30"
-            style={{ backgroundColor: "rgba(34,211,238,0.35)" }}
+            className="absolute bottom-[-30px] right-[-30px] w-40 h-40 rounded-full opacity-20"
+            style={{ backgroundColor: "rgba(34,211,238,0.4)" }}
           />
-          <View className="relative z-10 p-6">
-            <View className="flex-row items-center gap-2 mb-4 self-start bg-white/10 border border-white/15 px-3 py-1.5 rounded-full">
+          <View className="relative z-10 p-7 items-center">
+            <View className="flex-row items-center gap-2 mb-4 bg-white/10 border border-white/15 px-3 py-1.5 rounded-full">
               <View className="h-2 w-2 rounded-full bg-cyan-400" />
-              <Text className="text-[11px] font-outfit-sb text-white/80">CampusMitra Marketplace</Text>
+              <Text className="text-[11px] font-outfit-sb text-white/80 uppercase tracking-wider">CampusMitra Marketplace</Text>
             </View>
-            <Text className="text-[22px] font-outfit-bl text-white leading-tight mb-2">
-              Buy campus essentials{"\n"}before they&apos;re gone.
+            <Text className="text-[26px] font-outfit-bl text-white text-center leading-tight mb-2">
+              Buy campus essentials before they&apos;re gone.
             </Text>
-            <Text className="text-[13px] font-outfit text-white/60 mb-5">
+            <Text className="text-[14px] font-outfit text-white/60 text-center mb-6">
               Student-to-student deals, fresh listings every day.
             </Text>
-            <View className="flex-row gap-2 flex-wrap">
-              <Link href="/products" asChild>
-                <Pressable className="flex-row items-center gap-1.5 bg-white/10 border border-white/20 rounded-full px-4 py-2 active:bg-white/20">
-                  <Text className="text-[13px] font-outfit-sb text-white">Browse All</Text>
-                  <Ionicons name="arrow-forward" size={13} color="#fff" />
-                </Pressable>
-              </Link>
-              <Link href={user ? "/create-product" : "/(auth)/register"} asChild>
-                <Pressable className="flex-row items-center gap-1.5 bg-primary-500/80 border border-primary-400/30 rounded-full px-4 py-2 active:bg-primary-600">
-                  <Text className="text-[13px] font-outfit-sb text-white">{user ? "List an Item" : "Start Selling"}</Text>
-                </Pressable>
-              </Link>
+            <View className="flex-row gap-3 w-full">
+              <Pressable
+                onPress={() => router.push("/products" as never)}
+                className="flex-1 flex-row items-center justify-center gap-2 bg-white/10 border border-white/20 rounded-2xl py-3 active:bg-white/20"
+              >
+                <Text className="text-[14px] font-outfit-sb text-white">Browse All</Text>
+                <Ionicons name="arrow-forward" size={14} color="#fff" />
+              </Pressable>
+              <Pressable
+                onPress={() => router.push((user ? "/create-product" : "/(auth)/register") as never)}
+                className="flex-1 flex-row items-center justify-center gap-2 bg-primary-500 border border-primary-400/30 rounded-2xl py-3 active:bg-primary-600 shadow-lg shadow-primary-900/50"
+              >
+                <Text className="text-[14px] font-outfit-sb text-white">{user ? "List an Item" : "Start Selling"}</Text>
+              </Pressable>
             </View>
           </View>
         </View>
@@ -244,10 +247,10 @@ export default function HomeScreen() {
               <Pressable
                 key={cat}
                 onPress={() => router.push(`/products?category=${encodeURIComponent(cat)}` as never)}
-                className={`self-start items-center rounded-2xl px-4 py-3 min-w-[80px] active:opacity-80 ${color.bg}`}
+                className={`items-center justify-center rounded-2xl px-2 py-3 w-[100px] h-[95px] active:opacity-80 ${color.bg}`}
               >
-                <Text className="text-2xl mb-1">{emoji}</Text>
-                <Text className={`text-[11px] font-outfit-sb text-center leading-tight ${color.text}`} numberOfLines={2}>{cat}</Text>
+                <Text className="text-3xl mb-1.5">{emoji}</Text>
+                <Text className={`text-[11px] font-outfit-sb text-center leading-[13px] ${color.text}`} numberOfLines={2}>{cat}</Text>
               </Pressable>
             );
           })}
@@ -314,14 +317,6 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* ── Feature tags ── */}
-        {/* <View className="flex-row flex-wrap gap-2 px-5 mb-4">
-          {["Fresh listings", "Budget-friendly picks", "Student-to-student deals"].map((tag) => (
-            <View key={tag} className="rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-1.5">
-              <Text className="text-[12px] font-outfit-m text-slate-500 dark:text-slate-400">{tag}</Text>
-            </View>
-          ))}
-        </View> */}
       </ScrollView>
     </Screen>
   );

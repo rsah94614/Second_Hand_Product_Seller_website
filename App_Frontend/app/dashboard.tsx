@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, Redirect, router } from "expo-router";
-import { useMemo } from "react";
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { Link, router } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
+import { Alert, Pressable, ScrollView, Text, View, InteractionManager, ActivityIndicator } from "react-native";
 import { Image } from "expo-image";
 import { Screen } from "../components/ui/Screen";
 import { Loading } from "../components/Loading";
@@ -11,6 +11,14 @@ import { formatInr } from "../lib/format";
 import { getImageUri } from "../lib/product-image";
 import type { ProductImage } from "../lib/types";
 import { Ionicons } from "@expo/vector-icons";
+import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
+import { useToast } from "../components/ui/AppToast";
+
+const openEditProduct = (productId: string) => {
+  setTimeout(() => {
+    router.push(`/edit-product/${productId}` as never);
+  }, 80);
+};
 
 const STAT_CONFIGS = [
   { label: "Total Listings", key: "total", icon: "layers" as const, iconColor: "#4f46e5", bg: "bg-indigo-50 dark:bg-indigo-950/40", text: "text-indigo-600 dark:text-indigo-400" },
@@ -20,18 +28,46 @@ const STAT_CONFIGS = [
 ];
 
 export default function SellerDashboardScreen() {
-  const { user, loading } = useAuth();
+  const [ready, setReady] = useState(false);
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => {
+      setReady(true);
+    });
+    return () => task.cancel();
+  }, []);
+
+  useEffect(() => {
+    if (ready && !authLoading && !user) {
+      router.replace("/(auth)/login");
+    }
+  }, [ready, authLoading, user]);
+
+  if (!ready || authLoading || !user) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#020617" }}>
+        <ActivityIndicator size="large" color="#6366f1" />
+      </View>
+    );
+  }
+
+  return <SellerDashboardContent />;
+}
+
+function SellerDashboardContent() {
+  const { user } = useAuth();
 
   const { data: products = [], isLoading, refetch } = useQuery({
     queryKey: ["user-dashboard-products", user?.id],
     queryFn: () => getUserProducts(user!.id),
-    enabled: !!user?.id && user.role === "user",
+    enabled: !!user?.id && user?.role === "user",
   });
 
   const { data: analyticsData } = useQuery({
     queryKey: ["seller-analytics-summary"],
     queryFn: getSellerAnalyticsSummary,
-    enabled: !!user?.id && user.role === "user",
+    enabled: !!user?.id && user?.role === "user",
   });
 
   const metrics = useMemo(() => {
@@ -50,9 +86,7 @@ export default function SellerDashboardScreen() {
     );
   }, [products]);
 
-  if (loading) return <Screen><Loading /></Screen>;
-  if (!user) return <Redirect href="/(auth)/login" />;
-  if (user.role !== "user") {
+  if (user?.role !== "user") {
     return (
       <Screen>
         <View className="flex-1 items-center justify-center">
@@ -69,7 +103,7 @@ export default function SellerDashboardScreen() {
   );
 
   return (
-    <Screen className="bg-slate-50 dark:bg-slate-950">
+    <Screen safeAreaTop={false} className="bg-slate-50 dark:bg-slate-950">
       <ScrollView className="flex-1 px-5 pt-6 pb-12" showsVerticalScrollIndicator={false}>
         <View className="mb-6">
            <Text className="text-[28px] font-outfit-bl text-slate-900 dark:text-white leading-tight">Dashboard</Text>
@@ -182,6 +216,7 @@ function ProductRow({
     images?: ProductImage[];
   };
   const uri = getImageUri(p.images?.[0]);
+  const { showToast } = useToast();
 
   const markSold = () => {
     Alert.alert("Mark sold?", `Mark "${p.title}" as sold?`, [
@@ -190,8 +225,14 @@ function ProductRow({
         text: "Confirm",
         style: "destructive",
         onPress: async () => {
-          await patchProduct(p._id, { isSold: true, isActive: false });
-          onSold();
+          try {
+            await patchProduct(p._id, { isSold: true, isActive: false });
+            showToast("Listing marked as sold.");
+            onSold();
+          } catch (e: any) {
+            const parsed = parseApiError(e, "Failed to mark as sold.");
+            Alert.alert("Error", formatErrorForDisplay(parsed));
+          }
         },
       },
     ]);
@@ -199,7 +240,12 @@ function ProductRow({
 
   return (
     <View className="mb-3.5 flex-row rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-sm shadow-slate-200/50 dark:shadow-none">
-      <Pressable onPress={() => router.push(`/edit-product/${p._id}` as never)} className="flex-1 flex-row">
+      <Pressable
+        onPress={() => {
+          openEditProduct(p._id);
+        }}
+        className="flex-1 flex-row"
+      >
         <Image source={{ uri }} style={{ width: 72, height: 72, borderRadius: 16 }} />
         <View className="ml-4 flex-1 py-1 flex-col justify-between">
           <View>
@@ -222,7 +268,7 @@ function ProductRow({
           </View>
         ) : (
           <View className="bg-rose-50 dark:bg-rose-950/40 px-3 py-1.5 rounded-lg border border-rose-100 dark:border-rose-900/40">
-             <Text className="text-[12px] font-outfit-sb text-rose-500 uppercase tracking-widest">Inactive</Text>
+             <Text className="text-[12px] font-outfit-sb text-rose-500 dark:text-rose-400 uppercase tracking-widest">Inactive</Text>
           </View>
         )}
       </View>

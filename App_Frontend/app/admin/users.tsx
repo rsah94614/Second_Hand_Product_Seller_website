@@ -40,7 +40,7 @@ export default function AdminUsersScreen() {
   }
 
   return (
-    <Screen className="bg-slate-50 dark:bg-slate-950">
+    <Screen className="bg-slate-50 dark:bg-slate-950" safeAreaTop={false}>
       <View className="px-4 pt-3 pb-2">
         <View className="relative">
           <View className="absolute left-3.5 top-0 bottom-0 justify-center z-10">

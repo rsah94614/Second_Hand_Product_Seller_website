@@ -40,7 +40,7 @@ const canTradeOnCampus = (user) => {
     score,
     missing,
     isComplete: missing.length === 0,
-    canTrade: score >= MIN_PROFILE_SCORE_FOR_TRADING && missing.length === 0,
+    canTrade: score >= MIN_PROFILE_SCORE_FOR_TRADING,
   };
 };
 

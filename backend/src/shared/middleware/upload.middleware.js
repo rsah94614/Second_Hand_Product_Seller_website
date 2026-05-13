@@ -19,16 +19,19 @@ const storage = multer.diskStorage({
   },
 });
 
-const allowedTypes = ['.jpg', '.jpeg', '.png', '.webp'];
+// MIME type whitelist — must match imageValidation.utils.js ALLOWED_MIME_TYPES
+const allowedTypes = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 const fileFilter = (req, file, cb) => {
   const ext = path.extname(file.originalname).toLowerCase();
 
-  if (file.mimetype.startsWith('image/') && allowedTypes.includes(ext)) {
+  // Validate both MIME type and extension to prevent spoofing
+  if (allowedMimeTypes.includes(file.mimetype) && allowedTypes.includes(ext)) {
     return cb(null, true);
   }
 
-  return cb(new Error('Only valid image files are allowed'));
+  return cb(new Error('Only JPEG, PNG, WebP, and GIF image files are allowed'));
 };
 
 const upload = multer({

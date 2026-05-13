@@ -38,6 +38,9 @@ const sampleProduct = {
   createdAt: '2026-03-20T00:00:00.000Z',
   images: ['https://example.com/chair.jpg'],
   isSold: false,
+  seller: {
+    location: 'Kolkata',
+  },
 };
 
 const renderProductCard = (product = sampleProduct) => {

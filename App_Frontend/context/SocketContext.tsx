@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { AppState, type AppStateStatus } from "react-native";
 import { io, type Socket } from "socket.io-client";
 import { SOCKET_URL } from "../lib/config";
@@ -10,100 +10,95 @@ const SocketStatusContext = createContext<boolean>(false);
 
 export function SocketProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const userId = user?.id || null;
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const socketRef = useRef<Socket | null>(null);
+  const intentionalCloseRef = useRef(false);
 
-  // ── Core connect function (reused by initial mount + AppState resume) ────────
-  const connect = async () => {
-    if (!user) return;
-    // Don't create a duplicate if already connected
-    if (socketRef.current?.connected) return;
+  const closeSocket = useCallback(() => {
+    intentionalCloseRef.current = true;
+    socketRef.current?.removeAllListeners();
+    socketRef.current?.disconnect();
+    socketRef.current = null;
+    setSocket(null);
+    setIsConnected(false);
+  }, []);
+
+  const connect = useCallback(async () => {
+    if (!userId) return;
+
+    const existing = socketRef.current;
+    if (existing) {
+      if (!existing.connected) {
+        existing.connect();
+      }
+      return;
+    }
 
     const token = await storage.getAccessToken();
-    if (!token) return;
+    if (!token || !userId) return;
 
+    intentionalCloseRef.current = false;
     const active = io(SOCKET_URL, {
       auth: { token: `Bearer ${token}` },
-      transports: ["websocket"],
+      autoConnect: false,
+      transports: ["polling", "websocket"],
       reconnection: true,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
+      reconnectionDelayMax: 10000,
+      randomizationFactor: 0.5,
+      timeout: 20000,
     });
 
-    active.on("connect_error", () => setIsConnected(false));
-    active.on("connect", () => setIsConnected(true));
-    active.on("disconnect", () => setIsConnected(false));
+    active.on("connect", () => {
+      console.log("[Socket] Connected");
+      setIsConnected(true);
+    });
+
+    active.on("disconnect", (reason) => {
+      setIsConnected(false);
+      if (intentionalCloseRef.current || reason === "io client disconnect") return;
+
+      console.log("[Socket] Disconnected:", reason);
+      if (reason === "io server disconnect") {
+        active.connect();
+      }
+    });
+
+    active.on("connect_error", (error) => {
+      console.log("[Socket] Connection Error:", error.message);
+      setIsConnected(false);
+    });
 
     socketRef.current = active;
     setSocket(active);
-  };
+    active.connect();
+  }, [userId]);
 
-  // ── Build/teardown socket when user changes ──────────────────────────────────
   useEffect(() => {
-    if (!user) {
-      socketRef.current?.close();
-      socketRef.current = null;
-      setSocket(null);
-      setIsConnected(false);
+    if (!userId) {
+      closeSocket();
       return undefined;
     }
 
-    let cancelled = false;
-    (async () => {
-      const token = await storage.getAccessToken();
-      if (!token || cancelled) return;
+    connect();
+    return closeSocket;
+  }, [userId, connect, closeSocket]);
 
-      const active = io(SOCKET_URL, {
-        auth: { token: `Bearer ${token}` },
-        transports: ["websocket"],
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-      });
-
-      if (cancelled) {
-        active.close();
-        return;
-      }
-
-      active.on("connect_error", () => setIsConnected(false));
-      active.on("connect", () => setIsConnected(true));
-      active.on("disconnect", () => setIsConnected(false));
-      socketRef.current = active;
-      setSocket(active);
-    })();
-
-    return () => {
-      cancelled = true;
-      socketRef.current?.close();
-      socketRef.current = null;
-      setSocket(null);
-      setIsConnected(false);
-    };
-  }, [user]);
-
-  // ── Fix B5: Reconnect when app returns to foreground ────────────────────────
   useEffect(() => {
-    if (!user) return undefined;
+    if (!userId) return undefined;
 
     const handleAppState = (nextState: AppStateStatus) => {
-      if (nextState === "active") {
-        // Re-attach if the socket dropped while in background
-        if (!socketRef.current?.connected) {
-          connect();
-        }
-      } else if (nextState === "background" || nextState === "inactive") {
-        // Optionally disconnect to save battery; socket will reconnect on resume
-        // We leave it connected so real-time messages still come through briefly,
-        // but reconnect logic above handles the case where it silently dies.
+      if (nextState === "active" && !socketRef.current?.connected) {
+        connect();
       }
     };
 
     const sub = AppState.addEventListener("change", handleAppState);
     return () => sub.remove();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [userId, connect]);
 
   return (
     <SocketContext.Provider value={socket}>

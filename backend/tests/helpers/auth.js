@@ -9,6 +9,7 @@ const registerAndLogin = async (app, overrides = {}) => {
     password: 'Password123!',
     phone: `9${String(uniqueSeed).slice(-9).padStart(9, '0')}`,
     location: 'Library Gate',
+    avatar: 'https://example.com/avatar.png',
     profileRole: 'student',
     campus: {
       department: 'Computer Science',
@@ -37,7 +38,10 @@ const registerAndLogin = async (app, overrides = {}) => {
   }
 
   if (registerResponse.body?.user?.id) {
-    await User.findByIdAndUpdate(registerResponse.body.user.id, { phoneVerified: true });
+    await User.findByIdAndUpdate(registerResponse.body.user.id, {
+      phoneVerified: true,
+      avatar: payload.avatar || 'https://example.com/avatar.png',
+    });
   }
 
   return {

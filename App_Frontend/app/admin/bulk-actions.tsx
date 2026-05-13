@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Screen } from "../../components/ui/Screen";
 import { bulkSuspendUsers, bulkDeleteProducts } from "../../lib/api/admin";
 import { Ionicons } from "@expo/vector-icons";
@@ -47,8 +47,12 @@ export default function AdminBulkActionsScreen() {
     raw.split(/[\n,\s]+/).map((s) => s.trim()).filter(Boolean);
 
   return (
-    <Screen className="bg-slate-50 dark:bg-slate-950">
-      <ScrollView className="flex-1 px-4 pt-4 pb-10" showsVerticalScrollIndicator={false}>
+    <Screen className="bg-slate-50 dark:bg-slate-950" safeAreaTop={false} safeAreaBottom={false}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+      <ScrollView className="flex-1 px-4 pt-4 pb-10" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <Text className="text-[13px] font-outfit-m text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">Admin Tools</Text>
         <Text className="text-[24px] font-outfit-bl text-slate-900 dark:text-white mb-6">Bulk Actions</Text>
 
@@ -153,6 +157,7 @@ export default function AdminBulkActionsScreen() {
           </Pressable>
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </Screen>
   );
 }

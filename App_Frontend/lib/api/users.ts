@@ -1,4 +1,4 @@
-import { api } from "./client";
+import { api, uploadFormData } from "./client";
 
 export const updateUserProfile = (userId: string, payload: Record<string, unknown>) =>
   api.put(`/api/users/${userId}`, payload).then((r) => r.data);
@@ -7,7 +7,7 @@ export const getUserProfile = (userId: string) =>
   api.get(`/api/users/${userId}`).then((r) => r.data);
 
 export const uploadUserAvatar = (userId: string, payload: FormData) =>
-  api.post(`/api/users/${userId}/avatar`, payload).then((r) => r.data);
+  uploadFormData(`/api/users/${userId}/avatar`, payload);
 
 export const getWishlist = () => api.get(`/api/users/me/wishlist`).then((r) => r.data);
 

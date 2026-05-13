@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { ShieldCheck, Inbox, CheckCircle, Loader2, UserCog } from 'lucide-react';
+import { useMutation, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import { Badge } from '../../../components/ui/Badge';
@@ -34,16 +34,24 @@ const AdminModerationQueuePage = () => {
   const [filters, setFilters] = useState({ status: '', priority: '', itemType: '' });
   const [resolutionText, setResolutionText] = useState({});
 
-  const queryString = useMemo(() => {
+  const fetchItems = async ({ pageParam = null }) => {
     const p = new URLSearchParams();
     Object.entries(filters).forEach(([k, v]) => { if (v) p.set(k, v); });
-    return p.toString();
-  }, [filters]);
+    if (pageParam) p.set('cursor', pageParam);
+    p.set('limit', '20');
+    return getModerationQueue(p.toString());
+  };
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin-moderation-queue', queryString],
-    queryFn: () => getModerationQueue(queryString),
-    refetchInterval: 30000,
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['admin-moderation-queue', filters],
+    queryFn: fetchItems,
+    getNextPageParam: (lastPage) => lastPage.nextCursor || undefined,
   });
 
   const resolveMutation = useMutation({
@@ -64,8 +72,17 @@ const AdminModerationQueuePage = () => {
     onError: (e) => toast.error(e.response?.data?.message || 'Failed to assign'),
   });
 
-  const items = data?.items || [];
-  const stats = data?.stats || {};
+  const items = useMemo(() => {
+    const raw = data?.pages.flatMap((page) => page.items) || [];
+    const seen = new Set();
+    return raw.filter((item) => {
+      if (!item?._id || seen.has(item._id)) return false;
+      seen.add(item._id);
+      return true;
+    });
+  }, [data]);
+
+  const stats = data?.pages?.[0]?.stats || {};
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -149,87 +166,109 @@ const AdminModerationQueuePage = () => {
               <div key={i} className="h-40 rounded-2xl border border-gray-100 bg-white animate-pulse" />
             ))
           ) : items.length ? (
-            items.map((item) => (
-              <Card key={item._id} className="rounded-2xl border-gray-100 shadow-sm">
-                <CardHeader className="border-b border-gray-100 pb-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <Inbox className="w-5 h-5 text-indigo-600" />
-                      {item.itemType?.charAt(0).toUpperCase() + item.itemType?.slice(1)} — {String(item.itemId).slice(-8).toUpperCase()}
-                    </CardTitle>
-                    <div className="flex items-center gap-2">
-                      <Badge className={`${priorityTone[item.priority] || priorityTone.medium} border-transparent`}>
-                        {item.priority}
-                      </Badge>
-                      <Badge className={`${statusTone[item.status] || statusTone.pending} border-transparent`}>
-                        {item.status?.replace('_', ' ')}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-6 space-y-4">
-                  <div className="rounded-xl bg-gray-50 p-4">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Reason</p>
-                    <p className="text-gray-800">{item.reason}</p>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
-                    <span>Added: {new Date(item.createdAt).toLocaleDateString('en-IN')}</span>
-                    {item.assignedTo && (
-                      <span className="flex items-center gap-1">
-                        <UserCog className="w-3.5 h-3.5" />
-                        Assigned to: {item.assignedTo.name || item.assignedTo.email}
-                      </span>
-                    )}
-                  </div>
-
-                  {item.status !== 'resolved' && (
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      {!item.assignedTo && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => assignMutation.mutate(item._id)}
-                          disabled={assignMutation.isPending}
-                          className="gap-2"
-                        >
-                          <UserCog className="w-4 h-4" />
-                          Assign to Me
-                        </Button>
-                      )}
-                      <div className="flex flex-1 gap-2">
-                        <Input
-                          placeholder="Resolution notes..."
-                          value={resolutionText[item._id] || ''}
-                          onChange={(e) => setResolutionText((p) => ({ ...p, [item._id]: e.target.value }))}
-                          className="flex-1"
-                        />
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            const resolution = resolutionText[item._id]?.trim();
-                            if (!resolution) { toast.error('Enter a resolution note'); return; }
-                            resolveMutation.mutate({ itemId: item._id, resolution });
-                          }}
-                          disabled={resolveMutation.isPending}
-                          className="gap-2 shrink-0"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                          Resolve
-                        </Button>
+            <>
+              {items.map((item) => (
+                <Card key={item._id} className="rounded-2xl border-gray-100 shadow-sm">
+                  <CardHeader className="border-b border-gray-100 pb-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <Inbox className="w-5 h-5 text-indigo-600" />
+                        {item.itemType?.charAt(0).toUpperCase() + item.itemType?.slice(1)} — {String(item.itemId).slice(-8).toUpperCase()}
+                      </CardTitle>
+                      <div className="flex items-center gap-2">
+                        <Badge className={`${priorityTone[item.priority] || priorityTone.medium} border-transparent`}>
+                          {item.priority}
+                        </Badge>
+                        <Badge className={`${statusTone[item.status] || statusTone.pending} border-transparent`}>
+                          {item.status?.replace('_', ' ')}
+                        </Badge>
                       </div>
                     </div>
-                  )}
-
-                  {item.status === 'resolved' && item.resolution && (
-                    <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-4">
-                      <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-1">Resolution</p>
-                      <p className="text-emerald-800 text-sm">{item.resolution}</p>
+                  </CardHeader>
+                  <CardContent className="p-6 space-y-4">
+                    <div className="rounded-xl bg-gray-50 p-4">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Reason</p>
+                      <p className="text-gray-800">{item.reason}</p>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))
+
+                    <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
+                      <span>Added: {new Date(item.createdAt).toLocaleDateString('en-IN')}</span>
+                      {item.assignedTo && (
+                        <span className="flex items-center gap-1">
+                          <UserCog className="w-3.5 h-3.5" />
+                          Assigned to: {item.assignedTo.name || item.assignedTo.email}
+                        </span>
+                      )}
+                    </div>
+
+                    {item.status !== 'resolved' && (
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        {!item.assignedTo && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => assignMutation.mutate(item._id)}
+                            disabled={assignMutation.isPending}
+                            className="gap-2"
+                          >
+                            <UserCog className="w-4 h-4" />
+                            Assign to Me
+                          </Button>
+                        )}
+                        <div className="flex flex-1 gap-2">
+                          <Input
+                            placeholder="Resolution notes..."
+                            value={resolutionText[item._id] || ''}
+                            onChange={(e) => setResolutionText((p) => ({ ...p, [item._id]: e.target.value }))}
+                            className="flex-1"
+                          />
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              const resolution = resolutionText[item._id]?.trim();
+                              if (!resolution) { toast.error('Enter a resolution note'); return; }
+                              resolveMutation.mutate({ itemId: item._id, resolution });
+                            }}
+                            disabled={resolveMutation.isPending}
+                            className="gap-2 shrink-0"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                            Resolve
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {item.status === 'resolved' && item.resolution && (
+                      <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-4">
+                        <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-1">Resolution</p>
+                        <p className="text-emerald-800 text-sm">{item.resolution}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+
+              {hasNextPage && (
+                <div className="py-6 flex justify-center">
+                  <Button
+                    variant="outline"
+                    onClick={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                    className="min-w-[200px]"
+                  >
+                    {isFetchingNextPage ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      'Load More Items'
+                    )}
+                  </Button>
+                </div>
+              )}
+            </>
           ) : (
             <Card className="rounded-2xl border-gray-100 shadow-sm">
               <CardContent className="p-10 text-center text-gray-500">

@@ -1,9 +1,9 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useColorScheme } from "nativewind";
+import { useColorScheme } from "react-native";
 
 export default function TabLayout() {
-  const { colorScheme } = useColorScheme();
+  const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
   return (
@@ -35,6 +35,7 @@ export default function TabLayout() {
           fontFamily: "Outfit-Medium",
           fontSize: 11,
         },
+        tabBarHideOnKeyboard: true,
       }}
     >
       {/* 1 — Home */}
@@ -89,16 +90,7 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Orders — hidden from tab bar, accessible via /orders route */}
-      <Tabs.Screen
-        name="orders"
-        options={{
-          title: "My Orders",
-          headerShown: false,
-          href: null, // removes from tab bar
-          tabBarIcon: ({ color, size }) => <Ionicons name="receipt" size={size} color={color} />,
-        }}
-      />
+
     </Tabs>
   );
 }

@@ -106,7 +106,13 @@ const AdminUsersPage = () => {
   };
 
   const users = useMemo(() => {
-    return data?.pages.flatMap((page) => page.users) || [];
+    const raw = data?.pages.flatMap((page) => page.users) || [];
+    const seen = new Set();
+    return raw.filter((u) => {
+      if (!u?._id || seen.has(u._id)) return false;
+      seen.add(u._id);
+      return true;
+    });
   }, [data]);
 
   const handleRoleChange = (userId, role) => {

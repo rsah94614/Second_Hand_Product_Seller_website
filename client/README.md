@@ -3,7 +3,7 @@
 The primary desktop frontend for CampusMitra, built with modern web technologies and optimized for blazing-fast marketplace operations.
 
 ## Tech Stack
-- **React 18** (UI Library)
+- **React 19** (UI Library)
 - **Vite** (Bundler & Dev Server)
 - **@tanstack/react-query** (Caching, Synchronization, and State logic)
 - **TailwindCSS** (Rapid Utility Styling)
@@ -32,3 +32,9 @@ The primary desktop frontend for CampusMitra, built with modern web technologies
    ```bash
    npm run build
    ```
+
+## Session Behavior
+
+- The web client now uses both an access token and a refresh token, matching the mobile app's session model more closely.
+- Auth requests send `X-Client: web` so the backend can return refresh tokens for web session restoration.
+- Tokens are restored on app boot, and authenticated requests refresh automatically after a `401` when possible.

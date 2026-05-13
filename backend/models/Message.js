@@ -33,9 +33,24 @@ const messageSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
+  // Message Delivery Status (Phase 1)
+  delivered: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deliveredAt: {
+    type: Date,
+    default: null
+  },
   read: {
     type: Boolean,
-    default: false
+    default: false,
+    index: true
+  },
+  readAt: {
+    type: Date,
+    default: null
   },
   isDeleted: {
     type: Boolean,
@@ -61,6 +76,14 @@ const messageSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product',
     default: null,
+  },
+
+  // Idempotency key for deduplication on retry (Task 4)
+  idempotencyKey: {
+    type: String,
+    default: null,
+    index: true,
+    sparse: true,         // only index documents that have this field set
   },
 });
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Send, MessageSquare, ArrowLeft, Edit2, Trash2, Check, CheckCheck, X, Ban, ShieldAlert, Pin, PinOff, Search, Image } from 'lucide-react';
+import { Send, MessageSquare, ArrowLeft, Edit2, Trash2, Check, CheckCheck, X, Ban, ShieldAlert, Pin, PinOff, Search, Image, WifiOff } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { useSocket, useSocketStatus } from '../../../context/SocketContext';
 import { Button } from '../../../components/ui/Button';
@@ -10,6 +10,31 @@ import { Input } from '../../../components/ui/Input';
 import Header from '../../../components/Header';
 import { getConversationMessages, getConversations, reportChatUser, pinConversation, unpinConversation, searchMessages, uploadChatImage, markConversationAsRead } from '../api/chatApi';
 import { blockUser } from '../../users/api/userApi';
+
+// ── Offline message queue (localStorage-backed) ──────────────────────────────
+const OFFLINE_QUEUE_KEY = 'chat_offline_queue';
+
+const loadOfflineQueue = () => {
+  try {
+    return JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
+  } catch {
+    return [];
+  }
+};
+
+const saveOfflineQueue = (queue) => {
+  try {
+    localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+  } catch { /* storage full — ignore */ }
+};
+
+const generateIdempotencyKey = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for older environments
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
 
 const QUICK_TEMPLATES = [
   'Is this still available?',
@@ -92,6 +117,25 @@ function ChatPage() {
     }
   });
 
+  useEffect(() => {
+    if (!socket) return undefined;
+
+    const handleSocketError = (err) => {
+      if (err?.code === 'PROFILE_INCOMPLETE') {
+        toast.error(err.message || 'Complete your profile before starting a new chat.');
+        return;
+      }
+
+      toast.error(err?.message || 'Chat action failed');
+    };
+
+    socket.on('error', handleSocketError);
+
+    return () => {
+      socket.off('error', handleSocketError);
+    };
+  }, [socket]);
+
   const handleBlock = () => {
     if (!currentChat) return;
     if (window.confirm('Are you sure you want to block this user? You will no longer receive messages from them.')) {
@@ -146,7 +190,6 @@ function ChatPage() {
   // ───── fetch conversations (HTTP, called once + on demand) ─────
   const fetchConversations = useCallback(async () => {
     try {
-      if (!localStorage.getItem('token')) return;
       const response = await getConversations();
       setConversations(response);
     } catch (error) {
@@ -273,6 +316,33 @@ function ChatPage() {
     };
   }, [socket, currentChat, user, fetchConversations]);
 
+  // ───── drain offline queue on reconnect ─────
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    const queue = loadOfflineQueue();
+    if (queue.length === 0) return;
+
+    // Clear the queue immediately to avoid double-send on re-render
+    saveOfflineQueue([]);
+
+    queue.forEach((item) => {
+      const { optimisticId, queuedAt, ...messageData } = item;
+      socket.emit('send_message', messageData, (ack) => {
+        if (!ack?.success) {
+          // Re-queue on failure (e.g. server error)
+          const current = loadOfflineQueue();
+          current.push(item);
+          saveOfflineQueue(current);
+        }
+      });
+    });
+
+    if (queue.length > 0) {
+      toast.success(`Sent ${queue.length} queued message${queue.length > 1 ? 's' : ''}`);
+    }
+  }, [socket, isConnected]);
+
   // ───── presence query ─────
   useEffect(() => {
     if (socket && conversations.length > 0) {
@@ -285,7 +355,6 @@ function ChatPage() {
     const fetchMessages = async () => {
       if (!currentChat || !isConnected) return;
       try {
-        if (!localStorage.getItem('token')) return;
         const response = await getConversationMessages(currentChat._id);
         setMessages(response);
 
@@ -349,16 +418,36 @@ function ChatPage() {
       return;
     }
 
-    const messageData = { receiver: currentChat._id, content: newMessage.trim(), timestamp: new Date() };
-    const optimisticMessage = { ...messageData, sender: user.id, _id: `temp-${Date.now()}` };
+    const idempotencyKey = generateIdempotencyKey();
+    const messageData = {
+      receiver: currentChat._id,
+      content: newMessage.trim(),
+      timestamp: new Date(),
+      idempotencyKey,
+    };
+    const optimisticMessage = {
+      ...messageData,
+      sender: user.id,
+      _id: `temp-${idempotencyKey}`,
+    };
 
     setMessages((prev) => [...prev, optimisticMessage]);
     setNewMessage('');
 
-    if (socket) {
-      socket.emit('send_message', messageData);
+    if (socket && isConnected) {
+      socket.emit('send_message', messageData, (ack) => {
+        if (!ack?.success) {
+          // Server rejected — remove optimistic message
+          setMessages((prev) => prev.filter((m) => m._id !== optimisticMessage._id));
+          toast.error(ack?.error || 'Failed to send message');
+        }
+      });
     } else {
-      setMessages((prev) => prev.filter((m) => m._id !== optimisticMessage._id));
+      // Offline: queue the message for later delivery
+      const queue = loadOfflineQueue();
+      queue.push({ ...messageData, optimisticId: optimisticMessage._id, queuedAt: Date.now() });
+      saveOfflineQueue(queue);
+      toast('Message queued — will send when reconnected', { icon: '📤' });
     }
   };
 
@@ -414,6 +503,14 @@ function ChatPage() {
       <div className={`flex-none ${showMobileChat ? 'hidden md:block' : ''}`}>
         <Header />
       </div>
+
+      {/* Offline banner */}
+      {!isConnected && (
+        <div className="flex items-center justify-center gap-2 bg-amber-50 border-b border-amber-200 px-4 py-2 text-sm text-amber-800 font-medium flex-none">
+          <WifiOff className="w-4 h-4 shrink-0" />
+          <span>You are offline — messages will be sent when reconnected</span>
+        </div>
+      )}
 
       <div className="flex-1 container mx-auto md:p-4 overflow-hidden min-h-0">
         <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] lg:grid-cols-[320px_1fr] gap-0 h-full bg-white md:rounded-2xl md:shadow-xl overflow-hidden md:border border-gray-100">
@@ -616,9 +713,22 @@ function ChatPage() {
                                     {message.isEdited && <span>(edited)</span>}
                                     <span>{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                     {isMe && !isTemp && (
-                                      message.read
-                                        ? <CheckCheck className="w-3.5 h-3.5 text-blue-300" />
-                                        : <Check className="w-3 h-3 opacity-70" />
+                                      message.read ? (
+                                        <div className="flex items-center gap-0.5">
+                                          <CheckCheck className="w-3.5 h-3.5 text-blue-300" />
+                                          <span className="text-blue-300">Read</span>
+                                        </div>
+                                      ) : message.delivered ? (
+                                        <div className="flex items-center gap-0.5">
+                                          <CheckCheck className="w-3.5 h-3.5 opacity-70" />
+                                          <span className="opacity-70">Delivered</span>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-0.5">
+                                          <Check className="w-3 h-3 opacity-70" />
+                                          <span className="opacity-70">Sent</span>
+                                        </div>
+                                      )
                                     )}
                                   </div>
                                 </>

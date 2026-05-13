@@ -5,6 +5,12 @@ const { getConversationsAggregation, markMessagesAsRead } = require('./chat.serv
 const { createNotification } = require('../../shared/utils/notification.utils');
 const { v2: cloudinary } = require('cloudinary');
 const fs = require('fs');
+const {
+  validateImageFile,
+  validateCloudinaryResponse,
+  sanitizeImageCaption,
+  getSafeImageMetadata,
+} = require('../../shared/utils/imageValidation.utils');
 
 const getConversations = async (req, res) => {
   try {
@@ -62,8 +68,34 @@ const getMessages = async (req, res) => {
 
 const markRead = async (req, res) => {
   try {
-    await markMessagesAsRead(req.user._id, req.params.userId);
-    return res.json({ message: 'Messages marked as read' });
+    const result = await markMessagesAsRead(req.user._id, req.params.userId);
+    
+    // Emit socket event to notify the sender that messages have been read
+    const io = req.app.get('io');
+    if (io) {
+      // Get all messages that were marked as read to include in the event
+      const markedMessages = await Message.find({
+        sender: req.params.userId,
+        receiver: req.user._id,
+        read: true,
+      }).select('_id readAt').lean();
+
+      const messageIds = markedMessages.map(msg => msg._id);
+      const readAt = new Date();
+
+      // Emit to the sender (the person who sent the messages)
+      io.to(req.params.userId).emit('conversation_marked_read', {
+        readBy: req.user._id,
+        messageIds,
+        readAt,
+        conversationPartnerId: req.user._id,
+      });
+    }
+
+    return res.json({ 
+      message: 'Messages marked as read',
+      markedCount: result.modifiedCount 
+    });
   } catch (error) {
     console.error(error.message);
     return res.status(500).send('Server Error');
@@ -252,6 +284,26 @@ const unpinConversation = async (req, res) => {
 
 // ─── Image Sharing (Phase 3) ──────────────────────────────────────────────────
 
+/**
+ * Handle multer upload errors (file type / size violations) before they reach
+ * the generic error handler, so the client gets a clean JSON 400 response.
+ */
+const handleUploadChatImage = (req, res, next) => {
+  const upload = require('../../shared/middleware/upload.middleware');
+  upload.single('image')(req, res, (err) => {
+    if (err) {
+      // Multer errors: file type rejected or size exceeded
+      const status = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+      const message =
+        err.code === 'LIMIT_FILE_SIZE'
+          ? 'File exceeds maximum size of 5MB'
+          : err.message || 'Invalid file upload';
+      return res.status(status).json({ message });
+    }
+    return next();
+  });
+};
+
 const uploadChatImage = async (req, res) => {
   const tempPath = req.file?.path;
 
@@ -264,6 +316,12 @@ const uploadChatImage = async (req, res) => {
 
     if (!req.file) {
       return res.status(400).json({ message: 'Image file is required' });
+    }
+
+    // Issue 3 Fix: Validate image file before upload
+    const fileValidation = await validateImageFile(tempPath);
+    if (!fileValidation.valid) {
+      return res.status(400).json({ message: fileValidation.error });
     }
 
     // Validate receiver exists
@@ -285,10 +343,13 @@ const uploadChatImage = async (req, res) => {
       return res.status(403).json({ message: 'Cannot send messages to this user' });
     }
 
-    // Upload image to Cloudinary
+    // Issue 3 Fix: Upload image to Cloudinary with security transformations
     const result = await cloudinary.uploader.upload(req.file.path, {
       folder: 'campusmitra-chat',
       resource_type: 'image',
+      type: 'upload',
+      // Security: Validate file on Cloudinary side
+      eager_async: false,
       transformation: [
         { width: 1200, height: 1200, crop: 'limit' }, // Max dimensions
         { quality: 'auto:good' }, // Automatic quality optimization
@@ -296,18 +357,25 @@ const uploadChatImage = async (req, res) => {
       ],
     });
 
+    // Issue 3 Fix: Validate Cloudinary response
+    const cloudinaryValidation = validateCloudinaryResponse(result);
+    if (!cloudinaryValidation.valid) {
+      return res.status(400).json({ message: cloudinaryValidation.error });
+    }
+
+    // Issue 2 Fix: Sanitize image caption
+    const sanitizedCaption = sanitizeImageCaption(content);
+
+    // Issue 3 Fix: Get safe metadata
+    const imageMetadata = getSafeImageMetadata(result);
+
     // Create message with image
     const message = await Message.create({
       sender: req.user._id,
       receiver: receiverId,
-      content: content.trim() || '', // Optional caption
+      content: sanitizedCaption, // Optional caption
       image: result.secure_url,
-      imageMetadata: {
-        width: result.width,
-        height: result.height,
-        size: result.bytes,
-        format: result.format,
-      },
+      imageMetadata,
     });
 
     // Populate sender info
@@ -319,7 +387,7 @@ const uploadChatImage = async (req, res) => {
       actorId: req.user._id,
       type: 'new_message',
       title: 'New message',
-      message: `${req.user.name} sent you ${content.trim() ? 'an image with a message' : 'an image'}`,
+      message: `${req.user.name} sent you ${sanitizedCaption ? 'an image with a message' : 'an image'}`,
       link: `/chat/${req.user._id}`,
       metadata: {
         hasImage: true,
@@ -363,4 +431,5 @@ module.exports = {
   pinConversation,
   unpinConversation,
   uploadChatImage,
+  handleUploadChatImage,
 };

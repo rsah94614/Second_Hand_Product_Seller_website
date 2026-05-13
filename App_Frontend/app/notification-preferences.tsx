@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Redirect } from "expo-router";
+import { router } from "expo-router";
+import { useEffect } from "react";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { Screen } from "../components/ui/Screen";
 import { Loading } from "../components/Loading";
@@ -9,6 +10,8 @@ import {
   updateNotificationPreferences,
 } from "../lib/api/notifications";
 import { Ionicons } from "@expo/vector-icons";
+import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
+import { useToast } from "../components/ui/AppToast";
 
 type PrefKey =
   | "emailNotifications"
@@ -47,7 +50,8 @@ function Toggle({ value, onChange, disabled }: { value: boolean; onChange: (v: b
 }
 
 export default function NotificationPreferencesScreen() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { showToast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: prefs, isLoading } = useQuery({
@@ -60,15 +64,25 @@ export default function NotificationPreferencesScreen() {
     mutationFn: (payload: Record<string, boolean>) => updateNotificationPreferences(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notification-preferences"] });
+      showToast("Notification preferences saved.", { duration: 1800 });
     },
-    onError: () => Alert.alert("Error", "Failed to save preferences."),
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Failed to save preferences.");
+      Alert.alert("Error", formatErrorForDisplay(parsed));
+    },
   });
 
   const update = (key: PrefKey, value: boolean) => {
     mutation.mutate({ [key]: value });
   };
 
-  if (!user) return <Redirect href="/(auth)/login" />;
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace("/(auth)/login");
+    }
+  }, [authLoading, user]);
+
+  if (authLoading || !user) return <Screen safeAreaTop={false}><Loading /></Screen>;
 
   if (isLoading) {
     return <Screen safeAreaTop={false}><Loading /></Screen>;

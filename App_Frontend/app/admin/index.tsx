@@ -39,7 +39,7 @@ export default function AdminHomeScreen() {
   const metrics = (data as { metrics?: Record<string, number> } | undefined)?.metrics;
 
   return (
-    <Screen className="bg-slate-50 dark:bg-slate-950">
+    <Screen className="bg-slate-50 dark:bg-slate-950" safeAreaTop={false}>
       <ScrollView className="flex-1 px-4 pt-4 pb-10" showsVerticalScrollIndicator={false}>
         <Text className="text-[13px] font-outfit-m text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">Control Panel</Text>
         <Text className="text-[26px] font-outfit-bl text-slate-900 dark:text-white mb-5">Admin Dashboard</Text>

@@ -14,10 +14,13 @@ import {
   loginUser,
   registerUser,
   resetPasswordApi,
+  resendVerificationEmailApi,
+  verifyEmailApi,
 } from "../lib/api/auth";
 import { updateUserProfile } from "../lib/api/users";
 import * as storage from "../lib/auth-storage";
 import type { AuthUser } from "../lib/types";
+import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
 
 type AuthContextValue = {
   user: AuthUser | null;
@@ -30,18 +33,17 @@ type AuthContextValue = {
   refreshUser: () => Promise<void>;
   updateProfile: (payload: Record<string, unknown>) => Promise<void>;
   sendSignupOtp: (email: string) => Promise<{ success: boolean; message?: string; code?: string }>;
+  verifyEmail: (token: string) => Promise<{ success: boolean; message?: string }>;
+  resendVerificationEmail: () => Promise<{ success: boolean; message?: string }>;
   isUser: boolean;
   isAdmin: boolean;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const getApiErrorMessage = (error: unknown, fallback: string) => {
-  const response = (error as { response?: { data?: { message?: string; errors?: string[] } } })?.response?.data;
-  if (Array.isArray(response?.errors) && response.errors.length > 0) {
-    return response.errors.join("\n");
-  }
-  return response?.message || fallback;
+const getApiErrorMessage = (error: any, fallback: string) => {
+  const parsed = parseApiError(error, fallback);
+  return formatErrorForDisplay(parsed);
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -64,30 +66,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    let mounted = true;
     (async () => {
-      const token = await storage.getAccessToken();
-      const refreshToken = await storage.getRefreshToken();
+      try {
+        const token = await storage.getAccessToken();
+        const refreshToken = await storage.getRefreshToken();
 
-      if (token) {
-        await fetchUser();
-      } else if (refreshToken) {
-        try {
-          const { data } = await axios.post<{ token: string }>(
-            `${API_BASE_URL}/api/auth/refresh`,
-            { refreshToken },
-            { headers: { "Content-Type": "application/json" } }
-          );
-          await storage.setAccessToken(data.token);
+        if (token) {
           await fetchUser();
-        } catch {
-          await storage.clearTokens();
-          setUser(null);
-          setLoading(false);
+        } else if (refreshToken) {
+          try {
+            const { data } = await axios.post<{ token: string }>(
+              `${API_BASE_URL}/api/auth/refresh`,
+              { refreshToken },
+              { headers: { "Content-Type": "application/json" } }
+            );
+            await storage.setAccessToken(data.token);
+            await fetchUser();
+          } catch {
+            await storage.clearTokens();
+            if (mounted) setUser(null);
+          }
         }
-      } else {
-        setLoading(false);
+      } catch (err) {
+        console.error("[Auth] Init failed", err);
+      } finally {
+        if (mounted) setLoading(false);
       }
     })();
+    return () => { mounted = false; };
   }, [fetchUser]);
 
   const login = useCallback(async (email: string, password: string) => {
@@ -165,6 +172,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const verifyEmail = useCallback(async (token: string) => {
+    try {
+      const res = await verifyEmailApi(token);
+      await fetchUser();
+      return { success: true, message: res.message };
+    } catch (e: unknown) {
+      const msg = getApiErrorMessage(e, "Failed to verify email.");
+      return { success: false, message: msg };
+    }
+  }, [fetchUser]);
+
+  const resendVerificationEmail = useCallback(async () => {
+    try {
+      const res = await resendVerificationEmailApi();
+      return { success: true, message: res.message };
+    } catch (e: unknown) {
+      const msg = getApiErrorMessage(e, "Failed to resend verification email.");
+      return { success: false, message: msg };
+    }
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -177,6 +205,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshUser: fetchUser,
       updateProfile,
       sendSignupOtp,
+      verifyEmail,
+      resendVerificationEmail,
       isUser: user?.role === "user",
       isAdmin: user?.role === "admin",
     }),
@@ -191,6 +221,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       fetchUser,
       updateProfile,
       sendSignupOtp,
+      verifyEmail,
+      resendVerificationEmail,
     ]
   );
 

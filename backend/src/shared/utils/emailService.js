@@ -1,10 +1,46 @@
 const nodemailer = require('nodemailer');
 
+const parseBoolean = (value, fallback) => {
+  if (value === undefined || value === null || value === '') return fallback;
+  return String(value).toLowerCase() === 'true';
+};
+
+const parseNumber = (value, fallback) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const getEmailConfig = () => {
+  const provider = (process.env.EMAIL_PROVIDER || 'smtp').trim().toLowerCase();
+  const host = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
+  const port = parseNumber(process.env.SMTP_PORT, 587);
+  const secure = parseBoolean(process.env.SMTP_SECURE, port === 465);
+  const user = (process.env.EMAIL_USER || '').trim();
+  const rawPass = (process.env.EMAIL_PASS || '').trim();
+  const pass = host.toLowerCase().includes('gmail.com') ? rawPass.replace(/\s+/g, '') : rawPass;
+  const fromEmail = (process.env.EMAIL_FROM || user).trim();
+  const fromName = (process.env.EMAIL_FROM_NAME || 'CampusMitra').trim();
+
+  return {
+    provider,
+    host,
+    port,
+    secure,
+    user,
+    pass,
+    fromEmail,
+    fromName,
+    brevoApiKey: (process.env.BREVO_API_KEY || '').trim(),
+  };
+};
+
 /**
  * Create email transporter with proper configuration
  */
 const createTransporter = () => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+  const config = getEmailConfig();
+
+  if (!config.user || !config.pass) {
     if (process.env.NODE_ENV === 'production') {
       throw new Error('SMTP credentials are missing');
     }
@@ -12,11 +48,21 @@ const createTransporter = () => {
   }
 
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    requireTLS: !config.secure,
+    pool: true, // Use connection pooling
+    maxConnections: 5,
+    maxMessages: 100,
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+      user: config.user,
+      pass: config.pass,
     },
+    // Increased timeouts to prevent blocking the event loop for too long
+    connectionTimeout: parseNumber(process.env.SMTP_CONNECTION_TIMEOUT_MS, 10000),
+    greetingTimeout: parseNumber(process.env.SMTP_GREETING_TIMEOUT_MS, 10000),
+    socketTimeout: parseNumber(process.env.SMTP_SOCKET_TIMEOUT_MS, 10000),
   });
 };
 
@@ -38,33 +84,91 @@ const emailTemplate = (title, content) => `
   </div>
 `;
 
+const sendEmailWithBrevo = async (to, subject, html, config) => {
+  if (!config.brevoApiKey) {
+    throw new Error('BREVO_API_KEY is missing');
+  }
+
+  if (!config.fromEmail) {
+    throw new Error('EMAIL_FROM is required for Brevo email delivery');
+  }
+
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+      'api-key': config.brevoApiKey,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      sender: {
+        name: config.fromName,
+        email: config.fromEmail,
+      },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+    }),
+  });
+
+  if (!response.ok) {
+    let details = '';
+    try {
+      const data = await response.json();
+      details = data?.message || JSON.stringify(data);
+    } catch {
+      details = await response.text().catch(() => '');
+    }
+    throw new Error(`Brevo API failed with ${response.status}${details ? `: ${details}` : ''}`);
+  }
+};
+
 /**
  * Send email with fallback to console in development
  */
 const sendEmail = async (to, subject, html) => {
+  const config = getEmailConfig();
+
+  if (config.provider === 'brevo') {
+    try {
+      const start = Date.now();
+      await sendEmailWithBrevo(to, subject, html, config);
+      console.log(`[Email Service] Success: Brevo email sent to ${to} in ${Date.now() - start}ms`);
+      return;
+    } catch (error) {
+      console.error(`[Email Service] ERROR sending Brevo email to ${to}:`, error.message);
+      throw new Error(`Email dispatch failed: ${error.message}`);
+    }
+  }
+
   const transporter = createTransporter();
   
   if (!transporter) {
-    console.warn('[DEV WARNING] EMAIL_USER or EMAIL_PASS not found in .env variables.');
+    console.warn('[Email Service] Skipping send: EMAIL_USER or EMAIL_PASS not found in environment.');
     console.warn(`[DEV ONLY] Email to ${to}:`);
     console.warn(`Subject: ${subject}`);
-    console.warn(`Content: ${html.substring(0, 200)}...`);
     return;
   }
 
   const mailOptions = {
-    from: `"CampusMitra" <${process.env.EMAIL_USER}>`,
+    from: `"${config.fromName}" <${config.fromEmail}>`,
     to,
     subject,
     html,
   };
 
   try {
+    const start = Date.now();
     await transporter.sendMail(mailOptions);
-    console.log(`Email successfully sent to ${to}: ${subject}`);
+    console.log(`[Email Service] Success: Email sent to ${to} in ${Date.now() - start}ms`);
   } catch (error) {
-    console.error(`Failed to send email to ${to}:`, error);
-    throw new Error('Failed to send email');
+    console.error(`[Email Service] ERROR sending to ${to}:`, {
+      message: error.message,
+      code: error.code,
+      responseCode: error.responseCode,
+      command: error.command,
+    });
+    throw new Error(`Email dispatch failed: ${error.message}`);
   }
 };
 
@@ -212,6 +316,28 @@ const sendLockoutEmail = async (toEmail, unlockTime) => {
   );
 };
 
+const verifyTransporter = async () => {
+  try {
+    const config = getEmailConfig();
+    if (config.provider === 'brevo') {
+      if (!config.brevoApiKey || !config.fromEmail) {
+        console.error('[Email Service] Brevo email configuration is incomplete');
+        return;
+      }
+      console.log('[Email Service] Brevo email provider configured');
+      return;
+    }
+
+    const transporter = createTransporter();
+    if (!transporter) return;
+
+    await transporter.verify();
+    console.log('[Email Service] SMTP connection established successfully');
+  } catch (error) {
+    console.error('[Email Service] SMTP connection verification failed:', error.message);
+  }
+};
+
 module.exports = {
   sendEmail,
   sendResetEmail,
@@ -220,4 +346,5 @@ module.exports = {
   sendNotificationEmail,
   sendLockoutEmail,
   sendSignupOtpEmail,
+  verifyTransporter,
 };

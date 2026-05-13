@@ -1,6 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../config/api';
 import {
   getCurrentUser,
   loginUser,
@@ -11,6 +9,10 @@ import {
   verifyEmailApi,
   resendVerificationEmailApi,
 } from '../features/auth/api/authApi';
+import { updateUserProfile } from '../features/users/api/userApi';
+import { authApi, api } from '../lib/api/client';
+import * as storage from '../lib/auth-storage';
+import { parseApiError, formatErrorForDisplay } from '../lib/errorHandler';
 
 const AuthContext = createContext();
 
@@ -27,13 +29,30 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchUser();
-    } else {
+    (async () => {
+      const token = await storage.getAccessToken();
+      const refreshToken = await storage.getRefreshToken();
+
+      if (token) {
+        await fetchUser();
+        return;
+      }
+
+      if (refreshToken) {
+        try {
+          const { data } = await authApi.post('/api/auth/refresh', { refreshToken });
+          await storage.setTokens(data.token, data.refreshToken || refreshToken);
+          await fetchUser();
+        } catch {
+          await storage.clearTokens();
+          setUser(null);
+          setLoading(false);
+        }
+        return;
+      }
+
       setLoading(false);
-    }
+    })();
   }, []);
 
   const fetchUser = async () => {
@@ -41,8 +60,8 @@ export const AuthProvider = ({ children }) => {
       const response = await getCurrentUser();
       setUser(response.user);
     } catch {
-      localStorage.removeItem('token');
-      delete axios.defaults.headers.common['Authorization'];
+      await storage.clearTokens();
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -51,17 +70,16 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const response = await loginUser(email, password);
-      const { token, user } = response;
+      const { token, refreshToken, user } = response;
 
-      localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      await storage.setTokens(token, refreshToken || '');
       setUser(user);
 
       return { success: true };
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Login failed'
+        message: formatErrorForDisplay(parseApiError(error, 'Login failed')),
       };
     }
   };
@@ -70,30 +88,28 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const response = await registerUser(userData);
-      const { token, user } = response;
+      const { token, refreshToken, user } = response;
 
-      localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      await storage.setTokens(token, refreshToken || '');
       setUser(user);
 
       return { success: true };
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Registration failed'
+        message: formatErrorForDisplay(parseApiError(error, 'Registration failed')),
       };
     }
   };
 
   const logout = async () => {
+    const refreshToken = await storage.getRefreshToken();
     try {
-      // Call backend to invalidate token(s)
-      await axios.post(`${API_BASE_URL}/api/auth/logout`);
+      await api.post('/api/auth/logout', refreshToken ? { refreshToken } : {});
     } catch {
       // Ignore network or backend errors on logout; still clean up locally
     }
-    localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
+    await storage.clearTokens();
     setUser(null);
   };
 
@@ -102,7 +118,7 @@ export const AuthProvider = ({ children }) => {
       const response = await forgotPasswordApi(email);
       return { success: true, message: response.message };
     } catch (error) {
-      return { success: false, message: error.response?.data?.message || 'Failed to send reset link.' };
+      return { success: false, message: formatErrorForDisplay(parseApiError(error, 'Failed to send reset link.')) };
     }
   };
 
@@ -111,7 +127,7 @@ export const AuthProvider = ({ children }) => {
       const response = await resetPasswordApi(token, newPassword);
       return { success: true, message: response.message };
     } catch (error) {
-      return { success: false, message: error.response?.data?.message || 'Failed to reset password.' };
+      return { success: false, message: formatErrorForDisplay(parseApiError(error, 'Failed to reset password.')) };
     }
   };
 
@@ -122,7 +138,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to send verification code',
+        message: formatErrorForDisplay(parseApiError(error, 'Failed to send verification code')),
       };
     }
   };
@@ -135,7 +151,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to verify email.',
+        message: formatErrorForDisplay(parseApiError(error, 'Failed to verify email.')),
       };
     }
   };
@@ -147,9 +163,15 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to resend verification email.',
+        message: formatErrorForDisplay(parseApiError(error, 'Failed to resend verification email.')),
       };
     }
+  };
+
+  const updateProfile = async (payload) => {
+    if (!user?.id) return;
+    await updateUserProfile(user.id, payload);
+    await fetchUser();
   };
 
   const value = {
@@ -162,6 +184,7 @@ export const AuthProvider = ({ children }) => {
     resetPassword,
     verifyEmail,
     resendVerificationEmail,
+    updateProfile,
     loading,
     refreshUser: fetchUser,
     isUser: user?.role === 'user',

@@ -1,14 +1,17 @@
 import { Link, useLocalSearchParams, router } from "expo-router";
 import { useState } from "react";
-import { ScrollView, Text, View, Pressable } from "react-native";
+import { Platform, ScrollView, Text, View, Pressable } from "react-native";
 import { Screen } from "../../components/ui/Screen";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
+import { KeyboardShiftView } from "../../components/ui/KeyboardShiftView";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../components/ui/AppToast";
 
 export default function ResetPasswordScreen() {
   const { token: tokenParam } = useLocalSearchParams<{ token?: string }>();
   const { resetPassword } = useAuth();
+  const { showToast } = useToast();
   const [token, setToken] = useState(typeof tokenParam === "string" ? tokenParam : "");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -25,6 +28,7 @@ export default function ResetPasswordScreen() {
     if (res.success) {
       setIsError(false);
       setMessage(res.message || "Password updated successfully.");
+      showToast(res.message || "Password updated successfully.");
       setTimeout(() => router.replace("/login"), 1500);
     } else {
       setIsError(true);
@@ -34,7 +38,14 @@ export default function ResetPasswordScreen() {
 
   return (
     <Screen>
-      <ScrollView className="flex-1 px-6 pt-12" keyboardShouldPersistTaps="handled">
+      <KeyboardShiftView>
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingTop: 48, paddingBottom: 160 }}
+          keyboardDismissMode={Platform.OS === "ios" ? "on-drag" : "none"}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
         <View className="mb-10">
            <View className="h-16 w-16 bg-primary-100 dark:bg-primary-900/40 rounded-3xl items-center justify-center mb-6">
               <Text className="text-3xl">🔒</Text>
@@ -79,7 +90,8 @@ export default function ResetPasswordScreen() {
              </Pressable>
            </Link>
         </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardShiftView>
     </Screen>
   );
 }

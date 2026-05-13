@@ -62,6 +62,58 @@ const otpDebugPayload = (code) => {
   return {};
 };
 
+const getRefreshCookieOptions = () => {
+  const sameSite = (process.env.COOKIE_SAME_SITE || (process.env.NODE_ENV === 'production' ? 'lax' : 'strict')).toLowerCase();
+  const secure = process.env.COOKIE_SECURE
+    ? process.env.COOKIE_SECURE === 'true'
+    : sameSite === 'none' || process.env.NODE_ENV === 'production';
+
+  return {
+    httpOnly: true,
+    secure,
+    sameSite,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  };
+};
+
+const getRefreshCookieClearOptions = () => {
+  const cookieOptions = getRefreshCookieOptions();
+  delete cookieOptions.maxAge;
+  return cookieOptions;
+};
+
+const getRefreshFromRequest = (req) => {
+  if (req.cookies?.refreshToken) return req.cookies.refreshToken;
+  if (req.body?.refreshToken) return req.body.refreshToken;
+  const auth = req.header('Authorization')?.replace(/^Bearer\s+/i, '');
+  return auth || null;
+};
+
+const shouldReturnRefreshToken = (req) => {
+  const client = String(req.get('X-Client') || '').toLowerCase();
+  return client === 'mobile' || client === 'web';
+};
+
+const issueSession = async (req, res, user, message) => {
+  const accessToken = signAccessToken(user._id);
+  const refreshToken = signRefreshToken(user._id);
+
+  if (!user.refreshTokens) user.refreshTokens = [];
+  user.refreshTokens.push(refreshToken);
+  await user.save();
+
+  res.cookie('refreshToken', refreshToken, getRefreshCookieOptions());
+
+  const body = {
+    message,
+    token: accessToken,
+    user: buildAuthUser(user),
+  };
+
+  if (shouldReturnRefreshToken(req)) body.refreshToken = refreshToken;
+  return body;
+};
+
 module.exports = {
   COLLEGE_DOMAINS,
   detectCollegeDomain,
@@ -71,4 +123,9 @@ module.exports = {
   hashOtpCode,
   generateOtpCode,
   otpDebugPayload,
+  getRefreshCookieOptions,
+  getRefreshCookieClearOptions,
+  getRefreshFromRequest,
+  shouldReturnRefreshToken,
+  issueSession,
 };

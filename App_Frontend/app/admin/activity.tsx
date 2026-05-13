@@ -61,7 +61,7 @@ export default function AdminActivityScreen() {
   }
 
   return (
-    <Screen className="bg-slate-50 dark:bg-slate-950">
+    <Screen className="bg-slate-50 dark:bg-slate-950" safeAreaTop={false}>
       <FlatList
         data={activities}
         keyExtractor={(a) => a._id}

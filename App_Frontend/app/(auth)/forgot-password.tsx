@@ -1,13 +1,16 @@
 import { useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { Link } from "expo-router";
 import { Screen } from "../../components/ui/Screen";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
+import { KeyboardShiftView } from "../../components/ui/KeyboardShiftView";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../components/ui/AppToast";
 
 export default function ForgotPasswordScreen() {
   const { forgotPassword } = useAuth();
+  const { showToast } = useToast();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -22,6 +25,7 @@ export default function ForgotPasswordScreen() {
     if (res.success) {
       setIsError(false);
       setMessage(res.message || "Reset link sent. Check your email.");
+      showToast(res.message || "Reset link sent. Check your email.");
     } else {
       setIsError(true);
       setMessage(res.message || "Could not send reset email.");
@@ -30,7 +34,14 @@ export default function ForgotPasswordScreen() {
 
   return (
     <Screen>
-      <ScrollView className="flex-1 px-6 pt-12" keyboardShouldPersistTaps="handled">
+      <KeyboardShiftView>
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingTop: 48, paddingBottom: 160 }}
+          keyboardDismissMode={Platform.OS === "ios" ? "on-drag" : "none"}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
         <View className="mb-10">
           <View className="h-16 w-16 bg-primary-100 dark:bg-primary-900/40 rounded-3xl items-center justify-center mb-6">
             <Text className="text-3xl">🔑</Text>
@@ -69,7 +80,8 @@ export default function ForgotPasswordScreen() {
             </Pressable>
           </Link>
         </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardShiftView>
     </Screen>
   );
 }

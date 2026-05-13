@@ -1,4 +1,4 @@
-import { api } from "./client";
+import { api, uploadFormData } from "./client";
 
 export const getOrders = () => api.get(`/api/orders`).then((r) => r.data);
 
@@ -39,8 +39,16 @@ export const reportNoShow = (orderId: string, payload: NoShowPayload) =>
 
 // ── Phase 2: Confirmation Photo ───────────────────────────────────────────────
 export const uploadConfirmationPhoto = (orderId: string, formData: FormData) =>
-  api.post(`/api/orders/${orderId}/confirmation-photo`, formData).then((r) => r.data);
+  uploadFormData(`/api/orders/${orderId}/confirmation-photo`, formData);
 
 // ── Phase 2: Disputes ─────────────────────────────────────────────────────────
 export const createDispute = (orderId: string, formData: FormData) =>
-  api.post(`/api/orders/${orderId}/dispute`, formData).then((r) => r.data);
+  uploadFormData(`/api/orders/${orderId}/dispute`, formData);
+
+// ── Two-Party Confirmation ─────────────────────────────────────────────────────
+export const markOrderDelivered = (orderId: string) =>
+  api.patch(`/api/orders/${orderId}/deliver`).then((r) => r.data);
+
+// ── Admin: Auto-Complete ───────────────────────────────────────────────────────
+export const autoCompleteOrders = () =>
+  api.post(`/api/orders/admin/auto-complete`).then((r) => r.data);

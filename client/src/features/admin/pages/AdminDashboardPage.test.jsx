@@ -84,11 +84,11 @@ describe('AdminDashboardPage', () => {
 
     renderPage();
 
-    expect(screen.getByText('Platform Overview')).toBeInTheDocument();
+    expect(screen.getByText('Performance Ranking')).toBeInTheDocument();
     expect(screen.getByText('Manage Users')).toBeInTheDocument();
     expect(screen.getByText('Monitor Orders')).toBeInTheDocument();
     expect(screen.getByText('Popular Listing')).toBeInTheDocument();
-    expect(screen.getByText('Electronics')).toBeInTheDocument();
+    expect(screen.getAllByText('Electronics').length).toBeGreaterThan(0);
     expect(screen.getByText('12')).toBeInTheDocument();
   });
 
@@ -106,6 +106,6 @@ describe('AdminDashboardPage', () => {
 
     renderPage();
 
-    expect(screen.getByText('No product data yet.')).toBeInTheDocument();
+    expect(screen.getByText('Awaiting Market Metrics')).toBeInTheDocument();
   });
 });

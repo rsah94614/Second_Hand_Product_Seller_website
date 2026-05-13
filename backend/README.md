@@ -36,11 +36,35 @@ CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
 CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 CLIENT_URL=http://localhost:5173
+EMAIL_PROVIDER=smtp
 EMAIL_USER=your-email@example.com
-EMAIL_PASS=your-email-app-password
+EMAIL_FROM=your-email@example.com
+EMAIL_FROM_NAME=CampusMitra
+EMAIL_PASS=your-email-app-password-without-spaces
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+# Recommended on Render free because outbound SMTP ports can time out.
+# EMAIL_PROVIDER=brevo
+# BREVO_API_KEY=your-brevo-api-key
 COOKIE_SAME_SITE=strict
 COOKIE_SECURE=false
 ADMIN_EMAIL=admin@example.com
+```
+
+For Gmail, create an app password from your Google account and save it without
+spaces in your deployment environment variables. The backend also strips
+accidental spaces for Gmail SMTP passwords, which helps when copying the app
+password into hosts such as Render.
+
+Render free services can time out on outbound SMTP ports. For Render free,
+use Brevo's HTTPS API instead of Gmail SMTP:
+
+```env
+EMAIL_PROVIDER=brevo
+BREVO_API_KEY=your-brevo-api-key
+EMAIL_FROM=your-verified-brevo-sender@example.com
+EMAIL_FROM_NAME=CampusMitra
 ```
 
 ## Installation & Deployment
