@@ -1,4 +1,4 @@
-import { useGlobalSearchParams, Redirect } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -11,11 +11,11 @@ import {
   View,
   InteractionManager,
   Platform,
+  Appearance,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Screen } from "../../components/ui/Screen";
 import { KeyboardShiftView } from "../../components/ui/KeyboardShiftView";
-import { useColorScheme } from "nativewind";
 import { useAuth } from "../../context/AuthContext";
 import { useChatThread, getId } from "../../lib/hooks/useChatThread";
 import { ChatHeader } from "../../components/chat/ChatHeader";
@@ -33,6 +33,7 @@ const QUICK_TEMPLATES = [
 export default function ChatThreadScreen() {
   const [ready, setReady] = useState(false);
   const { user, loading: authLoading } = useAuth();
+  const params = useLocalSearchParams<{ userId: string; name?: string; pinned?: string }>();
 
   useEffect(() => {
     const task = InteractionManager.runAfterInteractions(() => {
@@ -41,9 +42,11 @@ export default function ChatThreadScreen() {
     return () => task.cancel();
   }, []);
 
-  if (ready && !authLoading && !user) {
-    return <Redirect href="/(auth)/login" />;
-  }
+  useEffect(() => {
+    if (ready && !authLoading && !user) {
+      router.replace("/(auth)/login");
+    }
+  }, [ready, authLoading, user]);
 
   if (!ready || authLoading || !user) {
     return (
@@ -55,14 +58,18 @@ export default function ChatThreadScreen() {
     );
   }
 
-  return <ChatThreadContent />;
+  // Pass all context-sensitive data as props to keep the content stable
+  return (
+    <ChatThreadContent 
+      params={params} 
+      user={user} 
+      isDark={Appearance.getColorScheme() === "dark"} 
+    />
+  );
 }
 
-function ChatThreadContent() {
-  const { userId: partnerId, name: partnerNameFromQuery, pinned } = useGlobalSearchParams<{ userId: string; name?: string; pinned?: string }>();
-  const { user } = useAuth();
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
+function ChatThreadContent({ params, user, isDark }: { params: any; user: any; isDark: boolean }) {
+  const { userId: partnerId, name: partnerNameFromQuery, pinned } = params;
 
   const {
     messages,
@@ -83,7 +90,6 @@ function ChatThreadContent() {
     isConnected,
   } = useChatThread(partnerId);
 
-  const [text, setText] = useState("");
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState("spam");
   const [reportDetails, setReportDetails] = useState("");
@@ -103,7 +109,6 @@ function ChatThreadContent() {
         text: "Edit",
         onPress: () => {
           setEditingMessageId(message._id);
-          setText(message.content || "");
         },
       },
       {
@@ -226,17 +231,15 @@ function ChatThreadContent() {
           )}
 
           <ChatInputArea
-            text={text}
-            setText={setText}
+            initialText={editingMessageId ? (messages.find(m => m._id === editingMessageId)?.content || "") : ""}
             onSend={sendMessage}
             onSendImage={sendImage}
             onTyping={emitTyping}
             editingMessageId={editingMessageId}
             onCancelEdit={() => {
               setEditingMessageId(null);
-              setText("");
             }}
-            sendingImage={false} // Will add state to hook if needed
+            sendingImage={false}
             isConnected={isConnected}
           />
         </KeyboardShiftView>

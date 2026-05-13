@@ -1,10 +1,11 @@
 import "../global.css";
-import { Platform } from "react-native";
+import { Appearance, Platform } from "react-native";
 import { Stack } from "expo-router";
 import { useMemo, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as SplashScreen from "expo-splash-screen";
 import * as SystemUI from "expo-system-ui";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import {
   configureReanimatedLogger,
   ReanimatedLogLevel,
@@ -22,7 +23,6 @@ import { AuthProvider } from "../context/AuthContext";
 import { SocketProvider } from "../context/SocketContext";
 import { ToastProvider } from "../components/ui/AppToast";
 
-import { useColorScheme } from "nativewind";
 import { ThemeProvider, DefaultTheme, DarkTheme } from "@react-navigation/native";
 
 SplashScreen.preventAutoHideAsync();
@@ -46,7 +46,7 @@ export default function RootLayout() {
     []
   );
 
-  const { colorScheme } = useColorScheme();
+  const colorScheme = Appearance.getColorScheme();
   const isDark = colorScheme === "dark";
 
   const [fontsLoaded, fontError] = useFonts({
@@ -57,8 +57,6 @@ export default function RootLayout() {
     "Outfit-Black": Outfit_900Black,
   });
 
-  // Fix D1: Sync the OS-level root background to prevent white flash on
-  // dark mode launch and during screen transitions.
   useEffect(() => {
     SystemUI.setBackgroundColorAsync(isDark ? "#020617" : "#f8fafc");
   }, [isDark]);
@@ -81,48 +79,47 @@ export default function RootLayout() {
   const sharedTintColor = isDark ? "#ffffff" : "#1e293b";
 
   return (
-    <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <SocketProvider>
-            <ToastProvider>
-              <Stack
-                screenOptions={{
-                  headerTitleStyle: { fontFamily: "Outfit-SemiBold", fontSize: 17 },
-                  headerTintColor: sharedTintColor,
-                  headerStyle: sharedHeaderStyle,
-                  headerShadowVisible: false,
-                  contentStyle: {
-                    backgroundColor: isDark ? "#020617" : "#f8fafc",
-                  },
-                  animation: stackAnimation,
-                  gestureEnabled: true,
-                }}
-              >
-                <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: "none" }} />
-                <Stack.Screen name="(auth)" options={{ headerShown: false, animation: stackAnimation }} />
-                <Stack.Screen name="admin" options={{ headerShown: false, animation: stackAnimation }} />
-                <Stack.Screen
-                  name="notification-preferences"
-                  options={{ title: "Notification Preferences" }}
-                />
-                <Stack.Screen name="devices" options={{ title: "Active Devices" }} />
-                <Stack.Screen name="notifications" options={{ title: "Notifications" }} />
-                <Stack.Screen name="my-products" options={{ title: "My Listings" }} />
-                <Stack.Screen name="create-product" options={{ title: "Create Listing" }} />
-                <Stack.Screen name="dashboard" options={{ title: "Dashboard" }} />
-                <Stack.Screen name="wishlist" options={{ title: "Wishlist" }} />
-                <Stack.Screen name="edit-product/[id]" options={{ title: "Edit Listing", animation: "none" }} />
-                <Stack.Screen name="product/[id]" options={{ title: "Product Details" }} />
-                <Stack.Screen name="order/[id]" options={{ title: "Place Order" }} />
-                <Stack.Screen name="orders" options={{ title: "My Orders" }} />
-                <Stack.Screen name="chat/[userId]" options={{ title: "Chat" }} />
-                <Stack.Screen name="review/[sellerId]" options={{ title: "Review" }} />
-              </Stack>
-            </ToastProvider>
-          </SocketProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <SocketProvider>
+              <ToastProvider>
+                <Stack
+                  screenOptions={{
+                    headerTitleStyle: { fontFamily: "Outfit-SemiBold", fontSize: 17 },
+                    headerTintColor: sharedTintColor,
+                    headerStyle: sharedHeaderStyle,
+                    headerShadowVisible: false,
+                    contentStyle: {
+                      backgroundColor: isDark ? "#020617" : "#f8fafc",
+                    },
+                    animation: stackAnimation,
+                    gestureEnabled: true,
+                  }}
+                >
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: "none" }} />
+                  <Stack.Screen name="(auth)" options={{ headerShown: false, animation: stackAnimation }} />
+                  <Stack.Screen name="admin" options={{ headerShown: false, animation: stackAnimation }} />
+                  <Stack.Screen name="notification-preferences" options={{ title: "Notification Preferences" }} />
+                  <Stack.Screen name="devices" options={{ title: "Active Devices" }} />
+                  <Stack.Screen name="notifications" options={{ title: "Notifications" }} />
+                  <Stack.Screen name="my-products" options={{ title: "My Listings" }} />
+                  <Stack.Screen name="create-product" options={{ title: "Create Listing" }} />
+                  <Stack.Screen name="dashboard" options={{ title: "Dashboard" }} />
+                  <Stack.Screen name="wishlist" options={{ title: "Wishlist" }} />
+                  <Stack.Screen name="edit-product/[id]" options={{ title: "Edit Listing", animation: "none" }} />
+                  <Stack.Screen name="product/[id]" options={{ title: "Product Details" }} />
+                  <Stack.Screen name="order/[id]" options={{ title: "Place Order" }} />
+                  <Stack.Screen name="orders" options={{ title: "My Orders" }} />
+                  <Stack.Screen name="chat/[userId]" options={{ headerShown: false }} />
+                  <Stack.Screen name="review/[sellerId]" options={{ title: "Review" }} />
+                </Stack>
+              </ToastProvider>
+            </SocketProvider>
+          </AuthProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }

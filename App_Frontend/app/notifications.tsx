@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Redirect, router } from "expo-router";
+import { router } from "expo-router";
+import { useEffect } from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
 import { Screen } from "../components/ui/Screen";
 import { Loading } from "../components/Loading";
@@ -24,7 +25,7 @@ type Notif = {
 };
 
 export default function NotificationsScreen() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
@@ -48,8 +49,18 @@ export default function NotificationsScreen() {
   });
 
 
-  if (!user) {
-    return <Redirect href="/(auth)/login" />;
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace("/(auth)/login");
+    }
+  }, [authLoading, user]);
+
+  if (authLoading || !user) {
+    return (
+      <Screen>
+        <Loading />
+      </Screen>
+    );
   }
 
   if (isLoading) {

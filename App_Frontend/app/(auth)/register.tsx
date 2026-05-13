@@ -135,7 +135,9 @@ export default function RegisterScreen() {
     <Screen>
       <KeyboardShiftView>
         <ScrollView
-          className="flex-1 px-6 pt-10"
+          className="flex-1"
+          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingTop: 40, paddingBottom: 180 }}
+          keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >

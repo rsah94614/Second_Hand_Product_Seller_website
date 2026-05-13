@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Redirect, router } from "expo-router";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   Alert,
@@ -40,7 +40,7 @@ type CartItem = {
 };
 
 export default function CartScreen() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
@@ -103,8 +103,18 @@ export default function CartScreen() {
     },
   });
 
-  if (!user) {
-    return <Redirect href="/(auth)/login" />;
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace("/(auth)/login");
+    }
+  }, [authLoading, user]);
+
+  if (authLoading || !user) {
+    return (
+      <Screen>
+        <Loading />
+      </Screen>
+    );
   }
 
   if (isLoading) {

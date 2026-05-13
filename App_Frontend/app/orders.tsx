@@ -1,10 +1,12 @@
-import { Redirect } from "expo-router";
-import { useState, useMemo } from "react";
+import { router } from "expo-router";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import {
   FlatList,
   View,
   Text,
   Pressable,
+  InteractionManager,
+  Appearance,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Screen } from "../components/ui/Screen";
@@ -17,7 +19,7 @@ import { ScheduleModal } from "../components/orders/ScheduleModal";
 import { DisputeModal } from "../components/orders/DisputeModal";
 
 export default function OrdersScreen() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const currentId = user?.id || "";
 
   const {
@@ -71,7 +73,45 @@ export default function OrdersScreen() {
     }
   };
 
-  if (!user) return <Redirect href="/(auth)/login" />;
+  const handleTabChange = useCallback((tab: "buying" | "selling") => {
+    InteractionManager.runAfterInteractions(() => {
+      setActiveTab(tab);
+    });
+  }, []);
+
+  const renderOrder = useCallback(({ item }: { item: any }) => (
+    <OrderCard
+      order={item}
+      currentId={currentId}
+      onAccept={(id) => acceptM.mutate(id)}
+      onCancel={(id) => cancelM.mutate(id)}
+      onSchedule={(id) => setScheduleOrderId(id)}
+      onDeliver={(id) => deliverM.mutate(id)}
+      onComplete={(id) => completeM.mutate(id)}
+      onNoShow={(id) => noShowM.mutate({ orderId: id, noShowBy: activeTab === "buying" ? "seller" : "buyer" })}
+      onDispute={(id) => setDisputeOrderId(id)}
+      onPhoto={handlePickPhoto}
+      isAccepting={acceptM.variables === item._id && acceptM.isPending}
+      isCancelling={cancelM.variables === item._id && cancelM.isPending}
+      isDelivering={deliverM.variables === item._id && deliverM.isPending}
+      isCompleting={completeM.variables === item._id && completeM.isPending}
+      isNoShow={noShowM.variables?.orderId === item._id && noShowM.isPending}
+    />
+  ), [currentId, activeTab, acceptM, cancelM, deliverM, completeM, noShowM, handlePickPhoto]);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace("/(auth)/login");
+    }
+  }, [authLoading, user]);
+
+  if (authLoading || !user) {
+    return (
+      <Screen>
+        <Loading />
+      </Screen>
+    );
+  }
 
   if (isLoading && !isRefetching) {
     return (
@@ -87,23 +127,41 @@ export default function OrdersScreen() {
         <Text className="text-[28px] font-outfit-bl text-slate-900 dark:text-white mb-6">My Orders</Text>
 
         <View className="flex-row bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl mb-4">
-          {(["buying", "selling"] as const).map((tab) => (
+          {(["buying", "selling"] as const).map((tab) => {
+            const isActive = activeTab === tab;
+            return (
               <Pressable
                 key={tab}
-                onPress={() => setActiveTab(tab)}
-              className={`flex-1 py-2.5 items-center rounded-xl ${
-                activeTab === tab ? "bg-white dark:bg-slate-700 shadow-sm" : ""
-              }`}
+                onPress={() => handleTabChange(tab)}
+                style={{
+                  flex: 1,
+                  backgroundColor: isActive ? (Appearance.getColorScheme() === "dark" ? "#334155" : "#ffffff") : "transparent",
+                  borderRadius: 12,
+                  paddingVertical: 10,
+                  alignItems: "center",
+                  // Add subtle shadow for active tab
+                  ...(isActive ? {
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 2,
+                    elevation: 2,
+                  } : {}),
+                }}
               >
                 <Text
-                className={`text-[14px] font-outfit-sb capitalize ${
-                  activeTab === tab ? "text-primary-600 dark:text-primary-300" : "text-slate-500 dark:text-slate-400"
-                }`}
+                  style={{
+                    fontSize: 14,
+                    fontFamily: "Outfit-SemiBold",
+                    textTransform: "capitalize",
+                    color: isActive ? (Appearance.getColorScheme() === "dark" ? "#cbd5e1" : "#4f46e5") : (Appearance.getColorScheme() === "dark" ? "#94a3b8" : "#64748b"),
+                  }}
                 >
                   {tab}
                 </Text>
               </Pressable>
-          ))}
+            );
+          })}
         </View>
       </View>
 
@@ -124,25 +182,7 @@ export default function OrdersScreen() {
               }
             />
           }
-          renderItem={({ item }) => (
-            <OrderCard
-              order={item}
-              currentId={currentId}
-              onAccept={(id) => acceptM.mutate(id)}
-              onCancel={(id) => cancelM.mutate(id)}
-              onSchedule={(id) => setScheduleOrderId(id)}
-              onDeliver={(id) => deliverM.mutate(id)}
-              onComplete={(id) => completeM.mutate(id)}
-              onNoShow={(id) => noShowM.mutate({ orderId: id, noShowBy: activeTab === "buying" ? "seller" : "buyer" })}
-              onDispute={(id) => setDisputeOrderId(id)}
-              onPhoto={handlePickPhoto}
-              isAccepting={acceptM.variables === item._id && acceptM.isPending}
-              isCancelling={cancelM.variables === item._id && cancelM.isPending}
-              isDelivering={deliverM.variables === item._id && deliverM.isPending}
-              isCompleting={completeM.variables === item._id && completeM.isPending}
-              isNoShow={noShowM.variables?.orderId === item._id && noShowM.isPending}
-            />
-          )}
+          renderItem={renderOrder}
         />
 
       <ScheduleModal

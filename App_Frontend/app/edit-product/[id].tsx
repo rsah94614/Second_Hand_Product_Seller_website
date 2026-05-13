@@ -193,7 +193,7 @@ export default function EditProductScreen() {
       <KeyboardShiftView>
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 18, paddingBottom: 48 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 18, paddingBottom: 180 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >

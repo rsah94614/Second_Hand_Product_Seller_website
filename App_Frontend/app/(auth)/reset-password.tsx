@@ -32,7 +32,6 @@ export default function ResetPasswordScreen() {
       setTimeout(() => router.replace("/login"), 1500);
     } else {
       setIsError(true);
-      setIsError(true);
       setMessage(res.message || "Reset failed. The link may have expired.");
     }
   };
@@ -40,7 +39,13 @@ export default function ResetPasswordScreen() {
   return (
     <Screen>
       <KeyboardShiftView>
-        <ScrollView className="flex-1 px-6 pt-12" keyboardShouldPersistTaps="handled">
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingTop: 48, paddingBottom: 160 }}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
         <View className="mb-10">
            <View className="h-16 w-16 bg-primary-100 dark:bg-primary-900/40 rounded-3xl items-center justify-center mb-6">
               <Text className="text-3xl">🔒</Text>

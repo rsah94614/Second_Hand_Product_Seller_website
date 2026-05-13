@@ -146,7 +146,7 @@ export default function ProductsBrowseScreen() {
       <PageHeader title="Browse Products" subtitle="Find exactly what you need" />
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
       >
       <View className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 z-10 shadow-sm shadow-slate-200/50 dark:shadow-none w-full relative">
