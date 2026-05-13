@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { History } from 'lucide-react';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
@@ -24,6 +24,12 @@ const OrderHistoryPage = () => {
     handleDispute,
     isMutating,
   } = useOrderHistoryLogic();
+  const navigate = useNavigate();
+
+  const handleReviewOrder = (order) => {
+    const sellerId = order.seller?._id || order.seller;
+    navigate(`/review/${sellerId}?orderId=${order._id}`);
+  };
 
   if (!user) {
     return (
@@ -81,6 +87,7 @@ const OrderHistoryPage = () => {
     onNoShow: handleNoShow,
     onPhotoUpload: handlePhotoUpload,
     onDispute: handleDispute,
+    onReview: handleReviewOrder,
     isMutating,
   };
 

@@ -15,12 +15,13 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Screen } from "../../components/ui/Screen";
-import { KeyboardShiftView } from "../../components/ui/KeyboardShiftView";
+import { ChatKeyboardAvoidingView } from "../../components/chat/ChatKeyboardAvoidingView";
 import { useAuth } from "../../context/AuthContext";
 import { useChatThread, getId } from "../../lib/hooks/useChatThread";
 import { ChatHeader } from "../../components/chat/ChatHeader";
 import { MessageItem } from "../../components/chat/MessageItem";
 import { ChatInputArea } from "../../components/chat/ChatInputArea";
+import { FullScreenImageViewer } from "../../components/chat/FullScreenImageViewer";
 import type { Msg } from "../../lib/types";
 
 const QUICK_TEMPLATES = [
@@ -97,6 +98,9 @@ function ChatThreadContent({ params, user, isDark }: { params: any; user: any; i
   const [reportReason, setReportReason] = useState("spam");
   const [reportDetails, setReportDetails] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
+  
+  const [viewerVisible, setViewerVisible] = useState(false);
+  const [viewerUri, setViewerUri] = useState<string | null>(null);
 
   const listRef = useRef<FlatList>(null);
   const partnerName = partnerNameFromQuery || "Chat";
@@ -129,6 +133,11 @@ function ChatThreadContent({ params, user, isDark }: { params: any; user: any; i
     const time = message.createdAt || message.timestamp || new Date().toISOString();
     const date = new Date(time);
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const handleImagePress = (uri: string) => {
+    setViewerUri(uri);
+    setViewerVisible(true);
   };
 
   return (
@@ -168,7 +177,7 @@ function ChatThreadContent({ params, user, isDark }: { params: any; user: any; i
           </Text>
         </View>
       ) : (
-        <KeyboardShiftView style={{ flex: 1 }}>
+        <ChatKeyboardAvoidingView style={{ flex: 1 }}>
           <View style={{ flex: 1 }}>
             <FlatList
               ref={listRef}
@@ -218,6 +227,7 @@ function ChatThreadContent({ params, user, isDark }: { params: any; user: any; i
                   showDate={showDate}
                   formattedTime={formatTime(item)}
                   onLongPress={openMessageActions}
+                  onImagePress={handleImagePress}
                 />
               );
             }}
@@ -268,13 +278,13 @@ function ChatThreadContent({ params, user, isDark }: { params: any; user: any; i
             />
           )}
           </View>
-        </KeyboardShiftView>
+        </ChatKeyboardAvoidingView>
       )}
 
       {/* Report Modal */}
       <Modal visible={reportOpen} transparent animationType="slide" onRequestClose={() => setReportOpen(false)}>
         <View className="flex-1 bg-black/50 justify-end">
-          <KeyboardShiftView
+          <ChatKeyboardAvoidingView
             style={{ flex: 1, justifyContent: "flex-end" }}
           >
             <View className="bg-white dark:bg-slate-900 rounded-t-[32px] p-6 pb-10">
@@ -339,9 +349,15 @@ function ChatThreadContent({ params, user, isDark }: { params: any; user: any; i
                 </View>
               </View>
             </View>
-          </KeyboardShiftView>
+          </ChatKeyboardAvoidingView>
         </View>
       </Modal>
+
+      <FullScreenImageViewer
+        visible={viewerVisible}
+        uri={viewerUri}
+        onClose={() => setViewerVisible(false)}
+      />
     </Screen>
   );
 }

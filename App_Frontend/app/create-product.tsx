@@ -307,49 +307,49 @@ function CreateProductContent() {
             style={{ flex: 1, justifyContent: "flex-end" }}
           >
             <View className="h-[88%] rounded-t-3xl bg-white dark:bg-slate-950 overflow-hidden">
-            {/* Header */}
-            <View className="flex-row items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-              <View>
-                <Text className="text-[20px] font-outfit-bl text-slate-900 dark:text-white">Listing Policies</Text>
-                <Text className="text-[13px] font-outfit text-slate-500 dark:text-slate-400">Read before you publish</Text>
-              </View>
-              <Pressable
-                onPress={() => setPolicyOpen(false)}
-                className="h-9 w-9 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center active:bg-slate-200"
-              >
-                <Ionicons name="close" size={18} color="#64748b" />
-              </Pressable>
-            </View>
-            {/* Content */}
-            <ScrollView className="flex-1 px-6 py-4" showsVerticalScrollIndicator={false}>
-              {LISTING_POLICIES.map((section) => (
-                <View key={section.title} className="mb-6">
-                  <View className="flex-row items-center gap-2 mb-3">
-                    <Text className="text-[20px]">{section.icon}</Text>
-                    <Text className="text-[16px] font-outfit-sb text-slate-900 dark:text-white">{section.title}</Text>
-                  </View>
-                  {section.items.map((item, i) => (
-                    <View key={i} className="flex-row items-start gap-2.5 mb-2">
-                    <View className="mt-2 h-1.5 w-1.5 rounded-full bg-primary-500 dark:bg-primary-400 shrink-0" />
-                      <Text className="flex-1 text-[14px] font-outfit text-slate-600 dark:text-slate-400 leading-relaxed">{item}</Text>
-                    </View>
-                  ))}
+              {/* Header */}
+              <View className="flex-row items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+                <View>
+                  <Text className="text-[20px] font-outfit-bl text-slate-900 dark:text-white">Listing Policies</Text>
+                  <Text className="text-[13px] font-outfit text-slate-500 dark:text-slate-400">Read before you publish</Text>
                 </View>
-              ))}
-              <View className="h-4" />
-            </ScrollView>
-            {/* Footer */}
-            <View className="px-6 py-4 border-t border-slate-100 dark:border-slate-800">
-              <Button title="Got it" onPress={() => setPolicyOpen(false)} />
+                <Pressable
+                  onPress={() => setPolicyOpen(false)}
+                  className="h-9 w-9 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center active:bg-slate-200"
+                >
+                  <Ionicons name="close" size={18} color="#64748b" />
+                </Pressable>
+              </View>
+              {/* Content */}
+              <ScrollView className="flex-1 px-6 py-4" showsVerticalScrollIndicator={false}>
+                {LISTING_POLICIES.map((section) => (
+                  <View key={section.title} className="mb-6">
+                    <View className="flex-row items-center gap-2 mb-3">
+                      <Text className="text-[20px]">{section.icon}</Text>
+                      <Text className="text-[16px] font-outfit-sb text-slate-900 dark:text-white">{section.title}</Text>
+                    </View>
+                    {section.items.map((item, i) => (
+                      <View key={i} className="flex-row items-start gap-2.5 mb-2">
+                        <View className="mt-2 h-1.5 w-1.5 rounded-full bg-primary-500 dark:bg-primary-400 shrink-0" />
+                        <Text className="flex-1 text-[14px] font-outfit text-slate-600 dark:text-slate-400 leading-relaxed">{item}</Text>
+                      </View>
+                    ))}
+                  </View>
+                ))}
+                <View className="h-4" />
+              </ScrollView>
+              {/* Footer */}
+              <View className="px-6 py-4 border-t border-slate-100 dark:border-slate-800">
+                <Button title="Got it" onPress={() => setPolicyOpen(false)} />
+              </View>
             </View>
-          </View>
           </KeyboardAvoidingView>
         </View>
       </Modal>
 
       <KeyboardShiftView>
-        <ScrollView 
-          className="flex-1 px-5 pt-6" 
+        <ScrollView
+          className="flex-1 px-5 pt-6"
           contentContainerStyle={{ paddingBottom: 180 }}
           keyboardShouldPersistTaps="handled"
         >
@@ -460,9 +460,9 @@ function CreateProductContent() {
           <View className="mb-10">
             <Button title="Publish Listing" onPress={submit} loading={submitting} />
           </View>
-        <View className="h-20" />
-        <View className="h-20" />
-        <View className="h-10" />
+          <View className="h-20" />
+          <View className="h-20" />
+          <View className="h-10" />
         </ScrollView>
       </KeyboardShiftView>
     </Screen>

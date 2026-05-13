@@ -8,6 +8,7 @@ const { ensureDefaultCategories } = require('../../../utils/categoryDefaults');
 const {
   createNotifications,
 } = require('../../shared/utils/notification.utils');
+const { buildSearchClause, rankByRelevance } = require('../../shared/utils/searchUtils');
 
 const escapeRegex = (text = '') => String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value));
@@ -121,71 +122,82 @@ const notifyWishlistUsers = async ({
 };
 
 const findProducts = async ({ cursor, limit = 12, category, minPrice, maxPrice, search, sortBy = 'createdAt', sortOrder = 'desc' }) => {
-  const query = { isActive: true, isSold: false };
+  const baseQuery = { isActive: true, isSold: false };
 
-  if (cursor) {
-    if (!isValidObjectId(cursor)) {
-      throw new Error('Invalid cursor');
-    }
-    query._id = { $lt: cursor };
-  }
-
-  if (category) query.category = category;
+  if (category) baseQuery.category = category;
   const hasMinPrice = minPrice !== undefined && minPrice !== null && minPrice !== '';
   const hasMaxPrice = maxPrice !== undefined && maxPrice !== null && maxPrice !== '';
   if (hasMinPrice || hasMaxPrice) {
-    query.price = {};
-    if (hasMinPrice) query.price.$gte = Number(minPrice);
-    if (hasMaxPrice) query.price.$lte = Number(maxPrice);
-  }
-  if (search) {
-    const escapedSearch = escapeRegex(search);
-    query.$or = [
-      { title: new RegExp(escapedSearch, 'i') },
-      { description: new RegExp(escapedSearch, 'i') },
-    ];
+    baseQuery.price = {};
+    if (hasMinPrice) baseQuery.price.$gte = Number(minPrice);
+    if (hasMaxPrice) baseQuery.price.$lte = Number(maxPrice);
   }
 
   const numericLimit = Number(limit);
-  const safeSortBy = allowedSortFields.has(sortBy) ? sortBy : 'createdAt';
-  const sortOptions = {};
-  sortOptions[safeSortBy] = sortOrder === 'desc' ? -1 : 1;
-  if (safeSortBy !== '_id') {
-    sortOptions['_id'] = sortOrder === 'desc' ? -1 : 1;
-  }
+  const isSearching = search && search.trim().length > 0;
+  const isDefaultSort = !sortBy || sortBy === 'createdAt';
 
   let products = [];
   let total = 0;
 
-  if (search && (!sortBy || sortBy === 'createdAt')) {
-    // Issue 9 Fix: Use MongoDB text index for relevance ranking at DB level
-    const searchQuery = { 
-      ...query, 
-      $text: { $search: search } 
-    };
-    
-    products = await Product.find(searchQuery, { score: { $meta: 'textScore' } })
+  if (isSearching) {
+    // ── Smart search path ──────────────────────────────────────────────
+    // Fetch a larger pool from DB using rich clause (synonyms + typo regex),
+    // then re-rank in JS using our custom scorer.
+    const searchClause = buildSearchClause(search);
+    const searchQuery = { ...baseQuery, ...searchClause };
+
+    // Fetch up to 4× the requested limit so re-ranking has enough candidates.
+    const poolSize = Math.min(numericLimit * 4, 200);
+
+    // Sort: if user picked a non-default sort, respect it. Otherwise, use createdAt for the pool.
+    const poolSort = isDefaultSort
+      ? { createdAt: -1 }
+      : { [allowedSortFields.has(sortBy) ? sortBy : 'createdAt']: sortOrder === 'desc' ? -1 : 1 };
+
+    // Cursor pagination only applies when NOT re-ranking by relevance
+    if (cursor && !isDefaultSort) {
+      if (!isValidObjectId(cursor)) throw new Error('Invalid cursor');
+      searchQuery._id = { $lt: cursor };
+    }
+
+    const pool = await Product.find(searchQuery)
       .populate('seller', 'name location')
-      .sort({ score: { $meta: 'textScore' } })
-      .limit(numericLimit);
+      .sort(poolSort)
+      .limit(poolSize)
+      .lean();
 
     total = await Product.countDocuments(searchQuery);
+
+    // Re-rank by relevance if default sort, otherwise keep DB sort
+    products = isDefaultSort ? rankByRelevance(pool, search) : pool;
+
+    // Trim to requested limit
+    products = products.slice(0, numericLimit);
   } else {
-    products = await Product.find(query)
+    // ── Standard browse path (no search term) ─────────────────────────
+    if (cursor) {
+      if (!isValidObjectId(cursor)) throw new Error('Invalid cursor');
+      baseQuery._id = { $lt: cursor };
+    }
+
+    const safeSortBy = allowedSortFields.has(sortBy) ? sortBy : 'createdAt';
+    const sortOptions = { [safeSortBy]: sortOrder === 'desc' ? -1 : 1 };
+    if (safeSortBy !== '_id') sortOptions['_id'] = sortOrder === 'desc' ? -1 : 1;
+
+    products = await Product.find(baseQuery)
       .populate('seller', 'name location')
       .sort(sortOptions)
       .limit(numericLimit);
 
-    total = await Product.countDocuments(query);
+    total = await Product.countDocuments(baseQuery);
   }
 
-  const nextCursor = products.length === numericLimit ? products[products.length - 1]._id.toString() : null;
+  const nextCursor = products.length === numericLimit
+    ? (products[products.length - 1]._id || products[products.length - 1]['_id']).toString()
+    : null;
 
-  return {
-    products,
-    nextCursor,
-    total,
-  };
+  return { products, nextCursor, total };
 };
 
 const findRelatedProducts = async (productId) => {

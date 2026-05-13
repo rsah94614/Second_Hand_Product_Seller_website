@@ -33,12 +33,13 @@ export type OrderRow = {
   _id: string;
   status: string;
   total: number;
-  items?: { product?: string; title?: string }[];
+  reviewUnlocked?: boolean;
+  items?: { product?: string; title?: string; image?: string; price?: number }[];
   meetupDetails?: {
     location?: string;
     scheduledAt?: string;
     notes?: string;
   };
-  user?: { _id?: string };
-  seller?: { _id?: string };
+  user?: { _id?: string; name?: string; avatar?: string };
+  seller?: { _id?: string; name?: string };
 };

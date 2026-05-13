@@ -54,7 +54,7 @@ export default function NotificationPreferencesScreen() {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: prefs, isLoading } = useQuery({
+  const { data: prefs, isLoading, isError } = useQuery({
     queryKey: ["notification-preferences"],
     queryFn: getNotificationPreferences,
     enabled: !!user,
@@ -86,6 +86,24 @@ export default function NotificationPreferencesScreen() {
 
   if (isLoading) {
     return <Screen safeAreaTop={false}><Loading /></Screen>;
+  }
+
+  if (isError) {
+    return (
+      <Screen safeAreaTop={false} className="bg-slate-50 dark:bg-slate-950">
+        <View className="flex-1 items-center justify-center px-6">
+          <View className="h-16 w-16 rounded-full bg-red-50 dark:bg-red-900/30 items-center justify-center mb-4">
+            <Ionicons name="cloud-offline-outline" size={32} color="#ef4444" />
+          </View>
+          <Text className="text-[18px] font-outfit-sb text-slate-900 dark:text-white text-center mb-2">
+            Could not load settings
+          </Text>
+          <Text className="text-[14px] font-outfit text-slate-500 dark:text-slate-400 text-center">
+            Check your connection and try again.
+          </Text>
+        </View>
+      </Screen>
+    );
   }
 
   const p = prefs as Record<string, boolean> | undefined;
