@@ -54,7 +54,7 @@ export default function OrdersScreen() {
 
   const handlePickPhoto = async (orderId: string) => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       quality: 0.7,
     });

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { Link, router, useLocalSearchParams } from "expo-router";
 import { Screen } from "../../components/ui/Screen";
 import { KeyboardShiftView } from "../../components/ui/KeyboardShiftView";
@@ -51,7 +51,7 @@ export default function LoginScreen() {
         <ScrollView
           className="flex-1"
           contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingTop: 48, paddingBottom: 160 }}
-          keyboardDismissMode="on-drag"
+          keyboardDismissMode={Platform.OS === "ios" ? "on-drag" : "none"}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >

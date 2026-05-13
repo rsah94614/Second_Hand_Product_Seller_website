@@ -88,6 +88,7 @@ function ChatThreadContent({ params, user, isDark }: { params: any; user: any; i
     report,
     emitTyping,
     isConnected,
+    isSendingImage,
   } = useChatThread(partnerId);
 
   const [reportOpen, setReportOpen] = useState(false);
@@ -163,14 +164,15 @@ function ChatThreadContent({ params, user, isDark }: { params: any; user: any; i
           </Text>
         </View>
       ) : (
-        <KeyboardShiftView>
-          <FlatList
-            ref={listRef}
-            data={messages}
-            keyExtractor={(item) => item._id}
-            contentContainerStyle={{ paddingVertical: 16, paddingHorizontal: 12 }}
-            keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
-            keyboardShouldPersistTaps="handled"
+        <KeyboardShiftView style={{ flex: 1 }}>
+          <View style={{ flex: 1 }}>
+            <FlatList
+              ref={listRef}
+              data={messages}
+              keyExtractor={(item) => item._id}
+              contentContainerStyle={{ paddingVertical: 16, paddingHorizontal: 12 }}
+              keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "none"}
+              keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             onContentSizeChange={() => {
               if (messages.length > 0) {
@@ -239,9 +241,10 @@ function ChatThreadContent({ params, user, isDark }: { params: any; user: any; i
             onCancelEdit={() => {
               setEditingMessageId(null);
             }}
-            sendingImage={false}
+            sendingImage={isSendingImage}
             isConnected={isConnected}
           />
+          </View>
         </KeyboardShiftView>
       )}
 

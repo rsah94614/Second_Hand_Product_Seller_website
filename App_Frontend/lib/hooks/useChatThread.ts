@@ -50,6 +50,7 @@ export function useChatThread(partnerId: string) {
   const [pinBusy, setPinBusy] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [isSendingImage, setIsSendingImage] = useState(false);
 
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -241,19 +242,23 @@ export function useChatThread(partnerId: string) {
 
   const sendImage = useCallback(async (uri: string, mimeType: string) => {
     if (!partnerId) return;
-    const ext = mimeType.includes("png") ? "png" : "jpg";
-    const fd = new FormData();
-    // In React Native, we need to casting to any/Blob for FormData
-    fd.append("image", { uri, name: `chat.${ext}`, type: mimeType } as any);
-    fd.append("receiverId", partnerId);
-    
     try {
-      await uploadChatImage(fd);
-    } catch (error: any) {
-      const parsed = parseApiError(error, "Failed to send image.");
-      Alert.alert("Error", formatErrorForDisplay(parsed), [{ text: "OK" }], { cancelable: true });
+      setIsSendingImage(true);
+      const fd = new FormData();
+      const filename = uri.split("/").pop() || "upload.jpg";
+      fd.append("image", { uri, name: filename, type: mimeType } as any);
+      fd.append("receiverId", partnerId);
+
+      const res = await uploadChatImage(fd);
+      // The backend already creates the message and emits 'receive_message' via socket
+      // No need to call sendMessage here as it would create a duplicate text message.
+    } catch (e: any) {
+      console.error("[sendImage] Error:", e);
+      showToast("Could not upload image. Please try again.");
+    } finally {
+      setIsSendingImage(false);
     }
-  }, [partnerId]);
+  }, [partnerId, sendMessage, showToast]);
 
   const togglePin = useCallback(async () => {
     if (!partnerId || pinBusy) return;
@@ -324,5 +329,6 @@ export function useChatThread(partnerId: string) {
     report,
     emitTyping,
     isConnected,
+    isSendingImage,
   };
 }

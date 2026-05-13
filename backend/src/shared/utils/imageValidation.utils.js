@@ -5,7 +5,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const fileType = require('file-type');
 
 /**
  * MIME type whitelist for chat images
@@ -130,7 +129,8 @@ const validateImageFile = async (filePath) => {
     }
 
     // Check MIME type using file-type library (reads magic bytes)
-    const type = await fileType.fromFile(filePath);
+    const { fileTypeFromFile } = await import('file-type');
+    const type = await fileTypeFromFile(filePath);
 
     if (!type) {
       return { valid: false, error: 'Unable to determine file type' };
