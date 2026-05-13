@@ -23,6 +23,7 @@ import { ProductCard, type ProductListItem } from "../../components/ProductCard"
 import { Loading } from "../../components/Loading";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { getProducts, getProductCategories } from "../../lib/api/products";
+import { Skeleton } from "../../components/ui/Skeleton";
 import { getSearchSuggestions } from "../../lib/api/search";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -283,7 +284,19 @@ export default function ProductsBrowseScreen() {
         )}
         ListEmptyComponent={
           isLoading ? (
-            <View className="py-20"><Loading /></View>
+            <View className="px-4 py-4 flex-row flex-wrap justify-between">
+              {[...Array(6)].map((_, i) => (
+                <View key={i} className="w-[48%] mb-4">
+                  <View className="h-64 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-2 overflow-hidden shadow-sm shadow-slate-200/50 dark:shadow-none">
+                    <Skeleton className="w-full h-40 rounded-2xl mb-3" />
+                    <View className="px-2">
+                      <Skeleton className="w-3/4 h-4 rounded-md mb-2" />
+                      <Skeleton className="w-1/2 h-5 rounded-md" />
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
           ) : (
             <View className="px-4 py-20 flex-1 items-center justify-center">
                <Text className="text-4xl mb-4">🏜️</Text>

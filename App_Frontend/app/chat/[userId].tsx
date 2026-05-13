@@ -85,10 +85,12 @@ function ChatThreadContent({ params, user, isDark }: { params: any; user: any; i
     deleteMessage,
     togglePin,
     block,
+    unblock,
     report,
     emitTyping,
     isConnected,
     isSendingImage,
+    isBlocked,
   } = useChatThread(partnerId);
 
   const [reportOpen, setReportOpen] = useState(false);
@@ -136,6 +138,8 @@ function ChatThreadContent({ params, user, isDark }: { params: any; user: any; i
         isPinned={isPinned}
         onTogglePin={togglePin}
         onBlock={block}
+        onUnblock={unblock}
+        isBlocked={isBlocked}
         onReport={() => setReportOpen(true)}
         isDark={isDark}
       />
@@ -232,18 +236,37 @@ function ChatThreadContent({ params, user, isDark }: { params: any; user: any; i
             </View>
           )}
 
-          <ChatInputArea
-            initialText={editingMessageId ? (messages.find(m => m._id === editingMessageId)?.content || "") : ""}
-            onSend={sendMessage}
-            onSendImage={sendImage}
-            onTyping={emitTyping}
-            editingMessageId={editingMessageId}
-            onCancelEdit={() => {
-              setEditingMessageId(null);
-            }}
-            sendingImage={isSendingImage}
-            isConnected={isConnected}
-          />
+          {isBlocked ? (
+            <View className="mx-4 mb-4 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 p-4">
+              <View className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/40 items-center justify-center mb-2">
+                <Ionicons name="lock-closed-outline" size={20} color="#92400e" />
+              </View>
+              <Text className="text-center text-[14px] font-outfit-m text-amber-800 dark:text-amber-200">
+                You have blocked this user.
+              </Text>
+              <Pressable 
+                onPress={unblock}
+                className="mt-2"
+              >
+                <Text className="text-[14px] font-outfit-b text-primary-600 dark:text-primary-400">
+                  Unblock to send a message
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            <ChatInputArea
+              initialText={editingMessageId ? (messages.find(m => m._id === editingMessageId)?.content || "") : ""}
+              onSend={sendMessage}
+              onSendImage={sendImage}
+              onTyping={emitTyping}
+              editingMessageId={editingMessageId}
+              onCancelEdit={() => {
+                setEditingMessageId(null);
+              }}
+              sendingImage={isSendingImage}
+              isConnected={isConnected}
+            />
+          )}
           </View>
         </KeyboardShiftView>
       )}

@@ -352,6 +352,8 @@ export default function RegisterScreen() {
             </Pressable>
           </Link>
         </View>
+        <View className="h-20" />
+        <View className="h-20" />
       </ScrollView>
       </KeyboardShiftView>
     </Screen>

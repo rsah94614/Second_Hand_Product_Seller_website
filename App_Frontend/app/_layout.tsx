@@ -46,8 +46,13 @@ export default function RootLayout() {
     []
   );
 
-  const colorScheme = Appearance.getColorScheme();
-  const isDark = colorScheme === "dark";
+  const [theme, setTheme] = require('react').useState(Appearance.getColorScheme());
+  require('react').useEffect(() => {
+    const sub = Appearance.addChangeListener(({ colorScheme }) => setTheme(colorScheme));
+    return () => sub.remove();
+  }, []);
+
+  const isDark = theme === "dark";
 
   const [fontsLoaded, fontError] = useFonts({
     "Outfit-Regular": Outfit_400Regular,
@@ -105,10 +110,10 @@ export default function RootLayout() {
                   <Stack.Screen name="devices" options={{ title: "Active Devices" }} />
                   <Stack.Screen name="notifications" options={{ title: "Notifications" }} />
                   <Stack.Screen name="my-products" options={{ title: "My Listings" }} />
-                  <Stack.Screen name="create-product" options={{ title: "Create Listing" }} />
+                  <Stack.Screen name="create-product" options={{ headerShown: false }} />
                   <Stack.Screen name="dashboard" options={{ title: "Dashboard" }} />
                   <Stack.Screen name="wishlist" options={{ title: "Wishlist" }} />
-                  <Stack.Screen name="edit-product/[id]" options={{ title: "Edit Listing", animation: "none" }} />
+                  <Stack.Screen name="edit-product/[id]" options={{ headerShown: false, animation: "none" }} />
                   <Stack.Screen name="product/[id]" options={{ title: "Product Details" }} />
                   <Stack.Screen name="order/[id]" options={{ title: "Place Order" }} />
                   <Stack.Screen name="orders" options={{ title: "My Orders" }} />

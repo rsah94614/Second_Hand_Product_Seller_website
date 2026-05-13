@@ -35,7 +35,11 @@ api.interceptors.request.use(async (config) => {
 
   const token = await storage.getAccessToken();
   if (token) {
-    (config.headers as Record<string, unknown>).Authorization = `Bearer ${token}`;
+    if (typeof (config.headers as any).set === "function") {
+      (config.headers as any).set("Authorization", `Bearer ${token}`);
+    } else {
+      (config.headers as Record<string, unknown>).Authorization = `Bearer ${token}`;
+    }
   }
 
   return config;

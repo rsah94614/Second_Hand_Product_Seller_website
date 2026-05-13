@@ -17,6 +17,9 @@ export const toggleWishlist = (productId: string) =>
 export const getRecentlyViewed = () =>
   api.get(`/api/users/me/recently-viewed`).then((r) => r.data);
 
+export const getBlockedUsers = () =>
+  api.get(`/api/users/me/blocked`).then((r) => r.data);
+
 export const submitSellerReview = (
   userId: string,
   payload: { rating: number; comment: string; orderId?: string; productId?: string }

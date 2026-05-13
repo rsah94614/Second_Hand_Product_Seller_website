@@ -12,6 +12,7 @@ import { saveThemePreference } from "../../lib/theme-storage";
 import { getUserProfile, uploadUserAvatar, getMyReputation, getMySellerVerification, requestSellerVerification, getProfileCompletion } from "../../lib/api/users";
 import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
 import { useToast } from "../../components/ui/AppToast";
+import { Skeleton } from "../../components/ui/Skeleton";
 
 // Modular Views
 import UserProfileView from "../../components/profile/UserProfileView";
@@ -128,11 +129,41 @@ export default function ProfileScreen() {
     }
   };
 
+  const saveProfileWithPayload = async (payload: any) => {
+    setSaving(true);
+    try {
+      await updateProfile(payload);
+      await refetchTrust();
+      if (user?.role !== 'admin') await refetchCompletion();
+      showToast("Profile updated.");
+    } catch (e: any) {
+      throw e; // Let the caller handle it
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <Screen>
-        <View className="flex-1 items-center justify-center">
-          <Text className="text-[15px] font-outfit-m text-slate-500 dark:text-slate-400">Loading...</Text>
+        <PageHeader title="My Profile" />
+        <View className="flex-1 px-4 py-6">
+          <View className="rounded-3xl bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800 mb-4 overflow-hidden">
+             <View className="bg-primary-600 dark:bg-primary-900 px-5 pt-5 pb-14 items-center">
+                <Skeleton circle className="w-24 h-24 mb-4 border-4 border-white/30" />
+                <Skeleton className="w-40 h-6 rounded-md mb-2" />
+                <Skeleton className="w-24 h-4 rounded-md" />
+             </View>
+             <View className="px-5 pb-5 pt-4">
+                <Skeleton className="w-full h-12 rounded-xl" />
+             </View>
+          </View>
+          <View className="rounded-3xl bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800 p-5">
+             <Skeleton className="w-32 h-5 rounded-md mb-4" />
+             <Skeleton className="w-full h-12 rounded-xl mb-3" />
+             <Skeleton className="w-full h-12 rounded-xl mb-3" />
+             <Skeleton className="w-full h-12 rounded-xl" />
+          </View>
         </View>
       </Screen>
     );
@@ -226,6 +257,7 @@ export default function ProfileScreen() {
     setEditLocation,
     saving,
     saveProfile,
+    saveProfileWithPayload,
     avatarUploading,
     avatarUri,
     userInitials,

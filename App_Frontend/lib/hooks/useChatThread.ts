@@ -10,7 +10,11 @@ import {
   uploadChatImage,
   reportChatUser,
 } from "../api/chat";
-import { blockUser as apiBlockUser } from "../api/users";
+import { 
+  blockUser as apiBlockUser, 
+  unblockUser as apiUnblockUser,
+  getBlockedUsers
+} from "../api/users";
 import { parseApiError, formatErrorForDisplay } from "../utils/errorHandler";
 import type { Msg } from "../types";
 import { useToast } from "../../components/ui/AppToast";
@@ -51,8 +55,24 @@ export function useChatThread(partnerId: string) {
   const [isPinned, setIsPinned] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [isSendingImage, setIsSendingImage] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
 
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    async function checkBlockStatus() {
+      if (!partnerId) return;
+      try {
+        const res = await getBlockedUsers();
+        // res.blocked is an array of users
+        const blockedList = res.blocked || [];
+        setIsBlocked(blockedList.some((u: any) => (u._id || u) === partnerId));
+      } catch (err) {
+        console.error("[checkBlockStatus] Error:", err);
+      }
+    }
+    checkBlockStatus();
+  }, [partnerId]);
 
   useEffect(() => {
     return () => {
@@ -282,9 +302,21 @@ export function useChatThread(partnerId: string) {
   const block = useCallback(async () => {
     try {
       await apiBlockUser(partnerId);
+      setIsBlocked(true);
       showToast("User blocked successfully.");
     } catch (error: any) {
       const parsed = parseApiError(error, "Failed to block user.");
+      Alert.alert("Error", formatErrorForDisplay(parsed), [{ text: "OK" }], { cancelable: true });
+    }
+  }, [partnerId, showToast]);
+
+  const unblock = useCallback(async () => {
+    try {
+      await apiUnblockUser(partnerId);
+      setIsBlocked(false);
+      showToast("User unblocked successfully.");
+    } catch (error: any) {
+      const parsed = parseApiError(error, "Failed to unblock user.");
       Alert.alert("Error", formatErrorForDisplay(parsed), [{ text: "OK" }], { cancelable: true });
     }
   }, [partnerId, showToast]);
@@ -326,9 +358,11 @@ export function useChatThread(partnerId: string) {
     deleteMessage,
     togglePin,
     block,
+    unblock,
     report,
     emitTyping,
     isConnected,
     isSendingImage,
+    isBlocked,
   };
 }

@@ -4,6 +4,7 @@ import { ScrollView, Text, View, Pressable, TextInput, RefreshControl } from "re
 import { Screen } from "../../components/ui/Screen";
 import { ProductCard, type ProductListItem } from "../../components/ProductCard";
 import { getProducts, getProductCategories } from "../../lib/api/products";
+import { Skeleton } from "../../components/ui/Skeleton";
 import { getRecentlyViewed } from "../../lib/api/users";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../context/AuthContext";
@@ -71,7 +72,15 @@ function ProductRow({ products, isLoading }: { products: ProductListItem[]; isLo
     return (
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}>
         {[...Array(3)].map((_, i) => (
-          <View key={i} className="w-44 h-56 rounded-3xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+          <View key={i} style={{ width: 176 }}>
+            <View className="h-56 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-2 overflow-hidden shadow-sm shadow-slate-200/50 dark:shadow-none">
+              <Skeleton className="w-full h-36 rounded-2xl mb-3" />
+              <View className="px-2">
+                <Skeleton className="w-3/4 h-4 rounded-md mb-2" />
+                <Skeleton className="w-1/2 h-5 rounded-md" />
+              </View>
+            </View>
+          </View>
         ))}
       </ScrollView>
     );

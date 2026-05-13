@@ -348,12 +348,24 @@ function CreateProductContent() {
       </Modal>
 
       <KeyboardShiftView>
-        <ScrollView className="flex-1 px-5 pt-6 pb-12" keyboardShouldPersistTaps="handled">
-          <View className="flex-row items-center gap-3 mb-2">
-            <Text className="text-[28px] font-outfit-bl text-slate-900 dark:text-white leading-tight flex-1">Create Listing</Text>
+        <ScrollView 
+          className="flex-1 px-5 pt-6" 
+          contentContainerStyle={{ paddingBottom: 180 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View className="flex-row items-center gap-3 mb-6">
+            <Pressable
+              onPress={() => router.back()}
+              className="h-10 w-10 rounded-full bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 items-center justify-center active:bg-slate-50"
+            >
+              <Ionicons name="arrow-back" size={20} color="#64748b" />
+            </Pressable>
+            <View className="flex-1">
+              <Text className="text-[24px] font-outfit-bl text-slate-900 dark:text-white leading-tight">Create Listing</Text>
+            </View>
             <Pressable
               onPress={() => setPolicyOpen(true)}
-              className="h-9 w-9 rounded-full bg-primary-50 dark:bg-primary-950/40 items-center justify-center active:bg-primary-100"
+              className="h-10 w-10 rounded-full bg-primary-50 dark:bg-primary-950/40 items-center justify-center active:bg-primary-100"
             >
               <Ionicons name="information-circle-outline" size={22} color="#6366f1" />
             </Pressable>
@@ -445,9 +457,12 @@ function CreateProductContent() {
             <Input label="Contact Email" placeholder="Enter contact email address" value={form.email} onChangeText={(t) => setF("email", t)} keyboardType="email-address" />
           </View>
 
-          <View className="mb-16">
+          <View className="mb-10">
             <Button title="Publish Listing" onPress={submit} loading={submitting} />
           </View>
+        <View className="h-20" />
+        <View className="h-20" />
+        <View className="h-10" />
         </ScrollView>
       </KeyboardShiftView>
     </Screen>
