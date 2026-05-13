@@ -1,6 +1,6 @@
 import { Link, useLocalSearchParams, router } from "expo-router";
 import { useState } from "react";
-import { ScrollView, Text, View, Pressable } from "react-native";
+import { Platform, ScrollView, Text, View, Pressable } from "react-native";
 import { Screen } from "../../components/ui/Screen";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
@@ -42,7 +42,7 @@ export default function ResetPasswordScreen() {
         <ScrollView
           className="flex-1"
           contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingTop: 48, paddingBottom: 160 }}
-          keyboardDismissMode="on-drag"
+          keyboardDismissMode={Platform.OS === "ios" ? "on-drag" : "none"}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
