@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Redirect } from "expo-router";
+import { router } from "expo-router";
+import { useEffect } from "react";
 import { Alert, FlatList, Pressable, Text, View } from "react-native";
 import { Screen } from "../components/ui/Screen";
 import { Loading } from "../components/Loading";
@@ -29,7 +30,7 @@ const deviceIcon = (type?: string): keyof typeof Ionicons.glyphMap => {
 };
 
 export default function DevicesScreen() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
 
@@ -63,7 +64,13 @@ export default function DevicesScreen() {
     },
   });
 
-  if (!user) return <Redirect href="/(auth)/login" />;
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace("/(auth)/login");
+    }
+  }, [authLoading, user]);
+
+  if (authLoading || !user) return <Screen safeAreaTop={false}><Loading /></Screen>;
 
   if (isLoading) {
     return <Screen safeAreaTop={false}><Loading /></Screen>;

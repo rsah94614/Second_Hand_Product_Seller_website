@@ -48,7 +48,13 @@ export default function LoginScreen() {
   return (
     <Screen>
       <KeyboardShiftView>
-        <ScrollView className="flex-1 px-6 pt-12" keyboardShouldPersistTaps="handled">
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingTop: 48, paddingBottom: 160 }}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
         <View className="mb-10">
 
            <Text className="text-4xl font-outfit-bl text-slate-900 dark:text-white leading-tight">

@@ -1,12 +1,10 @@
-import React, { useRef } from "react";
-import { View, TextInput, Pressable, ActivityIndicator } from "react-native";
+import React, { useRef, useState, useEffect, memo } from "react";
+import { View, TextInput, Pressable, ActivityIndicator, Keyboard, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Props = {
-  text: string;
-  setText: (t: string) => void;
+  initialText?: string;
   onSend: (content: string) => void;
   onSendImage: (uri: string, mime: string) => void;
   onTyping: () => void;
@@ -16,9 +14,14 @@ type Props = {
   isConnected: boolean;
 };
 
-export function ChatInputArea({
-  text,
-  setText,
+/**
+ * ChatInputArea
+ * 
+ * Optimized to handle local state. Typing here will NOT re-render
+ * the entire chat thread, preventing navigation context crashes.
+ */
+export const ChatInputArea = memo(({
+  initialText = "",
   onSend,
   onSendImage,
   onTyping,
@@ -26,9 +29,15 @@ export function ChatInputArea({
   onCancelEdit,
   sendingImage,
   isConnected,
-}: Props) {
-  const insets = useSafeAreaInsets();
+}: Props) => {
+  const [localText, setLocalText] = useState(initialText);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const lastTypingAtRef = useRef(0);
+
+  // Sync with editing changes
+  useEffect(() => {
+    setLocalText(initialText);
+  }, [initialText]);
 
   const notifyTyping = () => {
     const now = Date.now();
@@ -50,15 +59,30 @@ export function ChatInputArea({
   };
 
   const handleSend = () => {
-    if (!text.trim()) return;
-    onSend(text);
-    setText("");
+    if (!localText.trim()) return;
+    onSend(localText);
+    setLocalText("");
   };
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      () => setIsKeyboardOpen(true)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => setIsKeyboardOpen(false)
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   return (
     <View
       className="px-4 pt-3 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800"
-      style={{ paddingBottom: Math.max(insets.bottom, 12) }}
+      style={{ paddingBottom: isKeyboardOpen ? 12 : 24 }}
     >
       {editingMessageId && (
         <View className="flex-row items-center justify-between bg-slate-50 dark:bg-slate-800/50 px-3 py-2 rounded-xl mb-3 border-l-4 border-primary-500">
@@ -95,9 +119,9 @@ export function ChatInputArea({
 
         <View className="flex-1 min-h-[44px] max-h-32 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 justify-center">
           <TextInput
-            value={text}
+            value={localText}
             onChangeText={(t) => {
-              setText(t);
+              setLocalText(t);
               notifyTyping();
             }}
             placeholder={isConnected ? "Message..." : "Message when back online..."}
@@ -113,17 +137,20 @@ export function ChatInputArea({
 
         <Pressable
           onPress={handleSend}
-          disabled={!text.trim()}
-          className={`h-11 w-11 items-center justify-center rounded-2xl ${text.trim() ? "bg-primary-600 shadow-md shadow-primary-200" : "bg-slate-200 dark:bg-slate-800"
-            }`}
+          disabled={!localText.trim()}
+          className={`h-11 w-11 items-center justify-center rounded-2xl ${
+            localText.trim() ? "bg-primary-600 shadow-md shadow-primary-200" : "bg-slate-200 dark:bg-slate-800"
+          }`}
         >
           <Ionicons
             name={editingMessageId ? "checkmark" : "send"}
             size={18}
-            color={text.trim() ? "#fff" : "#94a3b8"}
+            color={localText.trim() ? "#fff" : "#94a3b8"}
           />
         </Pressable>
       </View>
     </View>
   );
-}
+});
+
+ChatInputArea.displayName = "ChatInputArea";

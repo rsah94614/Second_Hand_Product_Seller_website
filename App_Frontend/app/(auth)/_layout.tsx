@@ -1,10 +1,9 @@
 import { Stack, router } from "expo-router";
-import { useColorScheme } from "nativewind";
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable } from "react-native";
+import { Pressable, useColorScheme } from "react-native";
 
 export default function AuthLayout() {
-  const { colorScheme } = useColorScheme();
+  const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
   const BackButton = () => (

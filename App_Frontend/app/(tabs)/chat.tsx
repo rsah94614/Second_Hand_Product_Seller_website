@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, useMemo } from "react";
-import { Redirect, useFocusEffect, router } from "expo-router";
+import { useFocusEffect, router } from "expo-router";
 import { Alert, FlatList, Pressable, Text, View, TextInput, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Screen } from "../../components/ui/Screen";
@@ -20,7 +20,7 @@ type Conv = {
 };
 
 export default function MessagesScreen() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const socket = useSocket();
   const [list, setList] = useState<Conv[]>([]);
   const [loading, setLoading] = useState(true);
@@ -118,8 +118,18 @@ export default function MessagesScreen() {
     return date.toLocaleDateString([], { month: "short", day: "numeric" });
   };
 
-  if (!user) {
-    return <Redirect href="/(auth)/login" />;
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace("/(auth)/login");
+    }
+  }, [authLoading, user]);
+
+  if (authLoading || !user) {
+    return (
+      <Screen>
+        <Loading />
+      </Screen>
+    );
   }
 
   if (loading) {

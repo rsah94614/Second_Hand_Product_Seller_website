@@ -11,7 +11,7 @@ type ActionBtnProps = {
   disabled?: boolean;
 };
 
-function ActionBtn({ label, onPress, color, loading = false, disabled = false }: ActionBtnProps) {
+const ActionBtn = memo(({ label, onPress, color, loading = false, disabled = false }: ActionBtnProps) => {
   return (
     <Pressable
       onPress={onPress}
@@ -25,7 +25,7 @@ function ActionBtn({ label, onPress, color, loading = false, disabled = false }:
       )}
     </Pressable>
   );
-}
+});
 
 const statusTone = (s: string) => {
   switch (s) {

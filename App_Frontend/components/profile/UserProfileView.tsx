@@ -98,7 +98,13 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
   router,
 }) => {
   return (
-    <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      className="flex-1"
+      contentContainerStyle={{ padding: 16, paddingBottom: 160 }}
+      keyboardDismissMode="on-drag"
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
       {/* ── Avatar & Name Hero Card ── */}
       <View className="overflow-hidden rounded-3xl bg-white dark:bg-slate-900 shadow-sm shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 mb-4">
         <View className="bg-primary-600 dark:bg-primary-900 px-5 pt-5 pb-14 items-center">

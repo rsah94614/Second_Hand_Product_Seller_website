@@ -1,5 +1,4 @@
-import { Text, TextInput, View, TextInputProps, Pressable } from "react-native";
-import { useColorScheme } from "nativewind";
+import { Text, TextInput, View, TextInputProps, Pressable, useColorScheme } from "react-native";
 import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -30,7 +29,7 @@ export function Input({
 }: Props) {
   const [isFocused, setIsFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { colorScheme } = useColorScheme();
+  const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const inputStyle = {
     borderColor: errorMessage
