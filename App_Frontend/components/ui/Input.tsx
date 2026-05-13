@@ -1,4 +1,4 @@
-import { Text, TextInput, View, TextInputProps, Pressable } from "react-native";
+import { Text, TextInput, View, TextInputProps, Pressable, useColorScheme } from "react-native";
 import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -29,6 +29,32 @@ export function Input({
 }: Props) {
   const [isFocused, setIsFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const inputStyle = {
+    borderColor: errorMessage
+      ? isDark
+        ? "rgba(239, 68, 68, 0.5)"
+        : "#f87171"
+      : isFocused
+        ? isDark
+          ? "#818cf8"
+          : "#6366f1"
+        : isDark
+          ? "#1e293b"
+          : "#e2e8f0",
+    backgroundColor: errorMessage
+      ? isDark
+        ? "rgba(69, 10, 10, 0.2)"
+        : "rgba(254, 242, 242, 0.5)"
+      : isDark
+        ? "#0f172a"
+        : "#ffffff",
+    shadowColor: isFocused && !errorMessage ? "#6366f1" : "transparent",
+    shadowOpacity: isFocused && !errorMessage ? 0.1 : 0,
+    shadowRadius: isFocused && !errorMessage ? 4 : 0,
+    elevation: isFocused && !errorMessage ? 1 : 0,
+  };
 
   return (
     <View className={`mb-4 w-full ${className}`}>
@@ -48,18 +74,14 @@ export function Input({
           multiline={multiline}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          className={`rounded-2xl border ${
-            errorMessage
-              ? "border-red-400 dark:border-red-500/50 bg-red-50/50 dark:bg-red-950/20"
-              : isFocused
-              ? "border-primary-500 dark:border-primary-400 bg-white dark:bg-slate-900 shadow-sm shadow-primary-500/10"
-              : "border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900"
-          } px-4 py-4 ${secureTextEntry ? "pr-12" : ""} text-[16px] font-outfit text-slate-900 dark:text-white transition-colors duration-200 ${inputClassName}`}
+          className={`rounded-2xl border px-4 py-4 ${secureTextEntry ? "pr-12" : ""} text-[16px] font-outfit text-slate-900 dark:text-white ${inputClassName}`}
           placeholderTextColor="#94a3b8"
+          style={inputStyle}
         />
         {secureTextEntry ? (
           <Pressable 
             className="absolute right-4 top-0 bottom-0 justify-center h-full"
+            style={{ zIndex: 10, elevation: 2 }}
             onPress={() => setShowPassword(!showPassword)}
           >
             <Ionicons name={showPassword ? "eye-off" : "eye"} size={22} color="#94a3b8" />

@@ -3,10 +3,12 @@ const createApp = require('./app');
 const connectDB = require('./config/db');
 const connectCloudinary = require('./config/cloudinary');
 const { validateEnvironment } = require('./config/env');
+const { verifyTransporter } = require('./shared/utils/emailService');
 const { ensureDefaultCategories } = require('../utils/categoryDefaults');
 const { startReminderService } = require('./services/reminder.service');
 
-dotenv.config();
+const path = require('path');
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 validateEnvironment();
 
 const logger = require('./services/logger.service');
@@ -17,6 +19,9 @@ const startServer = async () => {
     await connectDB();
     await ensureDefaultCategories();
     connectCloudinary();
+
+    // Verify email service (non-blocking)
+    verifyTransporter();
 
     // Start reminder service (Task 2.3.1)
     startReminderService();

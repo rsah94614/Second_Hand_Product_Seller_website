@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Redirect, router } from "expo-router";
-import { Alert, FlatList, Pressable, Text, View } from "react-native";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import { Alert, FlatList, Pressable, Text, View, InteractionManager, ActivityIndicator } from "react-native";
 import { Image } from "expo-image";
 import { Screen } from "../components/ui/Screen";
-import { Loading } from "../components/Loading";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/EmptyState";
 import { useAuth } from "../context/AuthContext";
@@ -12,40 +12,80 @@ import { formatInr } from "../lib/format";
 import { getImageUri } from "../lib/product-image";
 import type { ProductImage } from "../lib/types";
 import { Ionicons } from "@expo/vector-icons";
+import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
+import { useToast } from "../components/ui/AppToast";
+
+const openEditProduct = (productId: string) => {
+  setTimeout(() => {
+    router.push(`/edit-product/${productId}` as never);
+  }, 80);
+};
 
 export default function MyProductsScreen() {
-  const { user, loading } = useAuth();
+  const [ready, setReady] = useState(false);
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => {
+      setReady(true);
+    });
+    return () => task.cancel();
+  }, []);
+
+  useEffect(() => {
+    if (ready && !authLoading && !user) {
+      router.replace("/(auth)/login");
+    }
+  }, [ready, authLoading, user]);
+
+  if (!ready || authLoading || !user) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#020617" }}>
+        <ActivityIndicator size="large" color="#6366f1" />
+      </View>
+    );
+  }
+
+  return <MyProductsContent />;
+}
+
+function MyProductsContent() {
+  const { user } = useAuth();
+  const { showToast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["my-products", user?.id],
     queryFn: () => getUserProducts(user!.id),
-    enabled: !!user?.id && user.role === "user",
+    enabled: !!user?.id && user?.role === "user",
   });
 
   const relistM = useMutation({
     mutationFn: (productId: string) => relistProduct(productId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-products"] });
-      Alert.alert("Relisted", "Your listing has been relisted for another 60 days.");
+      showToast("Your listing has been relisted for another 60 days.");
     },
-    onError: (e: unknown) => {
-      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      Alert.alert("Failed", msg || "Could not relist this product.");
+    onError: (e: any) => {
+      const parsed = parseApiError(e, "Could not relist this product.");
+      Alert.alert("Failed", formatErrorForDisplay(parsed));
     },
   });
 
-  if (loading || isLoading) {
+  if (isLoading) {
     return (
-      <Screen>
-        <Loading />
-      </Screen>
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#020617" }}>
+        <ActivityIndicator size="large" color="#6366f1" />
+      </View>
     );
   }
 
-  if (!user) return <Redirect href="/(auth)/login" />;
-  if (user.role !== "user") {
-    return <Screen><View className="flex-1 items-center justify-center"><Text className="font-outfit-sb text-lg text-slate-800 dark:text-slate-200">Seller access only.</Text></View></Screen>;
+  if (user?.role !== "user") {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#020617" }}>
+        <Text style={{ color: "white", fontSize: 18 }}>Seller access only.</Text>
+      </View>
+    );
   }
 
   const list = products as {
@@ -62,13 +102,16 @@ export default function MyProductsScreen() {
   }[];
 
   return (
-    <Screen>
-      <View className="px-5 pt-4 pb-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex-row justify-between items-center z-10">
-         <Text className="text-[26px] font-outfit-bl text-slate-900 dark:text-white">My Listings</Text>
+    <Screen safeAreaTop={false}>
+      <View className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex-row justify-between items-center z-10">
+         <View>
+           <Text className="text-[18px] font-outfit-sb text-slate-900 dark:text-white">Inventory Summary</Text>
+           <Text className="text-[13px] font-outfit text-slate-500 dark:text-slate-400">{list.length} item{list.length !== 1 ? 's' : ''}</Text>
+         </View>
          <Button 
-           title="New +" 
+           title="Create New +" 
            onPress={() => router.push("/create-product")} 
-           className="py-2.5 px-4 min-h-[40px] rounded-full"
+           className="py-2.5 px-5 min-h-[40px] rounded-full"
            textClassName="text-[14px]" 
          />
       </View>
@@ -86,19 +129,27 @@ export default function MyProductsScreen() {
              />
           </View>
         }
-        renderItem={({ item: p }) => (
+        renderItem={({ item: p }) => {
+          const badgeBg = p.isSold ? 'bg-red-50 dark:bg-red-900/30' : p.isActive ? 'bg-emerald-50 dark:bg-emerald-900/30' : 'bg-slate-100 dark:bg-slate-800';
+          const badgeText = p.isSold ? 'text-red-600 dark:text-red-400' : p.isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400';
+
+          return (
           <Pressable
-            onPress={() => router.push(`/edit-product/${p._id}` as never)}
-            className="mb-4 flex-row rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-sm shadow-slate-200/50 dark:shadow-none active:scale-[0.98] transition-transform"
+            onPress={() => {
+              openEditProduct(p._id);
+            }}
+            className="mb-4 flex-row rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-sm shadow-slate-200/50 dark:shadow-none"
           >
-            <View className="relative">
+            <View className="relative bg-slate-100 dark:bg-slate-800 rounded-2xl overflow-hidden">
               <Image
                 source={{ uri: getImageUri(p.images?.[0]) }}
-                style={{ width: 100, height: 100, borderRadius: 16 }}
+                style={{ width: 100, height: 100 }}
+                contentFit="cover"
+                transition={200}
               />
               {p.isSold && (
-                 <View className="absolute top-1 left-1 bg-red-500/90 rounded-md px-1.5 py-0.5">
-                    <Text className="text-[9px] font-outfit-b text-white uppercase">Sold</Text>
+                 <View className="absolute top-2 left-2 bg-red-500 rounded-md px-2 py-1 shadow-sm">
+                    <Text className="text-[10px] font-outfit-b text-white uppercase tracking-wider">Sold</Text>
                  </View>
               )}
             </View>
@@ -107,23 +158,25 @@ export default function MyProductsScreen() {
                  <Text className="text-[16px] font-outfit-sb text-slate-900 dark:text-white leading-tight" numberOfLines={2}>
                    {p.title}
                  </Text>
-                 <Text className="mt-1 text-[17px] font-outfit-b text-primary-600 dark:text-primary-400">{formatInr(p.price)}</Text>
+                 <Text className="mt-1.5 text-[18px] font-outfit-b text-primary-600 dark:text-primary-400">{formatInr(p.price)}</Text>
               </View>
               
-              <View className="flex-row items-center justify-between mt-2">
-                 <View className={`px-2 py-0.5 rounded-md ${p.isSold ? 'bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400' : p.isActive ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
-                    <Text className="text-[11px] font-outfit-sb uppercase tracking-wider">{p.isSold ? "Sold Out" : p.isActive ? "Active" : "Inactive"}</Text>
+              <View className="flex-row items-center justify-between mt-3">
+                 <View className={`px-2.5 py-1 rounded-md ${badgeBg}`}>
+                    <Text className={`text-[10px] font-outfit-b uppercase tracking-wider ${badgeText}`}>
+                      {p.isSold ? "Sold Out" : p.isActive ? "Active" : "Inactive"}
+                    </Text>
                  </View>
                  
-                 <View className="flex-row items-center gap-1.5 opacity-60">
-                    <Text className="text-[12px] font-outfit-m text-slate-500 dark:text-slate-400 uppercase tracking-widest">Edit</Text>
-                    <Ionicons name="create-outline" size={14} color="#64748b" />
+                 <View className="flex-row items-center gap-1.5 bg-slate-50 dark:bg-slate-800/50 px-3 py-1 rounded-lg border border-slate-100 dark:border-slate-700">
+                    <Text className="text-[11px] font-outfit-sb text-slate-600 dark:text-slate-300 uppercase tracking-widest">Edit</Text>
+                    <Ionicons name="create-outline" size={12} color="#64748b" />
                  </View>
               </View>
 
               {/* Expiry info */}
               {p.daysRemaining !== null && p.daysRemaining !== undefined && !p.isSold && (
-                <Text className={`mt-1 text-[11px] font-outfit-m ${p.isExpiringSoon ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'}`}>
+                <Text className={`mt-2 text-[11px] font-outfit-m ${p.isExpiringSoon ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'}`}>
                   {p.daysRemaining > 0 ? `Expires in ${p.daysRemaining}d` : "Expired"}
                 </Text>
               )}
@@ -138,15 +191,15 @@ export default function MyProductsScreen() {
                       { text: "Relist", onPress: () => relistM.mutate(p._id) },
                     ]);
                   }}
-                  className="mt-2 flex-row items-center gap-1 px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 self-start"
+                  className="mt-2 flex-row items-center gap-1 px-3 py-1.5 rounded-lg bg-primary-50 dark:bg-primary-900/30 border border-primary-100 dark:border-primary-800 self-start"
                 >
-                  <Ionicons name="refresh-outline" size={12} color="#6366f1" />
-                  <Text className="text-[11px] font-outfit-sb text-indigo-600 dark:text-indigo-400">Relist</Text>
+                  <Ionicons name="refresh-outline" size={14} color="#6366f1" />
+                  <Text className="text-[12px] font-outfit-sb text-primary-700 dark:text-primary-400">Relist Now</Text>
                 </Pressable>
               )}
             </View>
           </Pressable>
-        )}
+        )}}
       />
     </Screen>
   );

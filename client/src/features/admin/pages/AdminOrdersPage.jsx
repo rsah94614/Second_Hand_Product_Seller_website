@@ -24,14 +24,16 @@ import {
   SelectValue,
 } from '../../../components/ui/Select';
 import { getAdminOrders, updateAdminOrder } from '../api/adminApi';
+import { autoCompleteOrders } from '../../orders/api/orderApi';
 
 const statusStyles = {
-  requested: 'bg-yellow-100 text-yellow-700',
-  accepted: 'bg-blue-100 text-blue-700',
+  requested:        'bg-yellow-100 text-yellow-700',
+  accepted:         'bg-blue-100 text-blue-700',
   meetup_scheduled: 'bg-indigo-100 text-indigo-700',
-  completed: 'bg-green-100 text-green-700',
-  cancelled: 'bg-red-100 text-red-700',
-  no_show: 'bg-orange-100 text-orange-700',
+  delivered:        'bg-teal-100 text-teal-700',
+  completed:        'bg-green-100 text-green-700',
+  cancelled:        'bg-red-100 text-red-700',
+  no_show:          'bg-orange-100 text-orange-700',
 };
 
 const AdminOrdersPage = () => {
@@ -76,6 +78,15 @@ const AdminOrdersPage = () => {
     },
   });
 
+  const autoCompleteM = useMutation({
+    mutationFn: () => autoCompleteOrders(),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      toast.success(`Auto-complete done: ${res?.count ?? 0} orders completed.`);
+    },
+    onError: (err) => toast.error(err.response?.data?.message || 'Failed to auto-complete orders'),
+  });
+
   const orders = useMemo(() => {
     return data?.pages.flatMap((page) => page.orders) || [];
   }, [data]);
@@ -116,6 +127,25 @@ const AdminOrdersPage = () => {
           </div>
         </section>
 
+        {/* Auto-Complete Banner */}
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-teal-200 bg-teal-50 px-6 py-4">
+          <div>
+            <p className="font-semibold text-teal-800">🔁 Auto-Complete Stale Orders</p>
+            <p className="text-sm text-teal-600 mt-0.5">Force-completes all delivered orders that are older than 48 hours, adjusting stock and unlocking reviews.</p>
+          </div>
+          <button
+            onClick={() => {
+              if (window.confirm('This will auto-complete all delivered orders older than 48h. Continue?')) {
+                autoCompleteM.mutate();
+              }
+            }}
+            disabled={autoCompleteM.isPending}
+            className="shrink-0 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-60 text-white text-sm font-semibold px-5 py-2.5 transition-colors"
+          >
+            {autoCompleteM.isPending ? 'Running...' : 'Run Auto-Complete'}
+          </button>
+        </div>
+
         <Card className="rounded-2xl border-gray-100 shadow-sm mb-8 animate-fade-up-delayed">
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -137,6 +167,7 @@ const AdminOrdersPage = () => {
                 <SelectItem value="requested">Requested</SelectItem>
                 <SelectItem value="accepted">Accepted</SelectItem>
                 <SelectItem value="meetup_scheduled">Meetup Scheduled</SelectItem>
+                <SelectItem value="delivered">Delivered</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
                 <SelectItem value="no_show">No-Show</SelectItem>
@@ -264,6 +295,7 @@ const AdminOrdersPage = () => {
                             <SelectItem value="requested">Requested</SelectItem>
                             <SelectItem value="accepted">Accepted</SelectItem>
                             <SelectItem value="meetup_scheduled">Meetup Scheduled</SelectItem>
+                            <SelectItem value="delivered">Delivered</SelectItem>
                             <SelectItem value="completed">Completed</SelectItem>
                             <SelectItem value="cancelled">Cancelled</SelectItem>
                             <SelectItem value="no_show">No-Show</SelectItem>

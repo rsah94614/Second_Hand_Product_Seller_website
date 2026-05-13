@@ -1,176 +1,39 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { Upload, X } from 'lucide-react';
-import toast from 'react-hot-toast';
-import { useAuth } from '../../../context/AuthContext';
+import { Info } from 'lucide-react';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import { Button } from '../../../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/Card';
-import { Input } from '../../../components/ui/Input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../../../components/ui/Select';
-import { Textarea } from '../../../components/ui/Textarea';
-import { DEFAULT_PRODUCT_CATEGORIES, PRODUCT_CONDITIONS } from '../../../config/productOptions';
-import { CAMPUS_LOCATIONS } from '../../../lib/campus';
-import { createProduct, getProductCategories } from '../api/productApi';
+import { useCreateProduct } from '../hooks/useCreateProduct';
+import { ListingPoliciesModal } from '../components/ListingPoliciesModal';
+import { ImageUploadGrid } from '../components/ImageUploadGrid';
+import { ProductFormFields } from '../components/ProductFormFields';
+import { ContactSection } from '../components/ContactSection';
 
 const CreateProductPage = () => {
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    category: '',
-    condition: '',
-    price: '',
-    contactInfo: {
-      email: '',
-    },
-  });
-  const [images, setImages] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const { user } = useAuth();
   const navigate = useNavigate();
-
-  const { data: categoryResponse } = useQuery({
-    queryKey: ['product-categories'],
-    queryFn: getProductCategories,
-  });
-
-  const categories = useMemo(
-    () => categoryResponse?.categories?.map((category) => category.name) || DEFAULT_PRODUCT_CATEGORIES,
-    [categoryResponse]
-  );
-
-  useEffect(() => {
-    if (!user) {
-      return;
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      contactInfo: {
-        email: prev.contactInfo.email || user.email || '',
-      },
-    }));
-  }, [user]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    if (name.includes('.')) {
-      const [parent, child] = name.split('.');
-      setFormData((prev) => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent],
-          [child]: value,
-        },
-      }));
-      return;
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleImageChange = (e) => {
-    const MAX_FILE_SIZE_MB = 5;
-    const files = Array.from(e.target.files || []);
-    const validFiles = [];
-    const rejected = [];
-
-    files.forEach((file) => {
-      if (!file.type.startsWith('image/')) {
-        rejected.push(`${file.name} (not an image)`);
-        return;
-      }
-      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-        rejected.push(`${file.name} (over ${MAX_FILE_SIZE_MB}MB)`);
-        return;
-      }
-      validFiles.push(file);
-    });
-
-    if (rejected.length > 0) {
-      toast.error(`Skipped: ${rejected.join(', ')}`);
-    }
-
-    const nextImages = validFiles.map((file) => ({
-      file,
-      preview: URL.createObjectURL(file),
-      id: Math.random().toString(36).slice(2, 11),
-    }));
-
-    setImages((prev) => [...prev, ...nextImages].slice(0, 5));
-  };
-
-  const removeImage = (id) => {
-    setImages((prev) => {
-      const imageToRemove = prev.find((image) => image.id === id);
-      if (imageToRemove) {
-        URL.revokeObjectURL(imageToRemove.preview);
-      }
-      return prev.filter((image) => image.id !== id);
-    });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (images.length === 0) {
-      toast.error('Please add at least one image');
-      return;
-    }
-
-    const HIGH_RISK_CATEGORIES = ['Electronics', 'Mobile Phones', 'Laptops', 'Gadgets'];
-    if (HIGH_RISK_CATEGORIES.includes(formData.category) && images.length < 2) {
-      toast.error('High-risk categories require at least 2 images for safety.');
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const payload = new FormData();
-
-      Object.entries(formData).forEach(([key, value]) => {
-        if (key === 'contactInfo') {
-          payload.append('contactInfo', JSON.stringify(value));
-          return;
-        }
-        payload.append(key, value);
-      });
-
-      images.forEach((image) => {
-        payload.append('images', image.file);
-      });
-
-      const product = await createProduct(payload);
-      toast.success('Product created successfully!');
-      navigate(`/products/${product._id}`);
-    } catch (error) {
-      toast.error(error.response?.data?.message || error.message || 'Failed to create product');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const {
+    user,
+    formData,
+    setFormData,
+    images,
+    isLoading,
+    policyOpen,
+    categories,
+    setPolicyOpen,
+    handleChange,
+    handleImageChange,
+    removeImage,
+    handleSubmit,
+  } = useCreateProduct();
 
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-800 mb-4">Please log in to create a product</h1>
-          <Button onClick={() => navigate('/login')}>
-            Login
-          </Button>
+          <Button onClick={() => navigate('/login')}>Login</Button>
         </div>
       </div>
     );
@@ -179,185 +42,64 @@ const CreateProductPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
+      <ListingPoliciesModal open={policyOpen} onClose={() => setPolicyOpen(false)} />
+      
       <div className="px-4 py-10">
         <div className="mx-auto max-w-5xl">
           <Card className="rounded-3xl border-gray-100 shadow-sm animate-fade-in">
             <CardHeader className="pb-2 text-center">
-              <CardTitle className="text-3xl text-gray-800">Create Listing</CardTitle>
+              <div className="flex items-center justify-center gap-3">
+                <CardTitle className="text-3xl text-gray-800">Create Listing</CardTitle>
+                <button
+                  type="button"
+                  onClick={() => setPolicyOpen(true)}
+                  className="h-8 w-8 rounded-full bg-primary-50 hover:bg-primary-100 flex items-center justify-center transition-colors"
+                >
+                  <Info className="w-4 h-4 text-primary-600" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-500 mt-1">
+                Read our{' '}
+                <button
+                  type="button"
+                  onClick={() => setPolicyOpen(true)}
+                  className="text-primary-600 hover:underline font-medium"
+                >
+                  listing guidelines
+                </button>
+                {' '}before publishing.
+              </p>
             </CardHeader>
+
             <CardContent className="p-8 pt-4">
-
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="flex flex-col">
-                  <label htmlFor="title" className="form-label">
-                    Product Title *
-                  </label>
-                  <Input
-                    type="text"
-                    id="title"
-                    name="title"
-                    required
-                    value={formData.title}
-                    onChange={handleChange}
-                    placeholder="What are you selling?"
-                  />
-                </div>
+                <ProductFormFields 
+                  formData={formData} 
+                  categories={categories} 
+                  onChange={handleChange}
+                  onSelectChange={(name, value) => setFormData(prev => ({ ...prev, [name]: value }))}
+                />
 
-                <div className="flex flex-col">
-                  <label htmlFor="description" className="form-label">
-                    Description *
-                  </label>
-                  <Textarea
-                    id="description"
-                    name="description"
-                    required
-                    value={formData.description}
-                    onChange={handleChange}
-                    placeholder="Describe your product in detail..."
-                    rows="4"
-                  />
-                </div>
+                <ContactSection 
+                  contactInfo={formData.contactInfo} 
+                  onChange={handleChange} 
+                />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="category" className="form-label">
-                      Category *
-                    </label>
-                    <Select
-                      value={formData.category || undefined}
-                      onValueChange={(value) => setFormData((prev) => ({ ...prev, category: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category} value={category}>{category}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <label htmlFor="condition" className="form-label">
-                      Condition *
-                    </label>
-                    <Select
-                      value={formData.condition || undefined}
-                      onValueChange={(value) => setFormData((prev) => ({ ...prev, condition: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Condition" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PRODUCT_CONDITIONS.map((condition) => (
-                          <SelectItem key={condition} value={condition}>{condition}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="price" className="form-label">
-                      Price (₹) *
-                    </label>
-                    <Input
-                      type="number"
-                      id="price"
-                      name="price"
-                      required
-                      min="0"
-                      value={formData.price}
-                      onChange={handleChange}
-                      placeholder="0"
-                    />
-                  </div>
-
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Contact Information</h3>
-                  <p className="mb-4 text-sm text-gray-500">
-                    We&apos;ve pre-filled your profile contact details. You can keep them or override them just for this listing.
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                    <div className="flex flex-col">
-                      <label htmlFor="contactInfo.email" className="form-label pr-2">
-                        Email :
-                      </label>
-                      <Input
-                        type="email"
-                        id="contactInfo.email"
-                        name="contactInfo.email"
-                        value={formData.contactInfo.email}
-                        onChange={handleChange}
-                        placeholder="Your email"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="form-label">
-                    Product Images * (Max 5)
-                  </label>
-                  <p className="text-xs text-amber-600 font-medium mb-3">
-                    Note: High-risk categories like Electronics, Laptops, Mobile Phones, and Gadgets require at least 2 clear images for safety verification.
-                  </p>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {images.map((image) => (
-                        <div key={image.id} className="relative group rounded-xl overflow-hidden border border-gray-200 aspect-square md:aspect-video w-full h-32">
-                          <img
-                            src={image.preview}
-                            alt="Preview"
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <button
-                              type="button"
-                              onClick={() => removeImage(image.id)}
-                              className="bg-red-500 hover:bg-red-600 text-white rounded-full p-2.5 shadow-lg transform scale-90 group-hover:scale-100 transition-all flex items-center gap-2 font-medium text-sm"
-                            >
-                              <X className="w-4 h-4" /> Remove
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-
-                      {images.length < 5 && (
-                        <label className="flex flex-col items-center justify-center w-full h-32 rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 cursor-pointer hover:border-blue-500 transition-colors">
-                          <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                          <span className="text-sm text-gray-500">Add Image</span>
-                          <input
-                            type="file"
-                            multiple
-                            accept="image/*"
-                            onChange={handleImageChange}
-                            className="hidden"
-                          />
-                        </label>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <ImageUploadGrid 
+                  images={images} 
+                  onImageChange={handleImageChange} 
+                  onRemoveImage={removeImage} 
+                />
 
                 <div className="flex flex-col items-center">
-                  <Button
-                    type="submit"
-                    disabled={isLoading}
-                    className="mb-4 w-2/4"
-                  >
+                  <Button type="submit" disabled={isLoading} className="mb-4 w-full md:w-2/4 shadow-lg shadow-primary-600/20">
                     {isLoading ? 'Creating...' : 'Create Listing'}
                   </Button>
                   <Button
                     type="button"
                     onClick={() => navigate('/')}
                     variant="outline"
-                    className="w-2/4"
+                    className="w-full md:w-2/4"
                   >
                     Cancel
                   </Button>

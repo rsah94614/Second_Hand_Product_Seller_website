@@ -17,9 +17,9 @@ const ProductCard = ({ product, highlightLabel = '', highlightTone = 'bg-primary
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [quantity, setQuantity] = React.useState(1);
+  const [quantity] = React.useState(1);
   const isWishlisted = Boolean(user?.wishlist?.includes(product._id));
-  
+
   const { data: cartData } = useQuery({
     queryKey: ['cart'],
     queryFn: () => axios.get(`${API_BASE_URL}/api/cart`).then((res) => res.data),
@@ -76,17 +76,17 @@ const ProductCard = ({ product, highlightLabel = '', highlightTone = 'bg-primary
   const handleAddToCartClick = (event) => {
     event.preventDefault();
     event.stopPropagation();
-    
+
     if (!user) {
       toast.error('Please login to add to cart');
       navigate('/login');
       return;
     }
-    
+
     if (product.isSold) {
       return;
     }
-    
+
     addToCartMutation.mutate();
   };
 
@@ -130,9 +130,8 @@ const ProductCard = ({ product, highlightLabel = '', highlightTone = 'bg-primary
             variant="outline"
             onClick={handleWishlistClick}
             disabled={wishlistMutation.isPending}
-            className={`absolute right-3 top-3 z-20 h-10 w-10 rounded-full border border-white/20 shadow-lg backdrop-blur-md transition-colors ${
-              isWishlisted ? 'bg-rose-500 hover:bg-rose-600 text-white border-transparent' : 'bg-white/30 text-white hover:bg-white hover:text-rose-500'
-            }`}
+            className={`absolute right-3 top-3 z-20 h-10 w-10 rounded-full border border-white/20 shadow-lg backdrop-blur-md transition-colors ${isWishlisted ? 'bg-rose-500 hover:bg-rose-600 text-white border-transparent' : 'bg-white/30 text-white hover:bg-white hover:text-rose-500'
+              }`}
             title={isWishlisted ? 'Remove from wishlist' : 'Save product'}
           >
             <Heart className={`h-4 w-4 ${isWishlisted ? 'fill-current' : ''}`} />
@@ -213,9 +212,9 @@ const ProductCard = ({ product, highlightLabel = '', highlightTone = 'bg-primary
                 title={product.isSold || product.stock === 0 ? 'Sold Out' : isInCart ? 'In Cart' : 'Add to Cart'}
               >
                 {isInCart ? (
-                   <PackageCheck className="h-3.5 w-3.5 sm:mr-1.5 shrink-0" />
+                  <PackageCheck className="h-3.5 w-3.5 sm:mr-1.5 shrink-0" />
                 ) : (
-                   <ShoppingCart className="h-3.5 w-3.5 sm:mr-1.5 shrink-0" />
+                  <ShoppingCart className="h-3.5 w-3.5 sm:mr-1.5 shrink-0" />
                 )}
                 <span className="hidden sm:inline text-xs font-bold">
                   {addToCartMutation.isPending ? '...' : isInCart ? 'In Cart' : product.stock === 0 ? 'Sold' : 'Add to Cart'}

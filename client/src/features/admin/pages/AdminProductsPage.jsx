@@ -67,7 +67,10 @@ const AdminProductsPage = () => {
     queryFn: () => axios.get(`${API_BASE_URL}/api/categories`).then((res) => res.data),
   });
 
-  const categories = categoryResponse?.categories?.map((category) => category.name) || DEFAULT_PRODUCT_CATEGORIES;
+  const categories = useMemo(() => {
+    const names = categoryResponse?.categories?.map((category) => category.name) || DEFAULT_PRODUCT_CATEGORIES;
+    return [...new Set(names)];
+  }, [categoryResponse]);
 
   const updateProductMutation = useMutation({
     mutationFn: ({ productId, payload }) => updateAdminProduct(productId, payload),
@@ -94,7 +97,13 @@ const AdminProductsPage = () => {
   });
 
   const products = useMemo(() => {
-    return data?.pages.flatMap((page) => page.products) || [];
+    const raw = data?.pages.flatMap((page) => page.products) || [];
+    const seen = new Set();
+    return raw.filter((p) => {
+      if (!p?._id || seen.has(p._id)) return false;
+      seen.add(p._id);
+      return true;
+    });
   }, [data]);
 
   const formatPrice = (value) =>

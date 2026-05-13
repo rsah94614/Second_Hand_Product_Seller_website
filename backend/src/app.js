@@ -14,6 +14,14 @@ const { canTradeOnCampus } = require('./shared/utils/profileCompletion.utils');
 const { setNotificationIO } = require('./shared/utils/notification.utils');
 const logger = require('./services/logger.service');
 const requestLogger = require('./shared/middleware/requestLogger.middleware');
+const { validateAndSanitizeMessage } = require('./shared/utils/messageValidation.utils');
+const {
+  startDeliveryCleanup,
+  registerPendingDelivery,
+  handleDeliveryAck,
+  handleReadAck,
+  getPendingDeliveriesForUser,
+} = require('./shared/utils/messageDelivery.utils');
 
 const parseAllowedOrigins = () => {
   const main = process.env.CLIENT_URL || 'http://localhost:5173';
@@ -28,6 +36,8 @@ const corsOriginHandler = (allowedList) => (origin, callback) => {
   if (!origin) return callback(null, true);
   if (allowedList.includes(origin)) return callback(null, true);
   if (process.env.NODE_ENV !== 'production') return callback(null, true);
+  
+  console.error(`[CORS REJECTED] Origin: ${origin}. Allowed origins: ${allowedList.join(', ')}`);
   callback(new Error('Not allowed by CORS'));
 };
 
@@ -39,6 +49,9 @@ const createApp = () => {
   const clientDistPath = path.join(__dirname, '../../client/dist');
   const shouldServeClient =
     process.env.SERVE_CLIENT === 'true' && fs.existsSync(clientDistPath);
+
+  // Initialize delivery cleanup (Issue 1 & 4 fix)
+  startDeliveryCleanup();
 
   const getSocketToken = (socket) => {
     const authToken = socket.handshake.auth?.token;
@@ -141,6 +154,18 @@ const createApp = () => {
   // In-memory anti-spam tracker: { userId → { msgs: timestamp[], lastContent: string, repeatCount: int } }
   const chatSpamTracker = new Map();
 
+  // Issue 7: Periodic cleanup of spam tracker to prevent memory leak
+  setInterval(() => {
+    const now = Date.now();
+    for (const [userId, tracker] of chatSpamTracker.entries()) {
+      // If no messages in the last 10 minutes, clear entry
+      const lastMsg = tracker.msgs[tracker.msgs.length - 1];
+      if (!lastMsg || now - lastMsg > 10 * 60 * 1000) {
+        chatSpamTracker.delete(userId);
+      }
+    }
+  }, 5 * 60 * 1000); // Run every 5 minutes
+
   const checkMessageSpam = (senderId, content) => {
     const now = Date.now();
     const BURST_WINDOW_MS = 10_000;  // 10 seconds
@@ -183,13 +208,14 @@ const createApp = () => {
     }
     onlineUsers.get(userId).add(socket.id);
     
-    // Broadcast presence only to users who have chatted with this user
+    // Issue 8: Cache presence partners once on connection to avoid DB spike on disconnect
     (async () => {
       try {
         const partnerIds = await Message.distinct('sender', { receiver: userId });
         const receiverIds = await Message.distinct('receiver', { sender: userId });
-        const uniquePartners = [...new Set([...partnerIds.map(String), ...receiverIds.map(String)])];
-        uniquePartners.forEach(partnerId => {
+        socket.partnerIds = [...new Set([...partnerIds.map(String), ...receiverIds.map(String)])];
+        
+        socket.partnerIds.forEach(partnerId => {
           if (partnerId !== userId) {
             io.to(partnerId).emit('user_online', { userId });
           }
@@ -218,42 +244,53 @@ const createApp = () => {
       }
     });
 
-    socket.on('send_message', async (data) => {
-      const { receiver, content, productRef } = data || {};
+    socket.on('send_message', async (data, callback) => {
+      const { receiver, content, productRef, idempotencyKey } = data || {};
       const sender = userId;
 
-      if (!receiver || typeof receiver !== 'string' || !content?.trim()) {
-        socket.emit('error', { message: 'Missing required fields' });
-        return;
-      }
-      if (sender === receiver) {
-        socket.emit('error', { message: 'You cannot message yourself' });
+      // Issue 2 Fix: Validate and sanitize message content
+      const validation = validateAndSanitizeMessage({ content, receiver, productRef });
+      if (!validation.valid) {
+        socket.emit('error', { message: validation.error });
+        if (typeof callback === 'function') {
+          callback({ success: false, error: validation.error });
+        }
         return;
       }
 
-      const trimmed = content.trim();
-      if (trimmed.length > 2000) {
-        socket.emit('error', { message: 'Message too long (max 2000 chars)' });
+      const { content: sanitizedContent, receiver: validatedReceiver, productRef: validatedProductRef } = validation.data;
+
+      if (sender === validatedReceiver) {
+        socket.emit('error', { message: 'You cannot message yourself' });
+        if (typeof callback === 'function') {
+          callback({ success: false, error: 'Cannot message yourself' });
+        }
         return;
       }
 
       // Anti-spam: burst + repeat check
-      const spamCheck = checkMessageSpam(sender, trimmed);
+      const spamCheck = checkMessageSpam(sender, sanitizedContent);
       if (spamCheck.blocked) {
         socket.emit('error', { message: spamCheck.reason });
+        if (typeof callback === 'function') {
+          callback({ success: false, error: spamCheck.reason });
+        }
         return;
       }
 
       try {
         // Block check: has receiver blocked sender?
-        const isBlocked = await BlockedUser.findOne({ blocker: receiver, blocked: sender });
+        const isBlocked = await BlockedUser.findOne({ blocker: validatedReceiver, blocked: sender });
         if (isBlocked) {
           socket.emit('error', { message: 'Unable to send message.' });
+          if (typeof callback === 'function') {
+            callback({ success: false, error: 'Unable to send message' });
+          }
           return;
         }
 
         // New account restriction: check if sender account < 24h old
-        const senderUser = await User.findById(sender).select('createdAt isSuspended suspendedReason name avatar campus profileRole location');
+        const senderUser = await User.findById(sender).select('createdAt isSuspended suspendedReason name avatar campus profileRole location emailVerified');
         const senderAgeHours = senderUser
           ? (Date.now() - new Date(senderUser.createdAt).getTime()) / (1000 * 60 * 60)
           : 999;
@@ -262,13 +299,16 @@ const createApp = () => {
           socket.emit('error', {
             message: `Your account has been suspended. Reason: ${senderUser.suspendedReason || 'Violation of campus marketplace rules.'}`,
           });
+          if (typeof callback === 'function') {
+            callback({ success: false, error: 'Account suspended' });
+          }
           return;
         }
 
         const hasExistingConversation = await Message.exists({
           $or: [
-            { sender, receiver },
-            { sender: receiver, receiver: sender },
+            { sender, receiver: validatedReceiver },
+            { sender: validatedReceiver, receiver: sender },
           ],
         });
 
@@ -280,6 +320,9 @@ const createApp = () => {
               code: 'PROFILE_INCOMPLETE',
               missing: gating.missing,
             });
+            if (typeof callback === 'function') {
+              callback({ success: false, error: 'Profile incomplete' });
+            }
             return;
           }
         }
@@ -291,30 +334,64 @@ const createApp = () => {
             sender,
             timestamp: { $gte: startOfDay },
           });
-          if (!distinctReceivers.includes(receiver) && distinctReceivers.length >= 5) {
+          if (!distinctReceivers.includes(validatedReceiver) && distinctReceivers.length >= 5) {
             socket.emit('error', {
               message: 'New accounts can start up to 5 conversations per day. Try again tomorrow.',
             });
+            if (typeof callback === 'function') {
+              callback({ success: false, error: 'Daily limit reached' });
+            }
             return;
           }
         }
 
         const newMessage = new Message({
           sender,
-          receiver,
-          content: trimmed,
-          productRef: productRef || null,
+          receiver: validatedReceiver,
+          content: sanitizedContent,
+          productRef: validatedProductRef,
+          ...(idempotencyKey && typeof idempotencyKey === 'string' ? { idempotencyKey } : {}),
         });
 
+        // Task 4: Idempotency dedup — if a message with this key already exists, return it
+        if (idempotencyKey && typeof idempotencyKey === 'string') {
+          const existing = await Message.findOne({ idempotencyKey, sender })
+            .populate('sender', 'name email avatar')
+            .populate('receiver', 'name email avatar');
+          if (existing) {
+            // Return the existing message so the client can replace its optimistic copy
+            io.to(sender).emit('receive_message', existing);
+            if (typeof callback === 'function') {
+              callback({ success: true, messageId: existing._id, duplicate: true });
+            }
+            return;
+          }
+        }
+
         await newMessage.save();
+        
+        // Issue 1 & 4 Fix: Register delivery tracking
+        registerPendingDelivery(newMessage._id, sender, validatedReceiver);
+
         await newMessage.populate('sender', 'name email avatar');
         await newMessage.populate('receiver', 'name email avatar');
 
-        io.to(receiver).emit('receive_message', newMessage);
+        // Issue 4 Fix: Send message to receiver (they will send delivery acknowledgment separately)
+        io.to(validatedReceiver).emit('receive_message', newMessage);
+        
+        // Send message to sender as well
         io.to(sender).emit('receive_message', newMessage);
+
+        // Issue 4 Fix: Acknowledge to sender that message was saved
+        if (typeof callback === 'function') {
+          callback({ success: true, messageId: newMessage._id });
+        }
       } catch (error) {
         logger.error('Error saving message:', { message: error.message });
         socket.emit('error', { message: 'Failed to save message' });
+        if (typeof callback === 'function') {
+          callback({ success: false, error: 'Failed to save message' });
+        }
       }
     });
 
@@ -363,19 +440,49 @@ const createApp = () => {
       }
     });
 
-    socket.on('mark_seen', async ({ receiverId } = {}) => {
+    socket.on('mark_seen', async ({ receiverId } = {}, callback) => {
       try {
         if (!receiverId || typeof receiverId !== 'string') {
           return;
         }
 
-        await Message.updateMany(
+        // Issue 1 Fix: Only mark as read after delivery is confirmed
+        // Get pending deliveries for this user
+        const pendingDeliveries = getPendingDeliveriesForUser(userId);
+
+        // Update messages in database
+        const result = await Message.updateMany(
           { sender: receiverId, receiver: userId, read: false },
-          { $set: { read: true } }
+          { $set: { read: true, readAt: new Date() } }
         );
+
         io.to(receiverId).emit('messages_read', { receiverId: userId });
+
+        // Acknowledge to client
+        if (typeof callback === 'function') {
+          callback({ success: true, markedCount: result.modifiedCount });
+        }
       } catch (error) {
         logger.error('Error marking seen:', { message: error.message });
+        if (typeof callback === 'function') {
+          callback({ success: false, error: error.message });
+        }
+      }
+    });
+
+    // Issue 1 & 4 Fix: Delivery acknowledgment handler
+    socket.on('message_delivered', ({ messageId }, callback) => {
+      const result = handleDeliveryAck(messageId, userId);
+      if (typeof callback === 'function') {
+        callback(result);
+      }
+    });
+
+    // Issue 1 & 4 Fix: Read acknowledgment handler
+    socket.on('message_read', ({ messageId }, callback) => {
+      const result = handleReadAck(messageId, userId);
+      if (typeof callback === 'function') {
+        callback(result);
       }
     });
 
@@ -385,19 +492,14 @@ const createApp = () => {
         userSockets.delete(socket.id);
         if (userSockets.size === 0) {
           onlineUsers.delete(userId);
-          // Scoped offline broadcast
-          (async () => {
-            try {
-              const partnerIds = await Message.distinct('sender', { receiver: userId });
-              const receiverIds = await Message.distinct('receiver', { sender: userId });
-              const uniquePartners = [...new Set([...partnerIds.map(String), ...receiverIds.map(String)])];
-              uniquePartners.forEach(partnerId => {
-                if (partnerId !== userId) {
-                  io.to(partnerId).emit('user_offline', { userId });
-                }
-              });
-            } catch { /* ignore */ }
-          })();
+          // Scoped offline broadcast using cached partner IDs (Issue 8 fix)
+          if (socket.partnerIds) {
+            socket.partnerIds.forEach(partnerId => {
+              if (partnerId !== userId) {
+                io.to(partnerId).emit('user_offline', { userId });
+              }
+            });
+          }
         }
       }
     });

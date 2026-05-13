@@ -1,13 +1,22 @@
-import { Redirect, Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { Loading } from "../../components/Loading";
-import { View } from "react-native";
-import { useColorScheme } from "nativewind";
+import { useEffect } from "react";
+import { View, useColorScheme } from "react-native";
 
 export default function AdminLayout() {
   const { user, loading } = useAuth();
-  const { colorScheme } = useColorScheme();
+  const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user) {
+      router.replace("/(auth)/login");
+    } else if (user.role !== "admin") {
+      router.replace("/");
+    }
+  }, [loading, user]);
 
   if (loading) {
     return (
@@ -17,12 +26,12 @@ export default function AdminLayout() {
     );
   }
 
-  if (!user) {
-    return <Redirect href="/(auth)/login" />;
-  }
-
-  if (user.role !== "admin") {
-    return <Redirect href={"/" as never} />;
+  if (!user || user.role !== "admin") {
+    return (
+      <View className="flex-1 bg-slate-50 dark:bg-slate-950">
+        <Loading />
+      </View>
+    );
   }
 
   return (
@@ -47,6 +56,10 @@ export default function AdminLayout() {
       <Stack.Screen name="orders" options={{ title: "Orders" }} />
       <Stack.Screen name="reports" options={{ title: "Reports" }} />
       <Stack.Screen name="audit" options={{ title: "Audit Logs" }} />
+      <Stack.Screen name="moderation-queue" options={{ title: "Moderation Queue" }} />
+      <Stack.Screen name="seller-verifications" options={{ title: "Seller Verifications" }} />
+      <Stack.Screen name="bulk-actions" options={{ title: "Bulk Actions" }} />
+      <Stack.Screen name="activity" options={{ title: "Activity Timeline" }} />
     </Stack>
   );
 }

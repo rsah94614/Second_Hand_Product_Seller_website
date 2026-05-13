@@ -29,7 +29,10 @@ const SignInPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.email.trim()) {
+    // Debugging form data
+    console.log('[DEBUG] SignIn Submit:', { email: formData.email, password: !!formData.password });
+
+    if (!formData.email || !formData.email.trim()) {
       toast.error('Email address is required');
       return;
     }
@@ -40,22 +43,27 @@ const SignInPage = () => {
 
     setIsLoading(true);
 
-    // Call unified login function (Backend handles detection)
-    const result = await login(formData.email, formData.password);
+    try {
+      // Call unified login function
+      const result = await login(formData.email.trim(), formData.password);
 
-    if (result.success) {
-      toast.success('Login successful!');
-      navigate(from, { replace: true });
-    } else {
-      toast.error(result.message);
+      if (result.success) {
+        toast.success('Login successful!');
+        navigate(from, { replace: true });
+      } else {
+        toast.error(result.message || 'Invalid credentials');
+      }
+    } catch (err) {
+      console.error('[ERROR] SignIn Exception:', err);
+      toast.error('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ec_0%,#f8fafc_24%,#f8fafc_100%)] flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-[1100px] min-h-[600px] lg:min-h-[640px] overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] bg-white shadow-[0_20px_80px_-20px_rgba(15,23,42,0.15)] flex flex-col lg:flex-row-reverse animate-fade-in border border-stone-100/50">
+      <div className="w-full max-w-[1100px] min-h-[600px] lg:min-h-[640px] overflow-hidden rounded-4xl sm:rounded-4xl bg-white shadow-[0_20px_80px_-20px_rgba(15,23,42,0.15)] flex flex-col lg:flex-row-reverse animate-fade-in border border-stone-100/50">
 
         {/* Right Form Section */}
         <div className="w-full lg:w-1/2 p-6 sm:p-14 lg:p-16 flex flex-col justify-center bg-white relative z-10">
@@ -92,7 +100,7 @@ const SignInPage = () => {
                     required
                     value={formData.email}
                     onChange={handleChange}
-                    className="pl-11 pr-11 h-12 bg-white border-gray-800 placeholder:text-gray-600"
+                    className="pl-11 pr-11 h-12 bg-white placeholder:text-gray-600"
                     placeholder="Enter your registered email"
                   />
                   <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-600 w-5 h-5" />
@@ -117,7 +125,7 @@ const SignInPage = () => {
                     required
                     value={formData.password}
                     onChange={handleChange}
-                    className="pl-11 pr-11 h-12 bg-white border-gray-800 placeholder:text-gray-600"
+                    className="pl-11 pr-11 h-12 bg-white placeholder:text-gray-600"
                     placeholder="Enter your password"
                   />
                   <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-600 w-5 h-5" />

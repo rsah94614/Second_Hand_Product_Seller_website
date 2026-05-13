@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { Link, router, useLocalSearchParams } from "expo-router";
 import { Screen } from "../../components/ui/Screen";
+import { KeyboardShiftView } from "../../components/ui/KeyboardShiftView";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../components/ui/AppToast";
 
 export default function LoginScreen() {
   const { login, user } = useAuth();
+  const { showToast } = useToast();
   const { email: emailParam } = useLocalSearchParams<{ email?: string }>();
   const [email, setEmail] = useState(typeof emailParam === "string" ? emailParam : "");
   const [password, setPassword] = useState("");
@@ -23,13 +26,11 @@ export default function LoginScreen() {
   const onSubmit = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setErrorMessage("");
-      Alert.alert("Invalid email", "Please enter a valid email address.");
+      setErrorMessage("Please enter a valid email address.");
       return;
     }
     if (!password) {
-      setErrorMessage("");
-      Alert.alert("Required", "Password is required.");
+      setErrorMessage("Password is required.");
       return;
     }
     setLoading(true);
@@ -37,16 +38,23 @@ export default function LoginScreen() {
     const res = await login(email, password);
     setLoading(false);
     if (res.success) {
+      showToast("Signed in successfully.");
       router.replace("/" as never);
     } else {
-      setErrorMessage(res.message || "Sign in failed");
-      Alert.alert("Sign in failed", res.message || "Try again.");
+      setErrorMessage(res.message || "Sign in failed. Please try again.");
     }
   };
 
   return (
     <Screen>
-      <ScrollView className="flex-1 px-6 pt-12" keyboardShouldPersistTaps="handled">
+      <KeyboardShiftView>
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingTop: 48, paddingBottom: 160 }}
+          keyboardDismissMode={Platform.OS === "ios" ? "on-drag" : "none"}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
         <View className="mb-10">
 
            <Text className="text-4xl font-outfit-bl text-slate-900 dark:text-white leading-tight">
@@ -64,6 +72,7 @@ export default function LoginScreen() {
             </View>
           ) : null}
           <Input 
+            key="email-input"
             label="Email Address" 
             value={email} 
             onChangeText={setEmail} 
@@ -71,6 +80,7 @@ export default function LoginScreen() {
             placeholder="Enter your email address"
           />
           <Input 
+            key="password-input"
             label="Password" 
             value={password} 
             onChangeText={setPassword} 
@@ -104,6 +114,7 @@ export default function LoginScreen() {
         </View>
         <View className="h-20" />
       </ScrollView>
+      </KeyboardShiftView>
     </Screen>
   );
 }

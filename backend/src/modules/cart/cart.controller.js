@@ -151,7 +151,7 @@ const removeFromCart = async (req, res) => {
 const checkout = async (req, res) => {
   try {
     const { shippingDetails = {} } = req.body;
-    const requiredFields = ['fullName', 'addressLine1', 'city', 'state', 'postalCode'];
+    const requiredFields = ['fullName', 'addressLine1'];
     const missingFields = requiredFields.filter((field) => !shippingDetails[field]);
 
     if (missingFields.length) {
@@ -184,77 +184,95 @@ const checkout = async (req, res) => {
       });
     }
 
-    const orderItems = cart.items.map((item) => ({
-      product: item.product._id,
-      title: item.product.title,
-      image: item.product.images?.[0] || '',
-      price: item.product.price,
-      quantity: item.quantity,
-    }));
-
-    const total = orderItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
-
-    const order = await Order.create({
-      user: req.user._id,
-      seller: cart.items[0]?.product?.seller || undefined,
-      items: orderItems,
-      total,
-      status: 'requested',
-      shippingDetails: {
-        fullName: shippingDetails.fullName || req.user.name || '',
-        email: shippingDetails.email || req.user.email || '',
-        addressLine1: shippingDetails.addressLine1 || '',
-        addressLine2: shippingDetails.addressLine2 || '',
-        landmark: shippingDetails.landmark || '',
-        city: shippingDetails.city || '',
-        state: shippingDetails.state || '',
-        postalCode: shippingDetails.postalCode || '',
-        country: shippingDetails.country || 'India',
-      },
+    // Group items by seller
+    const itemsBySeller = new Map();
+    cart.items.forEach(item => {
+      const sellerId = item.product.seller?.toString();
+      if (!sellerId) return;
+      if (!itemsBySeller.has(sellerId)) {
+        itemsBySeller.set(sellerId, []);
+      }
+      itemsBySeller.get(sellerId).push(item);
     });
 
-    const uniqueSellerIds = [...new Set(
-      cart.items
-        .map((item) => item.product?.seller)
-        .filter(Boolean)
-        .map((sellerId) => sellerId.toString())
-    )];
+    const orders = [];
+    const notificationPromises = [];
 
-    await Promise.all([
-      createNotification({
-        userId: req.user._id,
-        actorId: req.user._id,
-        orderId: order._id,
-        type: 'order_placed',
-        title: 'Deal request sent!',
-        message: `Your cart request with ${orderItems.length} item${orderItems.length > 1 ? 's' : ''} has been sent to the seller.`,
-        link: '/orders',
-        metadata: {
-          status: order.status,
-          itemCount: orderItems.length,
+    for (const [sellerId, sellerItems] of itemsBySeller.entries()) {
+      const orderItems = sellerItems.map((item) => ({
+        product: item.product._id,
+        title: item.product.title,
+        image: item.product.images?.[0] || '',
+        price: item.product.price,
+        quantity: item.quantity,
+      }));
+
+      const total = orderItems.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
+      );
+
+      const order = await Order.create({
+        user: req.user._id,
+        seller: sellerId,
+        items: orderItems,
+        total,
+        status: 'requested',
+        shippingDetails: {
+          fullName: shippingDetails.fullName || req.user.name || '',
+          email: shippingDetails.email || req.user.email || '',
+          addressLine1: shippingDetails.addressLine1 || '',
+          addressLine2: shippingDetails.addressLine2 || '',
+          landmark: shippingDetails.landmark || '',
+          city: shippingDetails.city || '',
+          state: shippingDetails.state || '',
+          postalCode: shippingDetails.postalCode || '',
+          country: shippingDetails.country || 'India',
         },
-      }),
-      createNotifications(uniqueSellerIds, {
-        actorId: req.user._id,
-        orderId: order._id,
-        type: 'new_order',
-        title: 'New deal request!',
-        message: `${req.user.name} placed a cart checkout request containing your listing${uniqueSellerIds.length > 1 ? 's' : ''}.`,
-        link: '/notifications',
-        metadata: {
-          buyerId: req.user._id.toString(),
-          itemCount: orderItems.length,
-        },
-      }),
-    ]);
+      });
+      orders.push(order);
+
+      // Notification to Buyer for this order
+      notificationPromises.push(
+        createNotification({
+          userId: req.user._id,
+          actorId: req.user._id,
+          orderId: order._id,
+          type: 'order_placed',
+          title: 'Deal request sent!',
+          message: `Your cart request with ${orderItems.length} item${orderItems.length > 1 ? 's' : ''} has been sent to the seller.`,
+          link: '/orders',
+          metadata: {
+            status: order.status,
+            itemCount: orderItems.length,
+          },
+        })
+      );
+
+      // Notification to Seller for this order
+      notificationPromises.push(
+        createNotifications([sellerId], {
+          actorId: req.user._id,
+          orderId: order._id,
+          type: 'new_order',
+          title: 'New deal request!',
+          message: `${req.user.name} placed a checkout request containing your listing${orderItems.length > 1 ? 's' : ''}.`,
+          link: '/notifications',
+          metadata: {
+            buyerId: req.user._id.toString(),
+            itemCount: orderItems.length,
+          },
+        })
+      );
+    }
+
+    await Promise.all(notificationPromises);
 
     cart.items = [];
     await cart.save();
 
-    return res.status(201).json(order);
+    // Return the first order or an array. We return an array to correctly represent multi-order checkouts.
+    return res.status(201).json(orders.length === 1 ? orders[0] : orders);
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

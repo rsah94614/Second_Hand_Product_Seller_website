@@ -24,15 +24,19 @@ export const reportNoShow = (orderId, payload = { noShowBy: 'seller' }) =>
 
 // ── Phase 2: Confirmation Photo ───────────────────────────────────────────────
 export const uploadConfirmationPhoto = (orderId, formData) =>
-  axios.post(`${API_BASE_URL}/api/orders/${orderId}/confirm-photo`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  }).then((res) => res.data);
+  axios.post(`${API_BASE_URL}/api/orders/${orderId}/confirmation-photo`, formData).then((res) => res.data);
 
 // ── Phase 2: Disputes ─────────────────────────────────────────────────────────
 export const createDispute = (orderId, formData) =>
-  axios.post(`${API_BASE_URL}/api/orders/${orderId}/dispute`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  }).then((res) => res.data);
+  axios.post(`${API_BASE_URL}/api/orders/${orderId}/dispute`, formData).then((res) => res.data);
 
 export const getDisputes = () =>
-  axios.get(`${API_BASE_URL}/api/disputes`).then((res) => res.data);
+  axios.get(`${API_BASE_URL}/api/orders/disputes/all`).then((res) => res.data);
+
+// ── Two-Party Confirmation ─────────────────────────────────────────────────────
+export const markOrderDelivered = (orderId) =>
+  axios.patch(`${API_BASE_URL}/api/orders/${orderId}/deliver`).then((res) => res.data);
+
+// ── Admin: Auto-Complete ───────────────────────────────────────────────────────
+export const autoCompleteOrders = () =>
+  axios.post(`${API_BASE_URL}/api/orders/admin/auto-complete`).then((res) => res.data);

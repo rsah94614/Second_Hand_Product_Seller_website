@@ -1,4 +1,4 @@
-import { api } from "./client";
+import { api, uploadFormData } from "./client";
 
 export const updateUserProfile = (userId: string, payload: Record<string, unknown>) =>
   api.put(`/api/users/${userId}`, payload).then((r) => r.data);
@@ -7,7 +7,7 @@ export const getUserProfile = (userId: string) =>
   api.get(`/api/users/${userId}`).then((r) => r.data);
 
 export const uploadUserAvatar = (userId: string, payload: FormData) =>
-  api.post(`/api/users/${userId}/avatar`, payload).then((r) => r.data);
+  uploadFormData(`/api/users/${userId}/avatar`, payload);
 
 export const getWishlist = () => api.get(`/api/users/me/wishlist`).then((r) => r.data);
 
@@ -19,7 +19,7 @@ export const getRecentlyViewed = () =>
 
 export const submitSellerReview = (
   userId: string,
-  payload: { rating: number; comment: string; orderId: string; productId?: string }
+  payload: { rating: number; comment: string; orderId?: string; productId?: string }
 ) =>
   api.post(`/api/users/${userId}/reviews`, payload).then((r) => r.data);
 
@@ -52,3 +52,7 @@ export const removeDevice = (deviceId: string) =>
 
 export const trustDevice = (deviceId: string) =>
   api.post(`/api/auth/devices/${deviceId}/trust`).then((r) => r.data);
+
+// ── Profile Completion ────────────────────────────────────────────────────────
+export const getProfileCompletion = () =>
+  api.get(`/api/users/me/profile-completion`).then((r) => r.data);

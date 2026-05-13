@@ -6,7 +6,7 @@ export function notificationLinkToHref(link: string): string | null {
     if (id) return `/product/${id}`;
   }
   if (path === "/cart") return "/(tabs)/cart";
-  if (path === "/orders") return "/(tabs)/orders";
+  if (path === "/orders") return "/orders";
   if (path.startsWith("/order/")) {
     const id = path.replace("/order/", "");
     if (id) return `/order/${id}`;

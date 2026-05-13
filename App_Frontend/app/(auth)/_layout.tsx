@@ -1,10 +1,9 @@
 import { Stack, router } from "expo-router";
-import { useColorScheme } from "nativewind";
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable } from "react-native";
+import { Pressable, useColorScheme } from "react-native";
 
 export default function AuthLayout() {
-  const { colorScheme } = useColorScheme();
+  const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
   const BackButton = () => (
@@ -16,7 +15,7 @@ export default function AuthLayout() {
           router.replace("/(tabs)");
         }
       }}
-      className="p-1"
+      className="pr-4"
     >
       <Ionicons name="arrow-back" size={24} color={isDark ? "#ffffff" : "#1e293b"} />
     </Pressable>
@@ -44,6 +43,7 @@ export default function AuthLayout() {
       <Stack.Screen name="register" options={{ title: "Create account" }} />
       <Stack.Screen name="forgot-password" options={{ title: "Forgot password" }} />
       <Stack.Screen name="reset-password" options={{ title: "Reset password" }} />
+      <Stack.Screen name="verify-email" options={{ title: "Verify email" }} />
     </Stack>
   );
 }

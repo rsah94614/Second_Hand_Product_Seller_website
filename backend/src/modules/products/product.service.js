@@ -58,7 +58,14 @@ const recalculateReviewStats = (product) => {
 
 const parseContactInfo = (value) => {
   if (!value) return {};
-  if (typeof value === 'string') return JSON.parse(value);
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch (e) {
+      console.warn('[ProductService] Failed to parse contactInfo JSON:', value);
+      return {};
+    }
+  }
   return value;
 };
 
@@ -151,22 +158,18 @@ const findProducts = async ({ cursor, limit = 12, category, minPrice, maxPrice, 
   let total = 0;
 
   if (search && (!sortBy || sortBy === 'createdAt')) {
-    const matchedProducts = await Product.find(query).populate('seller', 'name location');
+    // Issue 9 Fix: Use MongoDB text index for relevance ranking at DB level
+    const searchQuery = { 
+      ...query, 
+      $text: { $search: search } 
+    };
+    
+    products = await Product.find(searchQuery, { score: { $meta: 'textScore' } })
+      .populate('seller', 'name location')
+      .sort({ score: { $meta: 'textScore' } })
+      .limit(numericLimit);
 
-    const rankedProducts = matchedProducts
-      .map((product) => ({
-        product,
-        relevanceScore: scoreSearchMatch(product, search),
-      }))
-      .sort((a, b) => {
-        if (b.relevanceScore !== a.relevanceScore) return b.relevanceScore - a.relevanceScore;
-        return new Date(b.product.createdAt) - new Date(a.product.createdAt);
-      });
-
-    total = rankedProducts.length;
-    products = rankedProducts
-      .slice(0, numericLimit)
-      .map((entry) => entry.product);
+    total = await Product.countDocuments(searchQuery);
   } else {
     products = await Product.find(query)
       .populate('seller', 'name location')
@@ -223,6 +226,13 @@ const findRelatedProducts = async (productId) => {
   return { products: relatedProducts };
 };
 
+const LISTING_EXPIRY_DAYS = 60;
+
+const getBearerToken = (headerValue) => {
+  if (!headerValue || typeof headerValue !== 'string') return null;
+  return headerValue.replace(/Bearer\s+/i, '').trim() || null;
+};
+
 module.exports = {
   scoreSearchMatch,
   recalculateReviewStats,
@@ -233,4 +243,6 @@ module.exports = {
   notifyWishlistUsers,
   findProducts,
   findRelatedProducts,
+  LISTING_EXPIRY_DAYS,
+  getBearerToken,
 };

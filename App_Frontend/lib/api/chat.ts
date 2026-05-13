@@ -1,4 +1,4 @@
-import { api } from "./client";
+import { api, uploadFormData } from "./client";
 
 export const getConversations = () =>
   api.get(`/api/chat/conversations/all`).then((r) => r.data);
@@ -35,4 +35,4 @@ export const unpinConversation = (userId: string) =>
 
 // ── Phase 3: Image Sharing ────────────────────────────────────────────────────
 export const uploadChatImage = (formData: FormData) =>
-  api.post(`/api/chat/upload-image`, formData).then((r) => r.data);
+  uploadFormData(`/api/chat/upload-image`, formData);

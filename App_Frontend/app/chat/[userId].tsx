@@ -1,421 +1,326 @@
-import { Redirect, Stack, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
-import { Image } from "expo-image";
-import * as ImagePicker from "expo-image-picker";
-import { Screen } from "../../components/ui/Screen";
-import { useAuth } from "../../context/AuthContext";
-import { useSocket } from "../../context/SocketContext";
-import { getConversationMessages, markConversationAsRead, reportChatUser, uploadChatImage } from "../../lib/api/chat";
+import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  ActivityIndicator,
+  FlatList,
+  Modal,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+  InteractionManager,
+  Platform,
+  Appearance,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { blockUser } from "../../lib/api/users";
+import { Screen } from "../../components/ui/Screen";
+import { KeyboardShiftView } from "../../components/ui/KeyboardShiftView";
+import { useAuth } from "../../context/AuthContext";
+import { useChatThread, getId } from "../../lib/hooks/useChatThread";
+import { ChatHeader } from "../../components/chat/ChatHeader";
+import { MessageItem } from "../../components/chat/MessageItem";
+import { ChatInputArea } from "../../components/chat/ChatInputArea";
+import type { Msg } from "../../lib/types";
 
-type Msg = {
-  _id: string;
-  content?: string;
-  image?: string;
-  sender: unknown;
-  receiver: unknown;
-  timestamp?: string;
-  createdAt?: string;
-  read?: boolean;
-  isDeleted?: boolean;
-};
-
-const getId = (v: unknown) => (typeof v === "object" && v && "_id" in v ? String((v as { _id: string })._id) : String(v || ""));
-const getName = (v: unknown) =>
-  typeof v === "object" && v && "name" in v ? String((v as { name?: string }).name || "") : "";
+const QUICK_TEMPLATES = [
+  "Is this still available?",
+  "Where on campus can we meet?",
+  "I am interested!",
+  "Can we negotiate the price?",
+];
 
 export default function ChatThreadScreen() {
-  const { userId, name } = useLocalSearchParams<{ userId: string; name?: string }>();
-  const { user } = useAuth();
-  const socket = useSocket();
-  const [messages, setMessages] = useState<Msg[]>([]);
-  const [text, setText] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [partnerTyping, setPartnerTyping] = useState(false);
+  const [ready, setReady] = useState(false);
+  const { user, loading: authLoading } = useAuth();
+  const params = useLocalSearchParams<{ userId: string; name?: string; pinned?: string }>();
+
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => {
+      setReady(true);
+    });
+    return () => task.cancel();
+  }, []);
+
+  useEffect(() => {
+    if (ready && !authLoading && !user) {
+      router.replace("/(auth)/login");
+    }
+  }, [ready, authLoading, user]);
+
+  if (!ready || authLoading || !user) {
+    return (
+      <Screen className="bg-slate-50 dark:bg-slate-950">
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="small" color="#6366f1" />
+        </View>
+      </Screen>
+    );
+  }
+
+  // Pass all context-sensitive data as props to keep the content stable
+  return (
+    <ChatThreadContent 
+      params={params} 
+      user={user} 
+      isDark={Appearance.getColorScheme() === "dark"} 
+    />
+  );
+}
+
+function ChatThreadContent({ params, user, isDark }: { params: any; user: any; isDark: boolean }) {
+  const { userId: partnerId, name: partnerNameFromQuery, pinned } = params;
+
+  const {
+    messages,
+    loading,
+    loadError,
+    partnerTyping,
+    isPinned,
+    setIsPinned,
+    editingMessageId,
+    setEditingMessageId,
+    sendMessage,
+    sendImage,
+    deleteMessage,
+    togglePin,
+    block,
+    report,
+    emitTyping,
+    isConnected,
+    isSendingImage,
+  } = useChatThread(partnerId);
+
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState("spam");
   const [reportDetails, setReportDetails] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
-  const [sendingImage, setSendingImage] = useState(false);
+
   const listRef = useRef<FlatList>(null);
-  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const partnerName = partnerNameFromQuery || "Chat";
 
-  const partnerId = String(userId || "");
-  const partnerName =
-    messages
-      .map((message) => {
-        const senderId = getId(message.sender);
-        const receiverId = getId(message.receiver);
-        if (senderId === partnerId) return getName(message.sender);
-        if (receiverId === partnerId) return getName(message.receiver);
-        return "";
-      })
-      .find(Boolean) || (name ? String(name) : "Chat");
+  useEffect(() => {
+    if (pinned === "1") setIsPinned(true);
+  }, [pinned, setIsPinned]);
 
-  const openActions = () => {
-    Alert.alert(partnerName, "Chat actions", [
+  const openMessageActions = (message: Msg) => {
+    if (getId(message.sender) !== user?.id || message.isDeleted || message._id.startsWith("temp-")) return;
+    Alert.alert("Message actions", "Choose an action for this message.", [
       {
-        text: "Report chat",
+        text: "Edit",
         onPress: () => {
-          setReportReason("spam");
-          setReportDetails("");
-          setReportOpen(true);
+          setEditingMessageId(message._id);
         },
       },
       {
-        text: "Block user",
+        text: "Delete",
         style: "destructive",
         onPress: () => {
-          Alert.alert("Block user", "You will no longer receive messages from this user. Continue?", [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Block",
-              style: "destructive",
-              onPress: async () => {
-                try {
-                  await blockUser(partnerId);
-                  Alert.alert("Blocked", "User blocked successfully.");
-                } catch (e: unknown) {
-                  const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
-                  Alert.alert("Error", msg || "Failed to block user.");
-                }
-              },
-            },
-          ]);
+          deleteMessage(message._id);
         },
       },
       { text: "Cancel", style: "cancel" },
-    ]);
+    ], { cancelable: true });
   };
 
-  const load = useCallback(async () => {
-    if (!partnerId || !user) return;
-    setLoading(true);
-    try {
-      const data = await getConversationMessages(partnerId);
-      setMessages(Array.isArray(data) ? data : []);
-      await markConversationAsRead(partnerId);
-      socket?.emit?.("mark_seen", { receiverId: partnerId });
-    } catch {
-      setMessages([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [partnerId, user, socket]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  useEffect(() => {
-    if (!socket || !user || !partnerId) return undefined;
-
-    const onReceive = (message: Msg) => {
-      const s = getId(message.sender);
-      const r = getId(message.receiver);
-      const me = user.id;
-      if ((s === me && r === partnerId) || (s === partnerId && r === me)) {
-        setMessages((prev) => {
-          if (prev.some((m) => m._id === message._id)) return prev;
-          return [...prev, message];
-        });
-        if (s === partnerId) {
-          socket.emit("mark_seen", { receiverId: partnerId });
-        }
-      }
-    };
-
-    const onEdited = (message: Msg) => {
-      setMessages((prev) => prev.map((m) => (m._id === message._id ? message : m)));
-    };
-
-    const onDeleted = (message: Msg) => {
-      setMessages((prev) => prev.map((m) => (m._id === message._id ? message : m)));
-    };
-
-    socket.on("receive_message", onReceive);
-    socket.on("message_edited", onEdited);
-    socket.on("message_deleted", onDeleted);
-    const onMessagesRead = ({ receiverId }: { receiverId?: string }) => {
-      if (String(receiverId || "") !== partnerId) return;
-      setMessages((prev) =>
-        prev.map((m) => {
-          const mine = getId(m.sender) === user.id;
-          const toPartner = getId(m.receiver) === partnerId;
-          if (mine && toPartner) return { ...m, read: true };
-          return m;
-        })
-      );
-    };
-    socket.on("messages_read", onMessagesRead);
-
-    const onTyping = ({ userId: typerId }: { userId?: string }) => {
-      if (String(typerId || "") === partnerId) setPartnerTyping(true);
-    };
-    const onStopTyping = ({ userId: typerId }: { userId?: string }) => {
-      if (String(typerId || "") === partnerId) setPartnerTyping(false);
-    };
-    socket.on("user_typing", onTyping);
-    socket.on("user_stop_typing", onStopTyping);
-
-    return () => {
-      socket.off("receive_message", onReceive);
-      socket.off("message_edited", onEdited);
-      socket.off("message_deleted", onDeleted);
-      socket.off("messages_read", onMessagesRead);
-      socket.off("user_typing", onTyping);
-      socket.off("user_stop_typing", onStopTyping);
-    };
-  }, [socket, user, partnerId]);
-
-  useEffect(() => {
-    return () => {
-      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    };
-  }, []);
-
-  const send = () => {
-    const trimmed = text.trim();
-    if (!trimmed || !socket || !partnerId) return;
-    socket.emit("typing_stop", { receiverId: partnerId });
-    socket.emit("send_message", { receiver: partnerId, content: trimmed });
-    setText("");
-  };
-
-  const sendImage = async () => {
-    if (sendingImage || !partnerId) return;
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission", "Photo access is required to send images.");
-      return;
-    }
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      quality: 0.8,
-    });
-    if (res.canceled || !res.assets?.length) return;
-    const asset = res.assets[0];
-    const mimeType = asset.mimeType || "image/jpeg";
-    const ext = mimeType.includes("png") ? "png" : "jpg";
-    const fd = new FormData();
-    if (Platform.OS === "web") {
-      const blob = await fetch(asset.uri).then((r) => r.blob());
-      fd.append("image", blob, `chat.${ext}`);
-    } else {
-      fd.append("image", { uri: asset.uri, name: `chat.${ext}`, type: mimeType } as unknown as Blob);
-    }
-    fd.append("receiverId", partnerId);
-    setSendingImage(true);
-    try {
-      await uploadChatImage(fd);
-      // The socket event will update the message list automatically
-    } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      Alert.alert("Error", msg || "Failed to send image.");
-    } finally {
-      setSendingImage(false);
-    }
-  };
-
-  if (!user) {
-    return <Redirect href="/(auth)/login" />;
-  }
-
-  const formatTime = (msg: Msg) => {
-    const d = msg.createdAt || msg.timestamp;
-    if (!d) return "";
-    const date = new Date(d);
+  const formatTime = (message: Msg) => {
+    const time = message.createdAt || message.timestamp || new Date().toISOString();
+    const date = new Date(time);
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
   return (
-    <Screen className="bg-slate-50 dark:bg-slate-950">
-      <Stack.Screen
-        options={{
-          title: partnerName,
-          headerRight: () => (
-            <Pressable onPress={openActions} className="px-2 py-1 active:opacity-70">
-              <Ionicons name="ellipsis-vertical" size={18} color="#64748b" />
-            </Pressable>
-          ),
-        }}
+    <Screen className="bg-slate-50 dark:bg-slate-950" safeAreaTop={false} safeAreaBottom={false}>
+      <ChatHeader
+        partnerName={partnerName}
+        isPinned={isPinned}
+        onTogglePin={togglePin}
+        onBlock={block}
+        onReport={() => setReportOpen(true)}
+        isDark={isDark}
       />
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={80}
-      >
-        {loading ? (
-          <View className="flex-1 items-center justify-center">
-            <Text className="text-[15px] font-outfit-m text-slate-500 dark:text-slate-400">Loading messages...</Text>
-          </View>
-        ) : messages.length === 0 ? (
-          <View className="flex-1 items-center justify-center px-8">
-            <View className="h-16 w-16 rounded-full bg-primary-100 dark:bg-primary-900/40 items-center justify-center mb-4">
-              <Ionicons name="chatbubbles-outline" size={28} color="#6366f1" />
-            </View>
-            <Text className="text-[18px] font-outfit-sb text-slate-900 dark:text-white text-center mb-1">Start the conversation</Text>
-            <Text className="text-[14px] font-outfit text-slate-500 dark:text-slate-400 text-center">Say hello and make a deal!</Text>
-          </View>
-        ) : (
-          <View className="flex-1">
-            {partnerTyping ? (
-              <View className="px-4 pt-2">
-                <Text className="text-[12px] font-outfit-m text-slate-500 dark:text-slate-400">Typing…</Text>
-              </View>
-            ) : null}
+
+      {!isConnected && (
+        <View className="flex-row items-center justify-center gap-2 bg-amber-50 border-b border-amber-200 px-4 py-2">
+          <Ionicons name="cloud-offline-outline" size={16} color="#92400e" />
+          <Text className="text-[13px] font-outfit-m text-amber-800">
+            Offline — messages will send when reconnected
+          </Text>
+        </View>
+      )}
+
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="small" color="#6366f1" />
+          <Text className="mt-2 text-[15px] font-outfit-m text-slate-500 dark:text-slate-400">Loading messages...</Text>
+        </View>
+      ) : loadError ? (
+        <View className="flex-1 items-center justify-center px-8">
+          <Text className="mb-2 text-center text-[18px] font-outfit-sb text-slate-900 dark:text-white">
+            Could not load messages
+          </Text>
+          <Text className="mb-4 text-center text-[14px] font-outfit text-slate-500 dark:text-slate-400">
+            Check your connection and try again.
+          </Text>
+        </View>
+      ) : (
+        <KeyboardShiftView style={{ flex: 1 }}>
+          <View style={{ flex: 1 }}>
             <FlatList
               ref={listRef}
               data={messages}
-              keyExtractor={(m) => m._id}
-              contentContainerStyle={{ padding: 16, paddingBottom: 8 }}
-              onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
-              renderItem={({ item: m }) => {
-                const mine = getId(m.sender) === user.id;
-                return (
-                  <View className={`mb-2.5 max-w-[80%] ${mine ? "self-end" : "self-start"}`}>
-                    <View
-                      className={`rounded-2xl px-4 py-2.5 ${
-                        mine
-                          ? "bg-primary-600 dark:bg-primary-500 rounded-br-sm"
-                          : "bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-bl-sm"
-                      }`}
-                    >
-                      {m.isDeleted ? (
-                        <Text className={`text-[15px] font-outfit leading-relaxed italic ${mine ? "text-white/70" : "text-slate-400"}`}>
-                          This message was deleted
-                        </Text>
-                      ) : m.image ? (
-                        <Image source={{ uri: m.image }} style={{ width: 200, height: 200, borderRadius: 12 }} contentFit="cover" />
-                      ) : (
-                        <Text className={`text-[15px] font-outfit leading-relaxed ${mine ? "text-white" : "text-slate-900 dark:text-slate-100"}`}>
-                          {m.content}
-                        </Text>
-                      )}
-                    </View>
-                    <Text
-                      className={`text-[10px] font-outfit-m text-slate-400 dark:text-slate-500 mt-1 ${
-                        mine ? "text-right mr-1" : "ml-1"
-                      }`}
-                    >
-                      {formatTime(m)}
-                      {mine && m.read ? " · Read" : ""}
-                    </Text>
-                  </View>
-                );
-              }}
-            />
-          </View>
-        )}
-
-        {/* Input Bar */}
-        <View className="flex-row items-end gap-2 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 pb-3">
-          {/* Image button */}
-          <Pressable
-            onPress={sendImage}
-            disabled={sendingImage}
-            className="h-11 w-11 rounded-full items-center justify-center bg-slate-100 dark:bg-slate-800 active:bg-slate-200"
-          >
-            <Ionicons name={sendingImage ? "hourglass-outline" : "image-outline"} size={20} color="#64748b" />
-          </Pressable>
-          <TextInput
-            value={text}
-            onChangeText={(t) => {
-              setText(t);
-              if (!socket || !partnerId) return;
-              socket.emit("typing_start", { receiverId: partnerId });
-              if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-              typingTimeoutRef.current = setTimeout(() => {
-                socket.emit("typing_stop", { receiverId: partnerId });
-              }, 1500);
+              keyExtractor={(item) => item._id}
+              contentContainerStyle={{ paddingVertical: 16, paddingHorizontal: 12 }}
+              keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "none"}
+              keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            onContentSizeChange={() => {
+              if (messages.length > 0) {
+                listRef.current?.scrollToEnd({ animated: true });
+              }
             }}
-            placeholder="Type a message..."
-            placeholderTextColor="#94a3b8"
-            multiline
-            className="max-h-28 min-h-[44px] flex-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-[15px] font-outfit text-slate-900 dark:text-white"
-          />
-          <Pressable
-            onPress={send}
-            disabled={!text.trim()}
-            className={`h-11 w-11 rounded-full items-center justify-center ${
-              text.trim()
-                ? "bg-primary-600 dark:bg-primary-500 active:bg-primary-700"
-                : "bg-slate-200 dark:bg-slate-700"
-            }`}
-          >
-            <Ionicons name="send" size={18} color={text.trim() ? "#fff" : "#94a3b8"} />
-          </Pressable>
-        </View>
+            ListEmptyComponent={
+              <View className="flex-1 items-center justify-center py-10">
+                <View className="h-20 w-20 rounded-full bg-primary-50 dark:bg-primary-900/30 items-center justify-center mb-4">
+                  <Ionicons name="chatbubbles-outline" size={40} color="#6366f1" />
+                </View>
+                <Text className="text-[18px] font-outfit-sb text-slate-900 dark:text-white">Start the conversation</Text>
+                <Text className="text-[14px] font-outfit text-slate-500 dark:text-slate-400 text-center px-10 mt-1">
+                  Send a message or use a template below to get started.
+                </Text>
 
-        <Modal visible={reportOpen} transparent animationType="slide" onRequestClose={() => setReportOpen(false)}>
-          <View className="flex-1 justify-end bg-black/60">
-            <View className="rounded-t-3xl bg-white dark:bg-slate-950 p-6">
-              <View className="items-center mb-4">
-                <View className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+                <View className="flex-row flex-wrap justify-center gap-2 mt-8 px-4">
+                  {QUICK_TEMPLATES.map((tmpl) => (
+                    <Pressable
+                      key={tmpl}
+                      onPress={() => sendMessage(tmpl)}
+                      className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-2.5 rounded-2xl shadow-sm active:bg-slate-50"
+                    >
+                      <Text className="text-[13px] font-outfit-m text-primary-600 dark:text-primary-400">{tmpl}</Text>
+                    </Pressable>
+                  ))}
+                </View>
               </View>
-              <Text className="text-xl font-outfit-bl text-slate-900 dark:text-white mb-4">Report chat</Text>
+            }
+            renderItem={({ item, index }) => {
+              const isMine = getId(item.sender) === user?.id;
+              const prevMsg = messages[index - 1];
+              const showDate = !prevMsg || new Date(getMessageTime(prevMsg)).toDateString() !== new Date(getMessageTime(item)).toDateString();
 
-              <Text className="text-[12px] font-outfit-m text-slate-500 dark:text-slate-400 mb-1">Reason</Text>
-              <TextInput
-                value={reportReason}
-                onChangeText={setReportReason}
-                placeholder="e.g. spam, scam attempt, abusive language"
-                placeholderTextColor="#94a3b8"
-                className="mb-3 rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white"
-              />
+              return (
+                <MessageItem
+                  message={item}
+                  isMine={isMine}
+                  showDate={showDate}
+                  formattedTime={formatTime(item)}
+                  onLongPress={openMessageActions}
+                />
+              );
+            }}
+          />
 
-              <Text className="text-[12px] font-outfit-m text-slate-500 dark:text-slate-400 mb-1">Details (optional)</Text>
+          {partnerTyping && (
+            <View className="px-6 py-2 flex-row items-center gap-2">
+              <View className="flex-row gap-1 bg-slate-200 dark:bg-slate-800 px-3 py-2 rounded-2xl rounded-bl-none">
+                <View className="h-1.5 w-1.5 rounded-full bg-slate-400 animate-pulse" />
+                <View className="h-1.5 w-1.5 rounded-full bg-slate-400 animate-pulse" />
+                <View className="h-1.5 w-1.5 rounded-full bg-slate-400 animate-pulse" />
+              </View>
+              <Text className="text-[11px] font-outfit-m text-slate-400 dark:text-slate-500">
+                {partnerName} is typing...
+              </Text>
+            </View>
+          )}
+
+          <ChatInputArea
+            initialText={editingMessageId ? (messages.find(m => m._id === editingMessageId)?.content || "") : ""}
+            onSend={sendMessage}
+            onSendImage={sendImage}
+            onTyping={emitTyping}
+            editingMessageId={editingMessageId}
+            onCancelEdit={() => {
+              setEditingMessageId(null);
+            }}
+            sendingImage={isSendingImage}
+            isConnected={isConnected}
+          />
+          </View>
+        </KeyboardShiftView>
+      )}
+
+      {/* Report Modal */}
+      <Modal visible={reportOpen} transparent animationType="slide" onRequestClose={() => setReportOpen(false)}>
+        <View className="flex-1 bg-black/50 justify-end">
+          <KeyboardShiftView
+            style={{ flex: 1, justifyContent: "flex-end" }}
+          >
+            <View className="bg-white dark:bg-slate-900 rounded-t-[32px] p-6 pb-10">
+              <View className="flex-row items-center justify-between mb-6">
+                <Text className="text-[20px] font-outfit-b text-slate-900 dark:text-white">Report User</Text>
+                <Pressable onPress={() => setReportOpen(false)} className="h-8 w-8 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+                  <Ionicons name="close" size={20} color="#64748b" />
+                </Pressable>
+              </View>
+
+              <Text className="text-[14px] font-outfit-sb text-slate-700 dark:text-slate-300 mb-3">Reason for reporting</Text>
+              <View className="flex-row flex-wrap gap-2 mb-6">
+                {["spam", "harassment", "fraud", "other"].map((r) => (
+                  <Pressable
+                    key={r}
+                    onPress={() => setReportReason(r)}
+                    className={`px-4 py-2 rounded-xl border ${reportReason === r
+                      ? "bg-primary-50 border-primary-500 dark:bg-primary-900/30"
+                      : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900"
+                      }`}
+                  >
+                    <Text className={`text-[13px] font-outfit-m capitalize ${reportReason === r ? "text-primary-700 dark:text-primary-400" : "text-slate-600 dark:text-slate-400"}`}>
+                      {r}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <Text className="text-[14px] font-outfit-sb text-slate-700 dark:text-slate-300 mb-3">Additional Details</Text>
               <TextInput
+                multiline
+                numberOfLines={4}
                 value={reportDetails}
                 onChangeText={setReportDetails}
-                placeholder="Extra details for moderators"
+                placeholder="Please provide more information..."
                 placeholderTextColor="#94a3b8"
-                multiline
-                className="mb-4 rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white"
+                className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 text-[15px] font-outfit text-slate-900 dark:text-white mb-8 min-h-[100px] border border-slate-100 dark:border-slate-800"
               />
 
               <View className="flex-row gap-3">
                 <View className="flex-1">
                   <Pressable
                     onPress={() => setReportOpen(false)}
-                    className="rounded-xl border border-slate-300 dark:border-slate-700 px-4 py-3 items-center"
-                    disabled={reportSubmitting}
+                    className="h-12 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 active:bg-slate-200"
                   >
                     <Text className="text-[15px] font-outfit-sb text-slate-700 dark:text-slate-200">Cancel</Text>
                   </Pressable>
                 </View>
                 <View className="flex-1">
                   <Pressable
-                    onPress={async () => {
-                      if (!reportReason.trim()) {
-                        Alert.alert("Reason required", "Please enter a reason for reporting.");
-                        return;
-                      }
-                      setReportSubmitting(true);
-                      try {
-                        await reportChatUser(partnerId, { reason: reportReason.trim(), details: reportDetails.trim() });
-                        setReportOpen(false);
-                        Alert.alert("Reported", "Chat report submitted successfully.");
-                      } catch (e: unknown) {
-                        const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
-                        Alert.alert("Error", msg || "Failed to submit report.");
-                      } finally {
-                        setReportSubmitting(false);
-                      }
-                    }}
-                    className="rounded-xl bg-red-600 px-4 py-3 items-center"
                     disabled={reportSubmitting}
+                    onPress={async () => {
+                      setReportSubmitting(true);
+                      await report(reportReason, reportDetails);
+                      setReportSubmitting(false);
+                      setReportOpen(false);
+                    }}
+                    className="h-12 items-center justify-center rounded-2xl bg-red-600 active:bg-red-700"
                   >
-                    <Text className="text-[15px] font-outfit-sb text-white">{reportSubmitting ? "Reporting..." : "Report"}</Text>
+                    {reportSubmitting ? <ActivityIndicator color="#fff" /> : <Text className="text-[15px] font-outfit-sb text-white">Submit Report</Text>}
                   </Pressable>
                 </View>
               </View>
             </View>
-          </View>
-        </Modal>
-      </KeyboardAvoidingView>
+          </KeyboardShiftView>
+        </View>
+      </Modal>
     </Screen>
   );
 }
+
+const getMessageTime = (message: Msg) => message.createdAt || message.timestamp || new Date().toISOString();

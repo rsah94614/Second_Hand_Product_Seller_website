@@ -119,8 +119,8 @@ export const toggleModerationRule = async (ruleId) =>
   axios.patch(`${API_BASE_URL}/api/admin/rules/${ruleId}/toggle`).then((r) => r.data);
 
 // ── Phase 2: Seller Verifications ─────────────────────────────────────────────
-export const getSellerVerifications = async (status = 'pending') =>
-  axios.get(`${API_BASE_URL}/api/admin/seller-verifications`, { params: { status } }).then((r) => r.data);
+export const getSellerVerifications = async (queryString = '') =>
+  axios.get(`${API_BASE_URL}/api/admin/seller-verifications${queryString ? `?${queryString}` : ''}`).then((r) => r.data);
 
 export const approveSellerVerification = async (userId) =>
   axios.post(`${API_BASE_URL}/api/admin/seller-verifications/${userId}/approve`).then((r) => r.data);

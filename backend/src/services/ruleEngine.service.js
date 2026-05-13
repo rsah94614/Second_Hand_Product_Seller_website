@@ -66,25 +66,25 @@ const evaluateRule = async (rule, item, itemType) => {
  */
 const evaluateKeywordRule = (rule, item, itemType) => {
   const keywords = rule.condition.toLowerCase().split(',').map(k => k.trim());
-  
+
   if (itemType === 'product') {
     const title = (item.title || '').toLowerCase();
     const description = (item.description || '').toLowerCase();
-    
-    return keywords.some(keyword => 
+
+    return keywords.some(keyword =>
       title.includes(keyword) || description.includes(keyword)
     );
   }
-  
+
   if (itemType === 'user') {
     const name = (item.name || '').toLowerCase();
     const bio = (item.bio || '').toLowerCase();
-    
-    return keywords.some(keyword => 
+
+    return keywords.some(keyword =>
       name.includes(keyword) || bio.includes(keyword)
     );
   }
-  
+
   return false;
 };
 
@@ -94,21 +94,21 @@ const evaluateKeywordRule = (rule, item, itemType) => {
 const evaluatePatternRule = (rule, item, itemType) => {
   try {
     const regex = new RegExp(rule.condition, 'i');
-    
+
     if (itemType === 'product') {
       const title = item.title || '';
       const description = item.description || '';
-      
+
       return regex.test(title) || regex.test(description);
     }
-    
+
     if (itemType === 'user') {
       const name = item.name || '';
       const bio = item.bio || '';
-      
+
       return regex.test(name) || regex.test(bio);
     }
-    
+
     return false;
   } catch (error) {
     console.error('Invalid regex pattern:', rule.condition);
@@ -119,24 +119,24 @@ const evaluatePatternRule = (rule, item, itemType) => {
 /**
  * Evaluate behavior rule (based on metrics)
  */
-const evaluateBehaviorRule = (rule, item, itemType) => {
+const evaluateBehaviorRule = (rule, item, _) => {
   try {
     // Parse condition like "riskScore >= 40" or "reportCount >= 5"
     const match = rule.condition.match(/^(\w+)\s*(>=|<=|>|<|==|!=)\s*(\d+)$/);
-    
+
     if (!match) {
       console.error('Invalid behavior rule condition:', rule.condition);
       return false;
     }
-    
+
     const [, field, operator, valueStr] = match;
     const value = parseFloat(valueStr);
     const itemValue = item[field];
-    
+
     if (itemValue === undefined || itemValue === null) {
       return false;
     }
-    
+
     switch (operator) {
       case '>=':
         return itemValue >= value;
@@ -181,14 +181,14 @@ const applyRule = async (rule, item, itemType) => {
         if (!item.riskFlags) {
           item.riskFlags = [];
         }
-        
+
         item.riskFlags.push({
           type: 'automated_rule',
           reason: rule.name,
           severity: rule.severity,
           detectedAt: new Date(),
         });
-        
+
         result.applied = true;
         result.message = `Item flagged by rule: ${rule.name}`;
         break;
@@ -206,7 +206,7 @@ const applyRule = async (rule, item, itemType) => {
             ruleType: rule.type,
           },
         });
-        
+
         result.applied = true;
         result.message = `Item added to moderation queue by rule: ${rule.name}`;
         break;
@@ -221,7 +221,7 @@ const applyRule = async (rule, item, itemType) => {
           item.suspendedReason = `Automated rule: ${rule.name}`;
           item.suspendedAt = new Date();
         }
-        
+
         result.applied = true;
         result.message = `Item suspended by rule: ${rule.name}`;
         break;
@@ -231,14 +231,14 @@ const applyRule = async (rule, item, itemType) => {
         if (!item.riskFlags) {
           item.riskFlags = [];
         }
-        
+
         item.riskFlags.push({
           type: 'marked_for_deletion',
           reason: rule.name,
           severity: 'high',
           detectedAt: new Date(),
         });
-        
+
         // Also add to moderation queue for admin review
         await ModerationQueue.create({
           itemType,
@@ -251,7 +251,7 @@ const applyRule = async (rule, item, itemType) => {
             action: 'delete',
           },
         });
-        
+
         result.applied = true;
         result.message = `Item marked for deletion by rule: ${rule.name}`;
         break;

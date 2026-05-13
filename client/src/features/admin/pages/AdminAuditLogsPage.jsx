@@ -6,19 +6,18 @@ import { PageShell } from '../../../components/layout/PageShell';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { API_BASE_URL } from '../../../config/api';
+import { api } from '../../../lib/api/client';
 
 const AdminAuditLogsPage = () => {
   const [targetTypeFilter, setTargetTypeFilter] = useState('');
 
   const fetchLogs = async ({ pageParam = null }) => {
-    const token = localStorage.getItem('token');
-    const response = await axios.get(`${API_BASE_URL}/api/admin/audit-logs`, {
+    const response = await api.get('/api/admin/audit-logs', {
       params: { 
         targetType: targetTypeFilter,
         cursor: pageParam,
         limit: 20
       },
-      headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
   };

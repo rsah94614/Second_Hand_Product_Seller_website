@@ -112,6 +112,10 @@ const productSchema = new mongoose.Schema({
   contactInfo: {
     email: String
   },
+  location: {
+    type: String,
+    trim: true,
+  },
   reviews: [reviewSchema],
   averageRating: {
     type: Number,

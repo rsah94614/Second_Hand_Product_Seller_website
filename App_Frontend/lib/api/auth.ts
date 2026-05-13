@@ -24,14 +24,24 @@ export const registerUser = (payload: Record<string, unknown>) =>
     .then((r) => r.data);
 
 export const forgotPasswordApi = (email: string) =>
-  axios
+  authAxios
     .post<{ message: string }>(`${API_BASE_URL}/api/auth/forgot-password`, { email })
     .then((r) => r.data);
 
 export const resetPasswordApi = (token: string, newPassword: string) =>
-  axios
+  authAxios
     .post<{ message: string }>(`${API_BASE_URL}/api/auth/reset-password`, {
       token,
       newPassword,
     })
+    .then((r) => r.data);
+
+export const verifyEmailApi = (token: string) =>
+  authAxios
+    .post<{ message: string }>(`${API_BASE_URL}/api/auth/verify-email`, { token })
+    .then((r) => r.data);
+
+export const resendVerificationEmailApi = () =>
+  authAxios
+    .post<{ message: string }>(`${API_BASE_URL}/api/auth/resend-verification`)
     .then((r) => r.data);

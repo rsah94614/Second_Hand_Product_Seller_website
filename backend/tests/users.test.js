@@ -54,6 +54,9 @@ const runUserFeatureTests = async (app) => {
     .get(`/api/products/${product._id}`)
     .set('Authorization', `Bearer ${buyer.token}`);
 
+  if (viewProductResponse.statusCode !== 200) {
+    console.error('viewProduct failed:', viewProductResponse.body);
+  }
   assert.equal(viewProductResponse.statusCode, 200);
 
   const recentlyViewedResponse = await request(app)

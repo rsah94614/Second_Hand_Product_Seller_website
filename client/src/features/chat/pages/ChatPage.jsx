@@ -2,14 +2,39 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Send, MessageSquare, ArrowLeft, Edit2, Trash2, Check, CheckCheck, X, Ban, ShieldAlert, Pin, PinOff, Search, Image } from 'lucide-react';
+import { Send, MessageSquare, ArrowLeft, Edit2, Trash2, Check, CheckCheck, X, Ban, ShieldAlert, Pin, PinOff, Search, Image, WifiOff } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
-import { useSocket } from '../../../context/SocketContext';
+import { useSocket, useSocketStatus } from '../../../context/SocketContext';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import Header from '../../../components/Header';
-import { getConversationMessages, getConversations, reportChatUser, pinConversation, unpinConversation, searchMessages, uploadChatImage } from '../api/chatApi';
+import { getConversationMessages, getConversations, reportChatUser, pinConversation, unpinConversation, searchMessages, uploadChatImage, markConversationAsRead } from '../api/chatApi';
 import { blockUser } from '../../users/api/userApi';
+
+// ── Offline message queue (localStorage-backed) ──────────────────────────────
+const OFFLINE_QUEUE_KEY = 'chat_offline_queue';
+
+const loadOfflineQueue = () => {
+  try {
+    return JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
+  } catch {
+    return [];
+  }
+};
+
+const saveOfflineQueue = (queue) => {
+  try {
+    localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+  } catch { /* storage full — ignore */ }
+};
+
+const generateIdempotencyKey = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for older environments
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
 
 const QUICK_TEMPLATES = [
   'Is this still available?',
@@ -38,6 +63,7 @@ const formatDateLabel = (dateStr) => {
 function ChatPage() {
   const { user } = useAuth();
   const socket = useSocket();
+  const isConnected = useSocketStatus();
   const location = useLocation();
 
   const [conversations, setConversations] = useState([]);
@@ -90,6 +116,25 @@ function ChatPage() {
       toast.error(error.response?.data?.message || 'Failed to submit chat report');
     }
   });
+
+  useEffect(() => {
+    if (!socket) return undefined;
+
+    const handleSocketError = (err) => {
+      if (err?.code === 'PROFILE_INCOMPLETE') {
+        toast.error(err.message || 'Complete your profile before starting a new chat.');
+        return;
+      }
+
+      toast.error(err?.message || 'Chat action failed');
+    };
+
+    socket.on('error', handleSocketError);
+
+    return () => {
+      socket.off('error', handleSocketError);
+    };
+  }, [socket]);
 
   const handleBlock = () => {
     if (!currentChat) return;
@@ -145,7 +190,6 @@ function ChatPage() {
   // ───── fetch conversations (HTTP, called once + on demand) ─────
   const fetchConversations = useCallback(async () => {
     try {
-      if (!localStorage.getItem('token')) return;
       const response = await getConversations();
       setConversations(response);
     } catch (error) {
@@ -272,6 +316,33 @@ function ChatPage() {
     };
   }, [socket, currentChat, user, fetchConversations]);
 
+  // ───── drain offline queue on reconnect ─────
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    const queue = loadOfflineQueue();
+    if (queue.length === 0) return;
+
+    // Clear the queue immediately to avoid double-send on re-render
+    saveOfflineQueue([]);
+
+    queue.forEach((item) => {
+      const { optimisticId, queuedAt, ...messageData } = item;
+      socket.emit('send_message', messageData, (ack) => {
+        if (!ack?.success) {
+          // Re-queue on failure (e.g. server error)
+          const current = loadOfflineQueue();
+          current.push(item);
+          saveOfflineQueue(current);
+        }
+      });
+    });
+
+    if (queue.length > 0) {
+      toast.success(`Sent ${queue.length} queued message${queue.length > 1 ? 's' : ''}`);
+    }
+  }, [socket, isConnected]);
+
   // ───── presence query ─────
   useEffect(() => {
     if (socket && conversations.length > 0) {
@@ -282,9 +353,8 @@ function ChatPage() {
   // ───── fetch messages when chat is selected ─────
   useEffect(() => {
     const fetchMessages = async () => {
-      if (!currentChat) return;
+      if (!currentChat || !isConnected) return;
       try {
-        if (!localStorage.getItem('token')) return;
         const response = await getConversationMessages(currentChat._id);
         setMessages(response);
 
@@ -293,16 +363,17 @@ function ChatPage() {
           (conv._id === currentChat._id && conv.unreadCount !== 0) ? { ...conv, unreadCount: 0 } : conv
         ));
 
-        // Mark as read via socket only
+        // Mark as read via socket only (and persistent HTTP fallback)
         if (socket) {
           socket.emit('mark_seen', { receiverId: currentChat._id });
         }
+        markConversationAsRead(currentChat._id).catch(() => { });
       } catch (error) {
         console.error('Error fetching messages:', error);
       }
     };
     fetchMessages();
-  }, [currentChat, socket]);
+  }, [currentChat, socket, isConnected]);
 
   // auto-scroll
   useEffect(() => {
@@ -347,16 +418,36 @@ function ChatPage() {
       return;
     }
 
-    const messageData = { receiver: currentChat._id, content: newMessage.trim(), timestamp: new Date() };
-    const optimisticMessage = { ...messageData, sender: user.id, _id: `temp-${Date.now()}` };
+    const idempotencyKey = generateIdempotencyKey();
+    const messageData = {
+      receiver: currentChat._id,
+      content: newMessage.trim(),
+      timestamp: new Date(),
+      idempotencyKey,
+    };
+    const optimisticMessage = {
+      ...messageData,
+      sender: user.id,
+      _id: `temp-${idempotencyKey}`,
+    };
 
     setMessages((prev) => [...prev, optimisticMessage]);
     setNewMessage('');
 
-    if (socket) {
-      socket.emit('send_message', messageData);
+    if (socket && isConnected) {
+      socket.emit('send_message', messageData, (ack) => {
+        if (!ack?.success) {
+          // Server rejected — remove optimistic message
+          setMessages((prev) => prev.filter((m) => m._id !== optimisticMessage._id));
+          toast.error(ack?.error || 'Failed to send message');
+        }
+      });
     } else {
-      setMessages((prev) => prev.filter((m) => m._id !== optimisticMessage._id));
+      // Offline: queue the message for later delivery
+      const queue = loadOfflineQueue();
+      queue.push({ ...messageData, optimisticId: optimisticMessage._id, queuedAt: Date.now() });
+      saveOfflineQueue(queue);
+      toast('Message queued — will send when reconnected', { icon: '📤' });
     }
   };
 
@@ -413,6 +504,14 @@ function ChatPage() {
         <Header />
       </div>
 
+      {/* Offline banner */}
+      {!isConnected && (
+        <div className="flex items-center justify-center gap-2 bg-amber-50 border-b border-amber-200 px-4 py-2 text-sm text-amber-800 font-medium flex-none">
+          <WifiOff className="w-4 h-4 shrink-0" />
+          <span>You are offline — messages will be sent when reconnected</span>
+        </div>
+      )}
+
       <div className="flex-1 container mx-auto md:p-4 overflow-hidden min-h-0">
         <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] lg:grid-cols-[320px_1fr] gap-0 h-full bg-white md:rounded-2xl md:shadow-xl overflow-hidden md:border border-gray-100">
           {/* ───── SIDEBAR ───── */}
@@ -429,18 +528,16 @@ function ChatPage() {
                 <div
                   key={conversation._id}
                   onClick={() => handleChatSelect(conversation)}
-                  className={`p-3 cursor-pointer flex items-center gap-3 transition-all duration-200 group relative border-l-4 ${
-                    currentChat?._id === conversation._id
-                      ? 'bg-primary-50/50 border-primary-600'
-                      : 'hover:bg-gray-50 border-transparent'
-                  }`}
+                  className={`p-3 cursor-pointer flex items-center gap-3 transition-all duration-200 group relative border-l-4 ${currentChat?._id === conversation._id
+                    ? 'bg-primary-50/50 border-primary-600'
+                    : 'hover:bg-gray-50 border-transparent'
+                    }`}
                 >
                   <div className="relative inline-flex items-center justify-center shrink-0 w-12 h-12">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.1)] transition-colors ${
-                      currentChat?._id === conversation._id
-                        ? 'bg-linear-to-br from-primary-500 to-indigo-600 text-white'
-                        : 'bg-white text-primary-600 border border-primary-100 group-hover:border-primary-200'
-                    }`}>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold shadow-[0_2px_10px_-3px_rgba(0,0,0,0.1)] transition-colors ${currentChat?._id === conversation._id
+                      ? 'bg-linear-to-br from-primary-500 to-indigo-600 text-white'
+                      : 'bg-white text-primary-600 border border-primary-100 group-hover:border-primary-200'
+                      }`}>
                       {conversation.name ? conversation.name[0].toUpperCase() : '?'}
                     </div>
                     {onlineUsers[conversation._id] && (
@@ -528,7 +625,7 @@ function ChatPage() {
                       )}
                     </div>
                   </div>
-                  
+
                   <Button
                     variant="outline"
                     size="sm"
@@ -601,13 +698,12 @@ function ChatPage() {
                               </div>
                             )}
 
-                            <div className={`px-3 py-2 text-sm leading-relaxed relative flex flex-col min-w-[80px] ${
-                              message.isDeleted
-                                ? 'bg-gray-100 text-gray-400 italic rounded-2xl shadow-sm border border-gray-200'
-                                : isMe
-                                  ? 'bg-linear-to-br from-primary-500 to-indigo-600 text-white shadow-md shadow-primary-500/20 rounded-2xl rounded-tr-sm'
-                                  : 'bg-white text-gray-800 shadow-sm shadow-gray-200/50 rounded-2xl rounded-tl-sm border border-gray-100/50'
-                            }`}>
+                            <div className={`px-3 py-2 text-sm leading-relaxed relative flex flex-col min-w-[80px] ${message.isDeleted
+                              ? 'bg-gray-100 text-gray-400 italic rounded-2xl shadow-sm border border-gray-200'
+                              : isMe
+                                ? 'bg-linear-to-br from-primary-500 to-indigo-600 text-white shadow-md shadow-primary-500/20 rounded-2xl rounded-tr-sm'
+                                : 'bg-white text-gray-800 shadow-sm shadow-gray-200/50 rounded-2xl rounded-tl-sm border border-gray-100/50'
+                              }`}>
                               {message.isDeleted ? (
                                 <span className="flex items-center gap-1">🚫 This message was deleted.</span>
                               ) : (
@@ -617,9 +713,22 @@ function ChatPage() {
                                     {message.isEdited && <span>(edited)</span>}
                                     <span>{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                     {isMe && !isTemp && (
-                                      message.read
-                                        ? <CheckCheck className="w-3.5 h-3.5 text-blue-300" />
-                                        : <Check className="w-3 h-3 opacity-70" />
+                                      message.read ? (
+                                        <div className="flex items-center gap-0.5">
+                                          <CheckCheck className="w-3.5 h-3.5 text-blue-300" />
+                                          <span className="text-blue-300">Read</span>
+                                        </div>
+                                      ) : message.delivered ? (
+                                        <div className="flex items-center gap-0.5">
+                                          <CheckCheck className="w-3.5 h-3.5 opacity-70" />
+                                          <span className="opacity-70">Delivered</span>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-0.5">
+                                          <Check className="w-3 h-3 opacity-70" />
+                                          <span className="opacity-70">Sent</span>
+                                        </div>
+                                      )
                                     )}
                                   </div>
                                 </>
