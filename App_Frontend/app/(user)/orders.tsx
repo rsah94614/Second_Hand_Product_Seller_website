@@ -9,14 +9,14 @@ import {
   Appearance,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { Screen } from "../components/ui/Screen";
-import { Loading } from "../components/Loading";
-import { EmptyState } from "../components/EmptyState";
-import { useAuth } from "../context/AuthContext";
-import { useOrders } from "../lib/hooks/useOrders";
-import { OrderCard } from "../components/orders/OrderCard";
-import { ScheduleModal } from "../components/orders/ScheduleModal";
-import { DisputeModal } from "../components/orders/DisputeModal";
+import { Screen } from "../../components/ui/Screen";
+import { Loading } from "../../components/Loading";
+import { EmptyState } from "../../components/EmptyState";
+import { useAuth } from "../../context/AuthContext";
+import { useOrders } from "../../lib/hooks/useOrders";
+import { OrderCard } from "../../components/orders/OrderCard";
+import { ScheduleModal } from "../../components/orders/ScheduleModal";
+import { DisputeModal } from "../../components/orders/DisputeModal";
 
 export default function OrdersScreen() {
   const { user, loading: authLoading } = useAuth();

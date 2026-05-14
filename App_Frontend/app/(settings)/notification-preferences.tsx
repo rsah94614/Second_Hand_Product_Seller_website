@@ -2,16 +2,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useEffect } from "react";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
-import { Screen } from "../components/ui/Screen";
-import { Loading } from "../components/Loading";
-import { useAuth } from "../context/AuthContext";
+import { Screen } from "../../components/ui/Screen";
+import { Loading } from "../../components/Loading";
+import { useAuth } from "../../context/AuthContext";
 import {
   getNotificationPreferences,
   updateNotificationPreferences,
-} from "../lib/api/notifications";
+} from "../../lib/api/notifications";
 import { Ionicons } from "@expo/vector-icons";
-import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
-import { useToast } from "../components/ui/AppToast";
+import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
+import { useToast } from "../../components/ui/AppToast";
 
 type PrefKey =
   | "emailNotifications"

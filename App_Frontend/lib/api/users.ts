@@ -18,7 +18,7 @@ export const getRecentlyViewed = () =>
   api.get(`/api/users/me/recently-viewed`).then((r) => r.data);
 
 export const getBlockedUsers = () =>
-  api.get(`/api/users/me/blocked`).then((r) => r.data);
+  api.get(`/api/users/me/blocked`).then((r) => r.data.blocked);
 
 export const submitSellerReview = (
   userId: string,
@@ -59,3 +59,6 @@ export const trustDevice = (deviceId: string) =>
 // ── Profile Completion ────────────────────────────────────────────────────────
 export const getProfileCompletion = () =>
   api.get(`/api/users/me/profile-completion`).then((r) => r.data);
+
+export const deleteAccount = () =>
+  api.delete(`/api/users/me`).then((r) => r.data);

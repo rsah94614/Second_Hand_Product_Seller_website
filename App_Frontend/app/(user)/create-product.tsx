@@ -1,21 +1,22 @@
+/// <reference types="nativewind/types" />
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, InteractionManager, Modal, ScrollView, Text, View, Pressable, Platform, KeyboardAvoidingView } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
-import { Screen } from "../components/ui/Screen";
-import { Button } from "../components/ui/Button";
-import { Input } from "../components/ui/Input";
-import { Loading } from "../components/Loading";
-import { useAuth } from "../context/AuthContext";
-import { createProduct, getProductCategories } from "../lib/api/products";
-import { PRODUCT_CONDITIONS } from "../lib/product-options";
+import { Screen } from "../../components/ui/Screen";
+import { Button } from "../../components/ui/Button";
+import { Input } from "../../components/ui/Input";
+import { Loading } from "../../components/Loading";
+import { useAuth } from "../../context/AuthContext";
+import { createProduct, getProductCategories } from "../../lib/api/products";
+import { PRODUCT_CONDITIONS } from "../../lib/product-options";
 import { Ionicons } from "@expo/vector-icons";
-import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
-import { api } from "@/lib/api/client";
-import { KeyboardShiftView } from "../components/ui/KeyboardShiftView";
-import { useToast } from "../components/ui/AppToast";
+import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
+import { api } from "../../lib/api/client";
+import { KeyboardShiftView } from "../../components/ui/KeyboardShiftView";
+import { useToast } from "../../components/ui/AppToast";
 
 const LISTING_POLICIES = [
   {

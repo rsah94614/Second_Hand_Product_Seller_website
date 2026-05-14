@@ -51,6 +51,12 @@ export const removeDevice = (deviceId) =>
 export const trustDevice = (deviceId) =>
   api.post(`/api/auth/devices/${deviceId}/trust`).then((res) => res.data);
 
+export const getBlockedUsers = () =>
+  api.get('/api/users/me/blocked').then((res) => res.data.blocked);
+
+export const deleteAccount = () =>
+  api.delete('/api/users/me').then((res) => res.data);
+
 // ── Avatar Upload ─────────────────────────────────────────────────────────────
 export const uploadUserAvatar = (userId, formData) =>
   api.post(`/api/users/${userId}/avatar`, formData).then((res) => res.data);

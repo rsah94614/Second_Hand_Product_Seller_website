@@ -285,13 +285,13 @@ const Header = () => {
   const utilityLinks = isAdmin
     ? [
       { to: '/notifications', label: 'Notifications', icon: Bell },
-      { to: '/notifications/preferences', label: 'Notification Settings', icon: Settings },
+      { to: '/settings', label: 'Settings', icon: Settings },
       { to: '/profile', label: 'Profile', icon: User },
     ]
     : [
       { to: '/chat', label: 'Chat', icon: MessageCircle },
       { to: '/notifications', label: 'Notifications', icon: Bell },
-      { to: '/notifications/preferences', label: 'Notification Settings', icon: Settings },
+      { to: '/settings', label: 'Settings', icon: Settings },
       { to: '/profile', label: 'Profile', icon: User },
     ];
 

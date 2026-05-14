@@ -2,16 +2,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useEffect } from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
-import { Screen } from "../components/ui/Screen";
-import { Loading } from "../components/Loading";
-import { useAuth } from "../context/AuthContext";
-import { EmptyState } from "../components/EmptyState";
+import { Screen } from "../../components/ui/Screen";
+import { Loading } from "../../components/Loading";
+import { useAuth } from "../../context/AuthContext";
+import { EmptyState } from "../../components/EmptyState";
 import {
   getNotifications,
   markAllNotificationsRead,
   markNotificationRead,
-} from "../lib/api/notifications";
-import { notificationLinkToHref } from "../lib/notificationLink";
+} from "../../lib/api/notifications";
+import { notificationLinkToHref } from "../../lib/notificationLink";
 import { Ionicons } from "@expo/vector-icons";
 
 type Notif = {

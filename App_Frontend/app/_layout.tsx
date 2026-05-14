@@ -22,6 +22,7 @@ import {
 import { AuthProvider } from "../context/AuthContext";
 import { SocketProvider } from "../context/SocketContext";
 import { ToastProvider } from "../components/ui/AppToast";
+import { AppThemeProvider, useAppTheme } from "../context/ThemeContext";
 
 import { ThemeProvider, DefaultTheme, DarkTheme } from "@react-navigation/native";
 
@@ -31,7 +32,7 @@ configureReanimatedLogger({
   strict: false,
 });
 
-export default function RootLayout() {
+function InnerLayout() {
   const queryClient = useMemo(
     () =>
       new QueryClient({
@@ -46,13 +47,8 @@ export default function RootLayout() {
     []
   );
 
-  const [theme, setTheme] = require('react').useState(Appearance.getColorScheme());
-  require('react').useEffect(() => {
-    const sub = Appearance.addChangeListener(({ colorScheme }) => setTheme(colorScheme));
-    return () => sub.remove();
-  }, []);
-
-  const isDark = theme === "dark";
+  const { activeScheme } = useAppTheme();
+  const isDark = activeScheme === "dark";
 
   const [fontsLoaded, fontError] = useFonts({
     "Outfit-Regular": Outfit_400Regular,
@@ -113,6 +109,12 @@ export default function RootLayout() {
                   <Stack.Screen name="create-product" options={{ headerShown: false }} />
                   <Stack.Screen name="dashboard" options={{ title: "Dashboard" }} />
                   <Stack.Screen name="wishlist" options={{ title: "Wishlist" }} />
+                  <Stack.Screen name="settings" options={{ title: "Settings" }} />
+                  <Stack.Screen name="blocked-users" options={{ title: "Blocked Users" }} />
+                  <Stack.Screen name="delete-account" options={{ title: "Delete Account" }} />
+                  <Stack.Screen name="help-center" options={{ title: "Help Center" }} />
+                  <Stack.Screen name="terms-of-service" options={{ title: "Terms of Service" }} />
+                  <Stack.Screen name="privacy-policy" options={{ title: "Privacy Policy" }} />
                   <Stack.Screen name="edit-product/[id]" options={{ headerShown: false, animation: "none" }} />
                   <Stack.Screen name="product/[id]" options={{ title: "Product Details" }} />
                   <Stack.Screen name="order/[id]" options={{ title: "Place Order" }} />
@@ -126,5 +128,13 @@ export default function RootLayout() {
         </QueryClientProvider>
       </ThemeProvider>
     </SafeAreaProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <AppThemeProvider>
+      <InnerLayout />
+    </AppThemeProvider>
   );
 }

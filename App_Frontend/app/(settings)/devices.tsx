@@ -2,14 +2,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useEffect } from "react";
 import { Alert, FlatList, Pressable, Text, View } from "react-native";
-import { Screen } from "../components/ui/Screen";
-import { Loading } from "../components/Loading";
-import { EmptyState } from "../components/EmptyState";
-import { useAuth } from "../context/AuthContext";
-import { getMyDevices, removeDevice, trustDevice } from "../lib/api/users";
+import { Screen } from "../../components/ui/Screen";
+import { Loading } from "../../components/Loading";
+import { EmptyState } from "../../components/EmptyState";
+import { useAuth } from "../../context/AuthContext";
+import { getMyDevices, removeDevice, trustDevice } from "../../lib/api/users";
 import { Ionicons } from "@expo/vector-icons";
-import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
-import { useToast } from "../components/ui/AppToast";
+import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
+import { useToast } from "../../components/ui/AppToast";
 
 type Device = {
   _id: string;
