@@ -196,7 +196,7 @@ export default function MessagesScreen() {
 
       <FlatList
         data={filteredList}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item, i) => item._id || `chat-${i}`}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-20 px-10">

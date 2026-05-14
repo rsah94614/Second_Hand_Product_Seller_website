@@ -19,16 +19,12 @@ export default function HelpCenterScreen() {
   return (
     <Screen className="bg-white dark:bg-slate-950">
       <ScrollView contentContainerStyle={{ padding: 24 }}>
-        <View className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-2xl items-center justify-center mb-6">
-          <Ionicons name="help-buoy" size={32} color="#3b82f6" />
+        <View className="items-center mb-4">
+          <View className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-2xl items-center justify-center mb-2">
+            <Ionicons name="help-buoy" size={32} color="#3b82f6" />
+          </View>
         </View>
-        
-        <Text className="text-2xl font-outfit-b text-slate-900 dark:text-white mb-2">
-          Help Center
-        </Text>
-        <Text className="text-[16px] font-outfit text-slate-600 dark:text-slate-400 mb-8">
-          Find answers to common questions or contact support.
-        </Text>
+
 
         <Text className="text-[13px] font-outfit-sb text-slate-500 uppercase tracking-widest mb-6">
           Frequently Asked Questions

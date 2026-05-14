@@ -2,6 +2,7 @@ const Order = require('../../../../models/Order');
 const Product = require('../../../../models/Product');
 const { createNotification } = require('../../../shared/utils/notification.utils');
 const cloudinary = require('cloudinary').v2;
+const fs = require('fs');
 
 const formatOrderId = (id) => id.toString().slice(-6).toUpperCase();
 
@@ -97,6 +98,7 @@ const markCompleted = async (req, res) => {
 };
 
 const uploadConfirmationPhoto = async (req, res) => {
+  const tempPath = req.file?.path;
   try {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Order not found' });
@@ -137,6 +139,9 @@ const uploadConfirmationPhoto = async (req, res) => {
     return res.json({ message: 'Confirmation photo uploaded successfully', order, photoUrl: result.secure_url });
   } catch (error) {
     return res.status(500).json({ message: error.message });
+  } finally {
+    // Clean up temp file regardless of success or failure
+    if (tempPath) { try { fs.unlinkSync(tempPath); } catch { /* ignore */ } }
   }
 };
 

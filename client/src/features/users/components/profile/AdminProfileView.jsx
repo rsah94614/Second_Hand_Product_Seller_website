@@ -12,8 +12,8 @@ import { Avatar } from '../../../../components/ui/Avatar';
 
 const AdminProfileView = ({
   profile,
-  devicesData,
   isEditing,
+
   setIsEditing,
   formData,
   handleChange,
@@ -22,9 +22,8 @@ const AdminProfileView = ({
   handleAvatarChange,
   avatarUploading,
   avatarInputRef,
-  trustDeviceMutation,
-  removeDeviceMutation,
   setIsLogoutDialogOpen,
+
 }) => {
   return (
     <div className="animate-fade-in">
@@ -144,57 +143,18 @@ const AdminProfileView = ({
           <Card className="rounded-4xl border border-gray-100 shadow-sm overflow-hidden h-full">
              <div className="bg-gray-50/50 px-6 py-4 border-b border-gray-100">
                 <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                  <Smartphone className="w-4 h-4 text-gray-500" />
+                  <ShieldCheck className="w-4 h-4 text-gray-500" />
                   Security
                 </h3>
              </div>
              <CardContent className="p-6">
-                <p className="text-xs text-gray-500 mb-4 font-medium uppercase tracking-wider">Active Administrative Sessions</p>
-                <div className="space-y-3">
-                  {devicesData?.devices?.map((device) => (
-                    <div key={device._id} className="group p-4 rounded-3xl bg-gray-50/50 border border-gray-100 hover:border-rose-100 transition-colors">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-xl ${device.isTrusted ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                            <Smartphone className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <p className="font-bold text-sm text-gray-900">{device.deviceName}</p>
-                            <p className="text-[10px] text-gray-500 uppercase font-black">{device.browser} · {device.os}</p>
-                          </div>
-                        </div>
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
-                          onClick={() => removeDeviceMutation.mutate(device._id)} 
-                          className="h-8 w-8 p-0 text-gray-300 hover:text-red-500"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      
-                      <div className="mt-3 flex items-center justify-between">
-                         <span className="text-[10px] font-mono text-gray-400">{device.lastIpAddress}</span>
-                         {!device.isTrusted && (
-                           <button 
-                             onClick={() => trustDeviceMutation.mutate(device._id)}
-                             className="text-[10px] font-bold text-primary-600 hover:underline"
-                           >
-                             TRUST DEVICE
-                           </button>
-                         )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-8 rounded-3xl bg-indigo-50/50 p-4 border border-indigo-50">
+                <div className="rounded-3xl bg-indigo-50/50 p-4 border border-indigo-50">
                   <div className="flex gap-3">
                     <ShieldCheck className="w-5 h-5 text-indigo-500 shrink-0" />
                     <div>
                       <p className="text-xs font-bold text-indigo-900">Security Tip</p>
                       <p className="text-[11px] text-indigo-700/70 mt-0.5 leading-relaxed">
-                        Session logs are audited daily. Always sign out from shared or public devices.
+                        Session logs are audited daily. Always sign out from shared or public devices. Manage your active sessions from the Settings menu.
                       </p>
                     </div>
                   </div>

@@ -28,8 +28,8 @@ const UserProfileView = ({
   completionData,
   reputationData,
   verificationData,
-  devicesData,
   isEditing,
+
   setIsEditing,
   formData,
   campusForm,
@@ -43,9 +43,8 @@ const UserProfileView = ({
   showTradingInfo,
   setShowTradingInfo,
   verificationMutation,
-  trustDeviceMutation,
-  removeDeviceMutation,
   setIsLogoutDialogOpen,
+
 }) => {
   return (
     <div className="animate-fade-in">
@@ -252,11 +251,12 @@ const UserProfileView = ({
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
               {[
-                { label: 'Score', value: `${reputationData.score}/100` },
-                { label: 'Completion Rate', value: `${reputationData.completionRate}%` },
-                { label: 'Avg Rating', value: `${reputationData.averageRating} ★` },
-                { label: 'Total Orders', value: reputationData.totalOrders },
+                { label: 'Score', value: `${reputationData?.reputation?.score ?? 0}/100` },
+                { label: 'Completion Rate', value: `${reputationData?.reputation?.completionRate ?? 0}%` },
+                { label: 'Avg Rating', value: `${reputationData?.reputation?.averageRating ?? 0} ★` },
+                { label: 'Total Orders', value: reputationData?.reputation?.totalOrders ?? 0 },
               ].map((m) => (
+
                 <div key={m.label} className="bg-gray-50 rounded-2xl p-4 text-center"><p className="text-2xl font-black text-gray-900">{m.value}</p><p className="text-xs text-gray-500 mt-1">{m.label}</p></div>
               ))}
             </div>
@@ -272,11 +272,12 @@ const UserProfileView = ({
               <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center"><Award className="w-5 h-5 text-indigo-600" /></div>
               <div><h2 className="text-xl font-black text-gray-900 tracking-tight">Seller Verification</h2><p className="text-gray-500 text-sm">Get a verified badge to build buyer trust</p></div>
             </div>
-            {verificationData?.sellerVerificationStatus === 'verified' && <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">Verified ✓</Badge>}
-            {verificationData?.sellerVerificationStatus === 'pending' && <Badge className="bg-amber-100 text-amber-700 border-amber-200">Pending Review</Badge>}
-            {verificationData?.sellerVerificationStatus === 'rejected' && <Badge className="bg-red-100 text-red-700 border-red-200">Rejected</Badge>}
+            {verificationData?.status === 'verified' && <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">Verified ✓</Badge>}
+            {verificationData?.status === 'pending' && <Badge className="bg-amber-100 text-amber-700 border-amber-200">Pending Review</Badge>}
+            {verificationData?.status === 'rejected' && <Badge className="bg-red-100 text-red-700 border-red-200">Rejected</Badge>}
           </div>
-          {(!verificationData?.sellerVerificationStatus || verificationData?.sellerVerificationStatus === 'none' || verificationData?.sellerVerificationStatus === 'rejected') && (
+          {(!verificationData?.status || verificationData?.status === 'none' || verificationData?.status === 'rejected') && (
+
             <div>
               <p className="text-sm text-gray-600 mb-4">Requirements: email verified, 5+ completed orders, 4.0+ rating, 80%+ completion rate.</p>
               <Button onClick={() => verificationMutation.mutate()} disabled={verificationMutation.isPending} className="rounded-full gap-2"><Shield className="w-4 h-4" /> Request Verification</Button>
@@ -285,34 +286,7 @@ const UserProfileView = ({
         </CardContent>
       </Card>
 
-      {/* Active Devices */}
-      {devicesData?.devices?.length > 0 && (
-        <Card className="rounded-4xl border border-gray-100 shadow-sm">
-          <CardContent className="p-5 md:p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center"><Smartphone className="w-5 h-5 text-gray-600" /></div>
-              <div><h2 className="text-xl font-black text-gray-900 tracking-tight">Active Devices</h2><p className="text-gray-500 text-sm">Devices currently logged into your account</p></div>
-            </div>
-            <div className="space-y-3">
-              {devicesData.devices.map((device) => (
-                <div key={device._id} className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-gray-50 border border-gray-100">
-                  <div className="flex items-center gap-3">
-                    <Smartphone className="w-4 h-4 text-gray-500" />
-                    <div>
-                      <p className="font-semibold text-sm text-gray-900">{device.deviceName}</p>
-                      <p className="text-xs text-gray-500">{device.browser} · {device.os}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {device.isTrusted ? <span className="text-xs text-emerald-600 font-semibold">Trusted</span> : <Button size="sm" variant="outline" onClick={() => trustDeviceMutation.mutate(device._id)} className="text-xs rounded-xl">Trust</Button>}
-                    <Button size="sm" variant="outline" onClick={() => removeDeviceMutation.mutate(device._id)} className="text-red-500 border-red-200 hover:bg-red-50 rounded-xl"><Trash2 className="w-3.5 h-3.5" /></Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+
     </div>
   );
 };

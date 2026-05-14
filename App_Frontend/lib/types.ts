@@ -11,6 +11,7 @@ export type AuthUser = {
   campus?: Record<string, string>;
   wishlist?: string[];
   wishlistCount?: number;
+  blocked?: string[];
 };
 
 export type ProductImage = string | { url?: string };
@@ -21,12 +22,13 @@ export type Msg = {
   image?: string;
   sender: unknown;
   receiver: unknown;
-  timestamp?: string;
-  createdAt?: string;
+  createdAt?: string;   // primary — set by Mongoose timestamps
+  timestamp?: string;   // legacy fallback for old messages
   read?: boolean;
   delivered?: boolean;
   isDeleted?: boolean;
   isEdited?: boolean;
+  idempotencyKey?: string;
 };
 
 export type OrderRow = {

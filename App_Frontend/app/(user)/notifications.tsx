@@ -112,7 +112,7 @@ export default function NotificationsScreen() {
       </View>
       <FlatList
         data={list}
-        keyExtractor={(n) => n._id}
+        keyExtractor={(n, i) => n._id || `notif-${i}`}
         refreshing={isRefetching}
         onRefresh={() => refetch()}
         contentContainerStyle={{ paddingBottom: 24 }}

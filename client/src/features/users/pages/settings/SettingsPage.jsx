@@ -12,7 +12,10 @@ import {
   ShieldAlert,
   Lock
 } from 'lucide-react';
-import { useAuth } from '../../../context/AuthContext';
+import { useAuth } from '../../../../context/AuthContext';
+import Header from '../../../../components/Header';
+import Footer from '../../../../components/Footer';
+
 
 const SettingsPage = () => {
   const { user } = useAuth();
@@ -63,8 +66,9 @@ const SettingsPage = () => {
                 icon={Smartphone} 
                 title="Active Devices" 
                 subtitle="Manage your signed-in sessions"
-                to="/notifications/preferences" // Reusing preferences page or we can add device list there
+                to="/settings/devices" 
               />
+
               <SettingRow 
                 icon={Trash2} 
                 title="Delete Account" 
@@ -125,6 +129,9 @@ const SettingsPage = () => {
   };
 
   return (
+    <>
+      <Header />
+
     <div className="min-h-screen bg-gray-50/50 py-12 px-4">
       <div className="max-w-5xl mx-auto">
         <div className="mb-8">
@@ -176,7 +183,12 @@ const SettingsPage = () => {
         </div>
       </div>
     </div>
-  );
+    <Footer />
+  </>
+);
+
+
+
 };
 
 export default SettingsPage;

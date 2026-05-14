@@ -3,8 +3,8 @@ import { api, uploadFormData } from "./client";
 export const getConversations = () =>
   api.get(`/api/chat/conversations/all`).then((r) => r.data);
 
-export const getConversationMessages = (userId: string) =>
-  api.get(`/api/chat/${userId}`).then((r) => r.data);
+export const getConversationMessages = (userId: string, params?: { limit?: number; before?: string }) =>
+  api.get(`/api/chat/${userId}`, { params }).then((r) => r.data);
 
 export const markConversationAsRead = (userId: string) =>
   api.patch(`/api/chat/mark-read/${userId}`).then((r) => r.data);
@@ -36,3 +36,13 @@ export const unpinConversation = (userId: string) =>
 // ── Phase 3: Image Sharing ────────────────────────────────────────────────────
 export const uploadChatImage = (formData: FormData) =>
   uploadFormData(`/api/chat/upload-image`, formData);
+
+// ── Conversation Archiving ────────────────────────────────────────────────────
+export const archiveConversation = (userId: string) =>
+  api.post(`/api/chat/archive/${userId}`).then((r) => r.data);
+
+export const unarchiveConversation = (userId: string) =>
+  api.delete(`/api/chat/archive/${userId}`).then((r) => r.data);
+
+export const getConversationsWithArchived = () =>
+  api.get(`/api/chat/conversations/all`, { params: { includeArchived: true } }).then((r) => r.data);

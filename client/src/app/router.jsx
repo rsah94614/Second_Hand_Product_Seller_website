@@ -13,9 +13,12 @@ import WishlistPage from '../features/users/pages/WishlistPage';
 import NotificationsPage from '../features/notifications/pages/NotificationsPage';
 import NotificationPreferencesPage from '../features/notifications/pages/NotificationPreferencesPage';
 import ReviewSellerPage from '../features/users/pages/ReviewSellerPage';
-import SettingsPage from '../features/users/pages/SettingsPage';
-import BlockedUsersPage from '../features/users/pages/BlockedUsersPage';
-import DeleteAccountPage from '../features/users/pages/DeleteAccountPage';
+import SettingsPage from '../features/users/pages/settings/SettingsPage';
+import BlockedUsersPage from '../features/users/pages/settings/BlockedUsersPage';
+import DeleteAccountPage from '../features/users/pages/settings/DeleteAccountPage';
+import ActiveDevicesPage from '../features/users/pages/settings/ActiveDevicesPage';
+
+
 import HelpCenterPage from '../features/users/pages/HelpCenterPage';
 import LegalPage from '../features/users/pages/LegalPage';
 import CreateProductPage from '../features/products/pages/CreateProductPage';
@@ -71,7 +74,9 @@ const AppRouter = () => (
     <Route path="/review/:sellerId" element={<ProtectedRoute><ReviewSellerPage /></ProtectedRoute>} />
     <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
     <Route path="/settings/blocked-users" element={<ProtectedRoute><BlockedUsersPage /></ProtectedRoute>} />
+    <Route path="/settings/devices" element={<ProtectedRoute><ActiveDevicesPage /></ProtectedRoute>} />
     <Route path="/settings/delete-account" element={<ProtectedRoute><DeleteAccountPage /></ProtectedRoute>} />
+
     <Route path="/help" element={<HelpCenterPage />} />
     <Route path="/terms" element={<LegalPage />} />
     <Route path="/privacy" element={<LegalPage />} />

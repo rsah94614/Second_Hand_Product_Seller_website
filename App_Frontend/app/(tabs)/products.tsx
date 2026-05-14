@@ -132,7 +132,15 @@ export default function ProductsBrowseScreen() {
       getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     });
 
-  const products: ProductListItem[] = data?.pages.flatMap((p) => p.products || []) || [];
+  const products: ProductListItem[] = useMemo(() => {
+    const all = data?.pages.flatMap((p) => p.products || []) || [];
+    const seen = new Set();
+    return all.filter((p) => {
+      if (seen.has(p._id)) return false;
+      seen.add(p._id);
+      return true;
+    });
+  }, [data?.pages]);
 
   const onEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
@@ -208,11 +216,11 @@ export default function ProductsBrowseScreen() {
           <View className="px-4 pb-4 animate-fade-in">
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
               <View className="flex-row gap-2 pr-4">
-                {categories.slice(0, 9).map((c: string) => {
+                {categories.slice(0, 9).map((c: string, i: number) => {
                   const isActive = c === "All" ? category === "" : category === c;
                   return (
                   <Pressable
-                    key={c}
+                    key={`${c}-${i}`}
                     onPress={() => setCategory(c === "All" ? "" : (isActive ? "" : c))}
                     className={`rounded-xl px-4 py-2 border ${isActive ? "bg-primary-600 border-primary-600 dark:bg-primary-500 dark:border-primary-500" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 active:bg-slate-50"}`}
                   >

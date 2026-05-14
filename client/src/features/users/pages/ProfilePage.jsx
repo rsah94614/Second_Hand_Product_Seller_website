@@ -13,7 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../../../components/ui/AlertDialog';
-import { getUserProfile, getMyReputation, getMySellerVerification, requestSellerVerification, getMyDevices, removeDevice, trustDevice, uploadUserAvatar, getProfileCompletion } from '../api/userApi';
+import { getUserProfile, getMyReputation, getMySellerVerification, requestSellerVerification, uploadUserAvatar, getProfileCompletion } from '../api/userApi';
 import { parseApiError, formatErrorForDisplay } from '../../../lib/errorHandler';
 
 // Modular Profile Views
@@ -52,11 +52,7 @@ const ProfilePage = () => {
     enabled: !!authUser?.id && authUser?.role !== 'admin',
   });
 
-  const { data: devicesData } = useQuery({
-    queryKey: ['my-devices'],
-    queryFn: getMyDevices,
-    enabled: !!authUser?.id,
-  });
+
 
   const verificationMutation = useMutation({
     mutationFn: requestSellerVerification,
@@ -70,25 +66,7 @@ const ProfilePage = () => {
     },
   });
 
-  const removeDeviceMutation = useMutation({
-    mutationFn: removeDevice,
-    onSuccess: () => {
-      toast.success('Device removed');
-      queryClient.invalidateQueries({ queryKey: ['my-devices'] });
-    },
-    onError: (err) => {
-      const parsedError = parseApiError(err, 'Failed to remove device');
-      toast.error(formatErrorForDisplay(parsedError));
-    },
-  });
 
-  const trustDeviceMutation = useMutation({
-    mutationFn: trustDevice,
-    onSuccess: () => {
-      toast.success('Device marked as trusted');
-      queryClient.invalidateQueries({ queryKey: ['my-devices'] });
-    },
-  });
 
   const profile = profileData?.user || authUser;
   const trustSignals = profileData?.trustSignals;
@@ -224,7 +202,7 @@ const ProfilePage = () => {
 
   const commonProps = {
     profile,
-    devicesData,
+
     isEditing,
     setIsEditing,
     formData,
@@ -234,9 +212,8 @@ const ProfilePage = () => {
     handleAvatarChange,
     avatarUploading,
     avatarInputRef,
-    trustDeviceMutation,
-    removeDeviceMutation,
     setIsLogoutDialogOpen,
+
   };
 
   return (

@@ -75,7 +75,7 @@ export default function SettingsScreen() {
       { text: "Light Mode", onPress: () => setTheme("light") },
       { text: "Dark Mode", onPress: () => setTheme("dark") },
       { text: "Cancel", style: "cancel" },
-    ]);
+    ], { cancelable: true });
   };
 
   return (

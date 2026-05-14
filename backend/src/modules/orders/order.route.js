@@ -1,5 +1,6 @@
 const express = require('express');
 const auth = require('../../shared/middleware/auth.middleware');
+const { adminAuth } = require('../../shared/middleware/auth.middleware');
 const multer = require('multer');
 
 const dealController = require('./controllers/deal.controller');
@@ -43,13 +44,13 @@ router.post('/:id/confirmation-photo', auth, upload.single('photo'), fulfillment
 
 // ── Dispute system (Task 2.3.3) ──────────────────────────────────────────────
 router.post('/:id/dispute', auth, upload.array('evidence', 5), disputeController.createDispute);
-router.get('/disputes/all', auth, disputeController.getDisputes); // Admin only
+router.get('/disputes/all', adminAuth, disputeController.getDisputes);
 router.get('/disputes/:disputeId', auth, disputeController.getDisputeById);
-router.patch('/disputes/:disputeId/resolve', auth, disputeController.resolveDispute); // Admin only
-router.patch('/disputes/:disputeId/reject', auth, disputeController.rejectDispute); // Admin only
+router.patch('/disputes/:disputeId/resolve', adminAuth, disputeController.resolveDispute);
+router.patch('/disputes/:disputeId/reject', adminAuth, disputeController.rejectDispute);
 
 // ── Admin: force auto-complete stale delivered orders ─────────────────────────────
-router.post('/admin/auto-complete', auth, fulfillmentController.autoCompleteOrders); // Admin only
+router.post('/admin/auto-complete', adminAuth, fulfillmentController.autoCompleteOrders);
 
 
 module.exports = router;

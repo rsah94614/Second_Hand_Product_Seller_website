@@ -89,7 +89,8 @@ export default function BlockedUsersScreen() {
                 variant="outline"
                 onPress={() => unblockMutation.mutate(item._id)}
                 loading={unblockMutation.isPending}
-                className="ml-3 w-[90px]"
+                className="ml-3 px-4 py-0 min-h-0 h-10 rounded-xl"
+                textClassName="text-[14px]"
               />
             </View>
           )}

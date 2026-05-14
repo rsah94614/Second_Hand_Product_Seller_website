@@ -32,14 +32,6 @@ export const getId = (value: unknown) =>
     ? String((value as { _id: string })._id)
     : String(value || "");
 
-const offlineQueue: {
-  receiver: string;
-  content: string;
-  idempotencyKey: string;
-  optimisticId: string;
-  queuedAt: number;
-}[] = [];
-
 // ── Hook ──────────────────────────────────────────────────────────────────────
 export function useChatThread(partnerId: string) {
   const { user } = useAuth();
@@ -56,17 +48,27 @@ export function useChatThread(partnerId: string) {
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [isSendingImage, setIsSendingImage] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const nextCursorRef = useRef<string | null>(null);
 
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const offlineQueueRef = useRef<{
+    receiver: string;
+    content: string;
+    idempotencyKey: string;
+    optimisticId: string;
+    queuedAt: number;
+  }[]>([]);
 
   useEffect(() => {
     async function checkBlockStatus() {
       if (!partnerId) return;
       try {
         const res = await getBlockedUsers();
-        // res.blocked is an array of users
-        const blockedList = res.blocked || [];
-        setIsBlocked(blockedList.some((u: any) => (u._id || u) === partnerId));
+        // getBlockedUsers already returns the array r.data.blocked
+        const blockedList = Array.isArray(res) ? res : (res?.blocked || []);
+        setIsBlocked(blockedList.some((u: any) => getId(u) === partnerId));
       } catch (err) {
         console.error("[checkBlockStatus] Error:", err);
       }
@@ -88,10 +90,16 @@ export function useChatThread(partnerId: string) {
     setLoading(true);
     setLoadError(false);
     try {
-      const data = await getConversationMessages(partnerId);
-      const fetchedMessages = Array.isArray(data) ? data : [];
+      const data = await getConversationMessages(partnerId, { limit: 50 });
+      // Support both old array response and new paginated response
+      const fetchedMessages = Array.isArray(data) ? data : (data.messages || []);
+      const paginatedHasMore = Array.isArray(data) ? false : (data.hasMore || false);
+      const paginatedCursor = Array.isArray(data) ? null : (data.nextCursor || null);
+
       setMessages(fetchedMessages);
-      
+      setHasMore(paginatedHasMore);
+      nextCursorRef.current = paginatedCursor;
+
       if (socket) {
         fetchedMessages.forEach((msg: Msg) => {
           const senderId = getId(msg.sender);
@@ -108,7 +116,7 @@ export function useChatThread(partnerId: string) {
           }
         });
       }
-      
+
       await markConversationAsRead(partnerId);
       socket?.emit?.("mark_seen", { receiverId: partnerId });
     } catch {
@@ -122,6 +130,33 @@ export function useChatThread(partnerId: string) {
   useEffect(() => {
     load();
   }, [load]);
+
+  const loadMore = useCallback(async () => {
+    if (!partnerId || !user || !hasMore || loadingMore || !nextCursorRef.current) return;
+    setLoadingMore(true);
+    try {
+      const data = await getConversationMessages(partnerId, {
+        limit: 50,
+        before: nextCursorRef.current,
+      });
+      const olderMessages = Array.isArray(data) ? data : (data.messages || []);
+      const paginatedHasMore = Array.isArray(data) ? false : (data.hasMore || false);
+      const paginatedCursor = Array.isArray(data) ? null : (data.nextCursor || null);
+
+      // Prepend older messages, avoid duplicates
+      setMessages((prev) => {
+        const existingIds = new Set(prev.map((m) => m._id));
+        const newOnes = olderMessages.filter((m: Msg) => !existingIds.has(m._id));
+        return [...newOnes, ...prev];
+      });
+      setHasMore(paginatedHasMore);
+      nextCursorRef.current = paginatedCursor;
+    } catch (e) {
+      console.error("[loadMore] Error:", e);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [partnerId, user, hasMore, loadingMore]);
 
   // ── Socket listeners ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -189,11 +224,28 @@ export function useChatThread(partnerId: string) {
       }
     };
 
+    const onStatusUpdate = ({ messageId, status, deliveredAt, readAt }: {
+      messageId: string;
+      status: 'delivered' | 'read';
+      deliveredAt?: string;
+      readAt?: string;
+    }) => {
+      setMessages((prev) =>
+        prev.map((item) => {
+          if (item._id !== messageId) return item;
+          if (status === 'delivered') return { ...item, delivered: true };
+          if (status === 'read') return { ...item, read: true };
+          return item;
+        })
+      );
+    };
+
     socket.on("receive_message", onReceive);
     socket.on("message_edited", onEdited);
     socket.on("message_deleted", onDeleted);
     socket.on("messages_read", onMessagesRead);
     socket.on("typing", onTyping);
+    socket.on("message_status_update", onStatusUpdate);
 
     return () => {
       socket.off("receive_message", onReceive);
@@ -201,17 +253,18 @@ export function useChatThread(partnerId: string) {
       socket.off("message_deleted", onDeleted);
       socket.off("messages_read", onMessagesRead);
       socket.off("typing", onTyping);
+      socket.off("message_status_update", onStatusUpdate);
     };
   }, [socket, user, partnerId]);
 
   // ── Offline Queue Processor ──────────────────────────────────────────────────
   useEffect(() => {
-    if (isConnected && socket && offlineQueue.length > 0) {
-      const items = [...offlineQueue];
-      offlineQueue.length = 0;
+    if (isConnected && socket && offlineQueueRef.current.length > 0) {
+      const items = [...offlineQueueRef.current];
+      offlineQueueRef.current = [];
       items.forEach((msg) => {
         socket.emit("send_message", {
-          receiverId: msg.receiver,
+          receiver: msg.receiver,
           content: msg.content,
           idempotencyKey: msg.idempotencyKey,
         });
@@ -244,7 +297,7 @@ export function useChatThread(partnerId: string) {
     setMessages((prev) => [...prev, optimisticMessage]);
 
     if (!isConnected || !socket) {
-      offlineQueue.push({
+      offlineQueueRef.current.push({
         receiver: partnerId,
         content: trimmed,
         idempotencyKey,
@@ -253,7 +306,7 @@ export function useChatThread(partnerId: string) {
       });
     } else {
       socket.emit("send_message", {
-        receiverId: partnerId,
+        receiver: partnerId,
         content: trimmed,
         idempotencyKey,
       });
@@ -364,5 +417,8 @@ export function useChatThread(partnerId: string) {
     isConnected,
     isSendingImage,
     isBlocked,
+    hasMore,
+    loadingMore,
+    loadMore,
   };
 }

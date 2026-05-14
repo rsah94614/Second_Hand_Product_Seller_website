@@ -102,23 +102,23 @@ function InnerLayout() {
                   <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: "none" }} />
                   <Stack.Screen name="(auth)" options={{ headerShown: false, animation: stackAnimation }} />
                   <Stack.Screen name="admin" options={{ headerShown: false, animation: stackAnimation }} />
-                  <Stack.Screen name="notification-preferences" options={{ title: "Notification Preferences" }} />
-                  <Stack.Screen name="devices" options={{ title: "Active Devices" }} />
-                  <Stack.Screen name="notifications" options={{ title: "Notifications" }} />
-                  <Stack.Screen name="my-products" options={{ title: "My Listings" }} />
-                  <Stack.Screen name="create-product" options={{ headerShown: false }} />
-                  <Stack.Screen name="dashboard" options={{ title: "Dashboard" }} />
-                  <Stack.Screen name="wishlist" options={{ title: "Wishlist" }} />
-                  <Stack.Screen name="settings" options={{ title: "Settings" }} />
-                  <Stack.Screen name="blocked-users" options={{ title: "Blocked Users" }} />
-                  <Stack.Screen name="delete-account" options={{ title: "Delete Account" }} />
-                  <Stack.Screen name="help-center" options={{ title: "Help Center" }} />
-                  <Stack.Screen name="terms-of-service" options={{ title: "Terms of Service" }} />
-                  <Stack.Screen name="privacy-policy" options={{ title: "Privacy Policy" }} />
-                  <Stack.Screen name="edit-product/[id]" options={{ headerShown: false, animation: "none" }} />
+                  <Stack.Screen name="(settings)/notification-preferences" options={{ title: "Notification Preferences" }} />
+                  <Stack.Screen name="(settings)/devices" options={{ title: "Active Devices" }} />
+                  <Stack.Screen name="(user)/notifications" options={{ title: "Notifications" }} />
+                  <Stack.Screen name="(user)/my-products" options={{ title: "My Listings" }} />
+                  <Stack.Screen name="(user)/create-product" options={{ title: "Create Listing" }} />
+                  <Stack.Screen name="(user)/dashboard" options={{ title: "Dashboard" }} />
+                  <Stack.Screen name="(user)/wishlist" options={{ title: "Wishlist" }} />
+                  <Stack.Screen name="(settings)/settings" options={{ title: "Settings" }} />
+                  <Stack.Screen name="(settings)/blocked-users" options={{ title: "Blocked Users" }} />
+                  <Stack.Screen name="(settings)/delete-account" options={{ title: "Delete Account" }} />
+                  <Stack.Screen name="(settings)/help-center" options={{ title: "Help Center" }} />
+                  <Stack.Screen name="(settings)/terms-of-service" options={{ title: "Terms of Service" }} />
+                  <Stack.Screen name="(settings)/privacy-policy" options={{ title: "Privacy Policy" }} />
+                  <Stack.Screen name="edit-product/[id]" options={{ title: "Edit Listing", animation: "none" }} />
                   <Stack.Screen name="product/[id]" options={{ title: "Product Details" }} />
                   <Stack.Screen name="order/[id]" options={{ title: "Place Order" }} />
-                  <Stack.Screen name="orders" options={{ title: "My Orders" }} />
+                  <Stack.Screen name="(user)/orders" options={{ title: "My Orders" }} />
                   <Stack.Screen name="chat/[userId]" options={{ headerShown: false }} />
                   <Stack.Screen name="review/[sellerId]" options={{ title: "Review" }} />
                 </Stack>
