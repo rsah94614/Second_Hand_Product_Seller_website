@@ -10,7 +10,7 @@ const getConversationsAggregation = async (userId) => {
         $or: [{ sender: userObjectId }, { receiver: userObjectId }],
       },
     },
-    { $sort: { timestamp: -1 } },
+    { $sort: { createdAt: -1 } },
     {
       $group: {
         _id: {
@@ -21,7 +21,7 @@ const getConversationsAggregation = async (userId) => {
             $cond: [{ $eq: ['$isDeleted', true] }, 'This message was deleted', '$content'],
           },
         },
-        timestamp: { $first: '$timestamp' },
+        timestamp: { $first: { $ifNull: ['$createdAt', '$timestamp'] } },
         unreadCount: {
           $sum: {
             $cond: [
@@ -51,7 +51,7 @@ const getConversationsAggregation = async (userId) => {
 const markMessagesAsRead = async (userId, otherUserId) => {
   return Message.updateMany(
     { sender: otherUserId, receiver: userId, read: false },
-    { $set: { read: true } }
+    { $set: { read: true, readAt: new Date() } }
   );
 };
 

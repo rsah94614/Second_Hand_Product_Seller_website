@@ -2,16 +2,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useEffect } from "react";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
-import { Screen } from "../components/ui/Screen";
-import { Loading } from "../components/Loading";
-import { useAuth } from "../context/AuthContext";
+import { Screen } from "../../components/ui/Screen";
+import { Loading } from "../../components/Loading";
+import { useAuth } from "../../context/AuthContext";
 import {
   getNotificationPreferences,
   updateNotificationPreferences,
-} from "../lib/api/notifications";
+} from "../../lib/api/notifications";
 import { Ionicons } from "@expo/vector-icons";
-import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
-import { useToast } from "../components/ui/AppToast";
+import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
+import { useToast } from "../../components/ui/AppToast";
 
 type PrefKey =
   | "emailNotifications"
@@ -54,7 +54,7 @@ export default function NotificationPreferencesScreen() {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: prefs, isLoading } = useQuery({
+  const { data: prefs, isLoading, isError } = useQuery({
     queryKey: ["notification-preferences"],
     queryFn: getNotificationPreferences,
     enabled: !!user,
@@ -88,13 +88,30 @@ export default function NotificationPreferencesScreen() {
     return <Screen safeAreaTop={false}><Loading /></Screen>;
   }
 
+  if (isError) {
+    return (
+      <Screen safeAreaTop={false} className="bg-slate-50 dark:bg-slate-950">
+        <View className="flex-1 items-center justify-center px-6">
+          <View className="h-16 w-16 rounded-full bg-red-50 dark:bg-red-900/30 items-center justify-center mb-4">
+            <Ionicons name="cloud-offline-outline" size={32} color="#ef4444" />
+          </View>
+          <Text className="text-[18px] font-outfit-sb text-slate-900 dark:text-white text-center mb-2">
+            Could not load settings
+          </Text>
+          <Text className="text-[14px] font-outfit text-slate-500 dark:text-slate-400 text-center">
+            Check your connection and try again.
+          </Text>
+        </View>
+      </Screen>
+    );
+  }
+
   const p = prefs as Record<string, boolean> | undefined;
 
   return (
     <Screen safeAreaTop={false} className="bg-slate-50 dark:bg-slate-950">
       <ScrollView className="flex-1 px-4 pt-4 pb-10" showsVerticalScrollIndicator={false}>
-        <Text className="text-[13px] font-outfit-m text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">Settings</Text>
-        <Text className="text-[24px] font-outfit-bl text-slate-900 dark:text-white mb-6">Notification Preferences</Text>
+
 
         {/* Channels */}
         <Text className="text-[13px] font-outfit-sb text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Delivery Channels</Text>

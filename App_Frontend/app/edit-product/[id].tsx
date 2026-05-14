@@ -191,91 +191,92 @@ export default function EditProductScreen() {
   return (
     <Screen safeAreaTop={false} className="flex-1">
       <KeyboardShiftView>
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 18, paddingBottom: 180 }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <Text className="text-[14px] font-outfit text-slate-500 dark:text-slate-400 leading-5 mb-3">
-          Add new images to replace gallery (optional). Existing images stay if you add none.
-        </Text>
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 180 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
 
-        <ActionButton title={`New photos (${images.length})`} variant="outline" onPress={pickImages} />
 
-        <Field label="Title" value={form.title} onChangeText={(value) => setF("title", value)} />
-        <Field
-          label="Description"
-          value={form.description}
-          onChangeText={(value) => setF("description", value)}
-          multiline
-        />
-        <Text className="mt-4 text-[14px] font-outfit-m text-slate-700 dark:text-slate-300 mb-2">Category</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2 -mx-4 px-4">
-          <View className="flex-row gap-2.5">
-            {(catRes?.categories?.map((c: { name: string }) => c.name) || ["Books & Study Materials", "Electronics", "Cycles", "Other"]).map((cat: string) => (
-              <Pressable
-                key={cat}
-                onPress={() => setF("category", cat)}
-                className={`px-4 py-2.5 rounded-xl border ${
-                  form.category === cat 
-                    ? "bg-primary-600 border-primary-600 dark:bg-primary-500 dark:border-primary-500" 
-                    : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
-                }`}
-              >
-                <Text 
-                  className={`text-[13px] font-outfit-sb tracking-wide ${
-                    form.category === cat ? "text-white" : "text-slate-700 dark:text-slate-300"
-                  }`}
+          <Text className="text-[14px] font-outfit text-slate-500 dark:text-slate-400 leading-5 mb-3 px-1">
+            Add new images to replace gallery (optional). Existing images stay if you add none.
+          </Text>
+
+          <ActionButton title={`New photos (${images.length})`} variant="outline" onPress={pickImages} />
+
+          <Field label="Title" value={form.title} onChangeText={(value) => setF("title", value)} />
+          <Field
+            label="Description"
+            value={form.description}
+            onChangeText={(value) => setF("description", value)}
+            multiline
+          />
+          <Text className="mt-4 text-[14px] font-outfit-m text-slate-700 dark:text-slate-300 mb-2">Category</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2 -mx-4 px-4">
+            <View className="flex-row gap-2.5">
+              {(catRes?.categories?.map((c: { name: string }) => c.name) || ["Books & Study Materials", "Electronics", "Cycles", "Other"]).map((cat: string) => (
+                <Pressable
+                  key={cat}
+                  onPress={() => setF("category", cat)}
+                  className={`px-4 py-2.5 rounded-xl border ${form.category === cat
+                      ? "bg-primary-600 border-primary-600 dark:bg-primary-500 dark:border-primary-500"
+                      : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                    }`}
                 >
-                  {cat}
+                  <Text
+                    className={`text-[13px] font-outfit-sb tracking-wide ${form.category === cat ? "text-white" : "text-slate-700 dark:text-slate-300"
+                      }`}
+                  >
+                    {cat}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </ScrollView>
+
+          <Text className="mt-4 text-[14px] font-outfit-m text-slate-700 dark:text-slate-300 mb-2">Condition</Text>
+          <View className="flex-row flex-wrap gap-2.5 mb-2">
+            {PRODUCT_CONDITIONS.map((c) => (
+              <Pressable
+                key={c}
+                onPress={() => setF("condition", c)}
+                className={`px-4 py-2.5 rounded-xl border ${form.condition === c
+                    ? "bg-primary-600 border-primary-600 dark:bg-primary-500 dark:border-primary-500"
+                    : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                  }`}
+              >
+                <Text
+                  className={`text-[13px] font-outfit-sb tracking-wide ${form.condition === c ? "text-white" : "text-slate-700 dark:text-slate-300"
+                    }`}
+                >
+                  {c}
                 </Text>
               </Pressable>
             ))}
           </View>
+
+          <Field
+            label="Price"
+            value={form.price}
+            onChangeText={(value) => setF("price", value)}
+            keyboardType="numeric"
+          />
+          <Field label="Location" value={form.location} onChangeText={(value) => setF("location", value)} />
+          <Field
+            label="Email"
+            value={form.email}
+            onChangeText={(value) => setF("email", value)}
+            keyboardType="email-address"
+          />
+
+          <View className="mt-6">
+            <ActionButton title="Save changes" loading={submitting} onPress={submit} />
+          </View>
+          <View className="h-20" />
+          <View className="h-20" />
+          <View className="h-10" />
         </ScrollView>
-
-        <Text className="mt-4 text-[14px] font-outfit-m text-slate-700 dark:text-slate-300 mb-2">Condition</Text>
-        <View className="flex-row flex-wrap gap-2.5 mb-2">
-          {PRODUCT_CONDITIONS.map((c) => (
-            <Pressable
-              key={c}
-              onPress={() => setF("condition", c)}
-              className={`px-4 py-2.5 rounded-xl border ${
-                form.condition === c 
-                  ? "bg-primary-600 border-primary-600 dark:bg-primary-500 dark:border-primary-500" 
-                  : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
-              }`}
-            >
-              <Text 
-                className={`text-[13px] font-outfit-sb tracking-wide ${
-                  form.condition === c ? "text-white" : "text-slate-700 dark:text-slate-300"
-                }`}
-              >
-                {c}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <Field
-          label="Price"
-          value={form.price}
-          onChangeText={(value) => setF("price", value)}
-          keyboardType="numeric"
-        />
-        <Field label="Location" value={form.location} onChangeText={(value) => setF("location", value)} />
-        <Field
-          label="Email"
-          value={form.email}
-          onChangeText={(value) => setF("email", value)}
-          keyboardType="email-address"
-        />
-
-        <View className="mt-6">
-          <ActionButton title="Save changes" loading={submitting} onPress={submit} />
-        </View>
-      </ScrollView>
       </KeyboardShiftView>
     </Screen>
   );
@@ -316,9 +317,8 @@ function Field({
         multiline={multiline}
         keyboardType={keyboardType || "default"}
         placeholderTextColor="#94a3b8"
-        className={`rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3.5 text-[16px] font-outfit text-slate-900 dark:text-white ${
-          multiline ? "min-h-[120px] text-top" : "min-h-[54px]"
-        }`}
+        className={`rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3.5 text-[16px] font-outfit text-slate-900 dark:text-white ${multiline ? "min-h-[120px] text-top" : "min-h-[54px]"
+          }`}
         style={multiline ? { textAlignVertical: "top" } : undefined}
       />
     </View>
@@ -344,21 +344,18 @@ function ActionButton({
     <Pressable
       onPress={onPress}
       disabled={loading}
-      className={`rounded-2xl items-center justify-center px-4 py-3 ${
-        compact ? "min-h-[42px] mb-2" : "min-h-[54px]"
-      } ${
-        isOutline
+      className={`rounded-2xl items-center justify-center px-4 py-3 ${compact ? "min-h-[42px] mb-2" : "min-h-[54px]"
+        } ${isOutline
           ? "border border-slate-300 dark:border-slate-700 bg-transparent active:bg-slate-100 dark:active:bg-slate-800"
           : "bg-primary-600 active:bg-primary-700"
-      } ${loading ? "opacity-60" : ""}`}
+        } ${loading ? "opacity-60" : ""}`}
     >
       {loading ? (
         <ActivityIndicator color={isOutline ? "#6366f1" : "#ffffff"} />
       ) : (
         <Text
-          className={`text-[15px] font-outfit-sb ${
-            isOutline ? "text-slate-700 dark:text-slate-200" : "text-white"
-          }`}
+          className={`text-[15px] font-outfit-sb ${isOutline ? "text-slate-700 dark:text-slate-200" : "text-white"
+            }`}
         >
           {title}
         </Text>

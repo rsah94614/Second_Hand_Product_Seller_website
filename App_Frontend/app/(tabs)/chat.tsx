@@ -4,7 +4,7 @@ import { Alert, FlatList, Pressable, Text, View, TextInput, Platform } from "rea
 import { Ionicons } from "@expo/vector-icons";
 import { Screen } from "../../components/ui/Screen";
 import { PageHeader } from "../../components/ui/PageHeader";
-import { Loading } from "../../components/Loading";
+import { Skeleton } from "../../components/ui/Skeleton";
 import { EmptyState } from "../../components/EmptyState";
 import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
@@ -124,18 +124,25 @@ export default function MessagesScreen() {
     }
   }, [authLoading, user]);
 
-  if (authLoading || !user) {
+  if (loading || authLoading || !user) {
     return (
-      <Screen>
-        <Loading />
-      </Screen>
-    );
-  }
-
-  if (loading) {
-    return (
-      <Screen>
-        <Loading />
+      <Screen className="bg-slate-50 dark:bg-slate-950">
+        <PageHeader title="Messages" />
+        <View className="bg-white dark:bg-slate-900 px-5 pt-2 pb-4 shadow-sm">
+          <Skeleton className="w-full h-10 rounded-xl" />
+        </View>
+        {[...Array(6)].map((_, i) => (
+          <View key={i} className="flex-row items-center bg-white dark:bg-slate-900 px-5 py-4 mb-[1px] border-b border-slate-50 dark:border-slate-800/50">
+            <Skeleton circle className="w-14 h-14" />
+            <View className="ml-4 flex-1">
+              <View className="flex-row justify-between mb-2">
+                <Skeleton className="w-1/3 h-5 rounded-md" />
+                <Skeleton className="w-12 h-3 rounded-md" />
+              </View>
+              <Skeleton className="w-2/3 h-4 rounded-md" />
+            </View>
+          </View>
+        ))}
       </Screen>
     );
   }
@@ -189,7 +196,7 @@ export default function MessagesScreen() {
 
       <FlatList
         data={filteredList}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item, i) => item._id || `chat-${i}`}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-20 px-10">

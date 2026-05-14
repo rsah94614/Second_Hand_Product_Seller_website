@@ -17,6 +17,9 @@ export const toggleWishlist = (productId: string) =>
 export const getRecentlyViewed = () =>
   api.get(`/api/users/me/recently-viewed`).then((r) => r.data);
 
+export const getBlockedUsers = () =>
+  api.get(`/api/users/me/blocked`).then((r) => r.data.blocked);
+
 export const submitSellerReview = (
   userId: string,
   payload: { rating: number; comment: string; orderId?: string; productId?: string }
@@ -56,3 +59,6 @@ export const trustDevice = (deviceId: string) =>
 // ── Profile Completion ────────────────────────────────────────────────────────
 export const getProfileCompletion = () =>
   api.get(`/api/users/me/profile-completion`).then((r) => r.data);
+
+export const deleteAccount = () =>
+  api.delete(`/api/users/me`).then((r) => r.data);

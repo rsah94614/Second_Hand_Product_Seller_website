@@ -44,7 +44,7 @@ const PreferenceRow = ({ icon, label, description, value, onChange, disabled }) 
 const NotificationPreferencesPage = () => {
   const queryClient = useQueryClient();
 
-  const { data: prefs, isLoading } = useQuery({
+  const { data: prefs, isLoading, isError } = useQuery({
     queryKey: ['notification-preferences'],
     queryFn: getNotificationPreferences,
   });
@@ -71,6 +71,24 @@ const NotificationPreferencesPage = () => {
             <div key={i} className="h-24 rounded-2xl bg-gray-100 animate-pulse" />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <Header />
+        <div className="flex-1 flex items-center justify-center p-6">
+          <Card className="max-w-md w-full text-center p-8 rounded-3xl shadow-sm border-gray-100">
+            <div className="mx-auto w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-6">
+              <ShieldAlert className="w-8 h-8" />
+            </div>
+            <h2 className="text-2xl font-black text-gray-900 mb-2">Could not load settings</h2>
+            <p className="text-gray-500 mb-8">Check your connection and try again.</p>
+          </Card>
+        </div>
+        <Footer />
       </div>
     );
   }

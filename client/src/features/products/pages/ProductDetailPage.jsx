@@ -97,41 +97,51 @@ const ProductDetailPage = () => {
       <Header />
       <main className="py-8 lg:py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 xl:gap-12">
-            <ProductImageGallery 
-              product={product} 
-              currentIndex={currentImageIndex} 
-              onIndexChange={setCurrentImageIndex} 
-            />
-
-            <div className="flex flex-col animate-fade-in">
-              <ProductMetaInfo 
+          <div className="flex flex-col lg:flex-row gap-10 xl:gap-14 items-start">
+            
+            {/* Left Column - Gallery & Details */}
+            <div className="w-full lg:w-3/5 space-y-10 xl:space-y-14">
+              <ProductImageGallery 
                 product={product} 
-                isOwner={isOwner} 
-                userRole={user?.role} 
-                onDelete={handleDelete} 
+                currentIndex={currentImageIndex} 
+                onIndexChange={setCurrentImageIndex} 
               />
 
-              <SellerReputationSection 
-                seller={product.seller} 
-                sellerProfile={sellerProfile}
-                isOwner={isOwner}
-                reviews={sellerReviews}
-                existingReview={existingReview}
-                reviewForm={reviewForm}
-                setReviewForm={setReviewForm}
-                onReviewSubmit={handleReviewSubmit}
-                isReviewPending={isReviewPending}
-              />
-
-              <div className="mb-8 mt-8">
-                <h3 className="text-lg font-bold text-gray-900 mb-3">Description</h3>
-                <div className="prose prose-gray max-w-none">
+              <div className="bg-white rounded-4xl p-8 md:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100">
+                <h3 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3">
+                  <span className="w-2 h-8 rounded-full bg-primary-600"></span>
+                  Product Description
+                </h3>
+                <div className="prose prose-lg prose-gray max-w-none">
                   <p className="text-gray-600 whitespace-pre-wrap leading-relaxed">{product.description}</p>
                 </div>
               </div>
 
-              <div className="mt-auto">
+              {!isOwner && (
+                <div className="mt-8">
+                  <ProductReportForm 
+                    reportForm={reportForm}
+                    setReportForm={setReportForm}
+                    onReportSubmit={handleReportSubmit}
+                    isPending={isReportPending}
+                    hasSeller={!!product.seller}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Right Column - Meta & Actions (Sticky) */}
+            <div className="w-full lg:w-2/5 flex flex-col gap-8 lg:sticky lg:top-24">
+              <div className="bg-white rounded-4xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 animate-fade-in">
+                <ProductMetaInfo 
+                  product={product} 
+                  isOwner={isOwner} 
+                  userRole={user?.role} 
+                  onDelete={handleDelete} 
+                />
+              </div>
+
+              <div className="animate-fade-up-delayed">
                 <ActionSidebar 
                   product={product}
                   quantity={quantity}
@@ -148,21 +158,20 @@ const ProductDetailPage = () => {
                   isWishlistPending={isWishlistPending}
                 />
               </div>
-            </div>
-          </div>
 
-          <div className="mt-16 grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
-            <div className="space-y-8" /> {/* Placeholder for alignment if needed, or moved reviews here */}
-            <div className="space-y-8">
-              {!isOwner && (
-                <ProductReportForm 
-                  reportForm={reportForm}
-                  setReportForm={setReportForm}
-                  onReportSubmit={handleReportSubmit}
-                  isPending={isReportPending}
-                  hasSeller={!!product.seller}
+              <div className="bg-white rounded-4xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100">
+                <SellerReputationSection 
+                  seller={product.seller} 
+                  sellerProfile={sellerProfile}
+                  isOwner={isOwner}
+                  reviews={sellerReviews}
+                  existingReview={existingReview}
+                  reviewForm={reviewForm}
+                  setReviewForm={setReviewForm}
+                  onReviewSubmit={handleReviewSubmit}
+                  isReviewPending={isReviewPending}
                 />
-              )}
+              </div>
             </div>
           </div>
 

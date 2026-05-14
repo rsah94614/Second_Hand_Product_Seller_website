@@ -60,7 +60,7 @@ export const CheckoutDialog = ({
             onClick={onConfirm}
             disabled={isPending}
           >
-            {isPending ? 'Placing Order...' : 'Place Campus Order'}
+            {isPending ? 'Placing Order...' : 'Place Order'}
           </Button>
         </div>
       </DialogContent>

@@ -1,10 +1,11 @@
 import React from "react";
-import { View, Text, Pressable, TextInput, ScrollView } from "react-native";
+import { View, Text, Pressable, TextInput, ScrollView, Modal, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Button } from "../ui/Button";
 import { SectionCard } from "../ui/SectionCard";
 import { SettingRow } from "../ui/SettingRow";
+import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
 
 interface TrustLabel {
   key: string;
@@ -43,6 +44,7 @@ interface UserProfileViewProps {
   setEditCampus: React.Dispatch<React.SetStateAction<CampusInfo>>;
   saving: boolean;
   saveProfile: () => Promise<void>;
+  saveProfileWithPayload: (payload: any) => Promise<void>;
   avatarUploading: boolean;
   avatarUri: string;
   userInitials: string;
@@ -80,6 +82,7 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
   setEditCampus,
   saving,
   saveProfile,
+  saveProfileWithPayload,
   avatarUploading,
   avatarUri,
   userInitials,
@@ -97,6 +100,46 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
   logout,
   router,
 }) => {
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [isViewerOpen, setIsViewerOpen] = React.useState(false);
+
+  const handleAvatarPress = () => {
+    if (avatarUploading) return;
+    setIsMenuOpen(true);
+  };
+
+  const handleRemovePhoto = async () => {
+    Alert.alert(
+      "Remove Photo",
+      "Are you sure you want to remove your profile picture?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Remove", 
+          style: "destructive", 
+          onPress: async () => {
+            setIsMenuOpen(false);
+            try {
+              await saveProfileDirectly({ avatar: "" });
+            } catch {
+              // Error handled in saveProfileDirectly
+            }
+          } 
+        }
+      ]
+    );
+  };
+
+  // Helper to save profile without full edit mode logic
+  const saveProfileDirectly = async (payload: any) => {
+    try {
+      await saveProfileWithPayload(payload);
+    } catch (e) {
+      const parsedError = parseApiError(e, "Could not update photo.");
+      Alert.alert("Error", formatErrorForDisplay(parsedError));
+    }
+  };
+
   return (
     <ScrollView
       className="flex-1"
@@ -108,7 +151,7 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
       {/* ── Avatar & Name Hero Card ── */}
       <View className="overflow-hidden rounded-3xl bg-white dark:bg-slate-900 shadow-sm shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 mb-4">
         <View className="bg-primary-600 dark:bg-primary-900 px-5 pt-5 pb-14 items-center">
-          <Pressable onPress={pickAndUploadAvatar} disabled={avatarUploading} className="active:opacity-80">
+          <Pressable onPress={handleAvatarPress} disabled={avatarUploading} className="active:opacity-80">
             <View className="h-24 w-24 rounded-full border-4 border-white/30 items-center justify-center overflow-hidden bg-primary-500 dark:bg-primary-600">
               {avatarUri ? (
                 <Image source={{ uri: avatarUri }} style={{ width: 96, height: 96 }} contentFit="cover" />
@@ -121,7 +164,7 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
             </View>
           </Pressable>
           <Text className="text-[11px] font-outfit text-primary-200 mt-2">
-            {avatarUploading ? "Uploading..." : "Tap to change photo"}
+            {avatarUploading ? "Uploading..." : "Tap to manage photo"}
           </Text>
         </View>
 
@@ -403,18 +446,90 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
         <SettingRow href="/wishlist" title="My Wishlist" icon="heart-outline" iconColor="#e11d48" iconBg="bg-red-50 dark:bg-red-950/30" />
         <SettingRow href="/orders" title="My Orders" icon="receipt-outline" iconColor="#6366f1" iconBg="bg-indigo-50 dark:bg-indigo-950/30" />
         <SettingRow href="/notifications" title="Notifications" icon="notifications-outline" iconColor="#6366f1" iconBg="bg-indigo-50 dark:bg-indigo-950/30" />
-        <SettingRow href="/devices" title="Active Devices" icon="phone-portrait-outline" iconColor="#7c3aed" iconBg="bg-violet-50 dark:bg-violet-950/30" />
         <SettingRow href="/dashboard" title="Seller Dashboard" icon="bar-chart-outline" iconColor="#0891b2" iconBg="bg-cyan-50 dark:bg-cyan-950/30" />
         <SettingRow href="/my-products" title="My Listings" icon="layers-outline" iconColor="#059669" iconBg="bg-emerald-50 dark:bg-emerald-950/30" />
         <SettingRow href="/create-product" title="Create New Listing" icon="add-circle-outline" iconColor="#d97706" iconBg="bg-amber-50 dark:bg-amber-950/30" />
+        <SettingRow href="/settings" title="Settings" icon="settings-outline" iconColor="#475569" iconBg="bg-slate-100 dark:bg-slate-800" />
       </SectionCard>
 
       {/* ── Sign Out ── */}
-      <View className="mt-6 bg-red-600 rounded-2xl">
-        <Button title="Sign Out" variant="outline" onPress={logout} />
+      <View className="mt-8">
+        <Button 
+          title="Sign Out" 
+          variant="danger" 
+          onPress={logout} 
+        />
       </View>
 
       <View className="h-4" />
+      {/* ── Profile Picture Management Modal ── */}
+      <Modal visible={isMenuOpen} transparent animationType="slide" onRequestClose={() => setIsMenuOpen(false)}>
+        <View className="flex-1 bg-black/50 justify-end">
+          <Pressable className="flex-1" onPress={() => setIsMenuOpen(false)} />
+          <View className="bg-white dark:bg-slate-900 rounded-t-[32px] px-6 pt-2 pb-8">
+            <View className="h-1.5 w-12 bg-slate-200 dark:bg-slate-800 rounded-full self-center mb-6" />
+            <Text className="text-[18px] font-outfit-sb text-slate-900 dark:text-white mb-6 px-1">Profile Photo</Text>
+            
+            <View className="flex-row items-center justify-start gap-6">
+              {avatarUri ? (
+                <View className="items-center">
+                  <Pressable 
+                    onPress={() => { setIsMenuOpen(false); setIsViewerOpen(true); }}
+                    className="h-14 w-14 rounded-2xl bg-indigo-50 dark:bg-indigo-900/40 items-center justify-center mb-2 active:bg-indigo-100"
+                  >
+                    <Ionicons name="eye-outline" size={24} color="#6366f1" />
+                  </Pressable>
+                  <Text className="text-[12px] font-outfit-m text-slate-600 dark:text-slate-400">View</Text>
+                </View>
+              ) : null}
+
+              <View className="items-center">
+                <Pressable 
+                  onPress={() => { setIsMenuOpen(false); pickAndUploadAvatar(); }}
+                  className="h-14 w-14 rounded-2xl bg-indigo-50 dark:bg-indigo-900/40 items-center justify-center mb-2 active:bg-indigo-100"
+                >
+                  <Ionicons name={avatarUri ? "sync-outline" : "add-outline"} size={24} color="#6366f1" />
+                </Pressable>
+                <Text className="text-[12px] font-outfit-m text-slate-600 dark:text-slate-400">
+                  {avatarUri ? "Change" : "Add Photo"}
+                </Text>
+              </View>
+
+              {avatarUri ? (
+                <View className="items-center">
+                  <Pressable 
+                    onPress={handleRemovePhoto}
+                    className="h-14 w-14 rounded-2xl bg-rose-50 dark:bg-rose-900/40 items-center justify-center mb-2 active:bg-rose-100"
+                  >
+                    <Ionicons name="trash-outline" size={24} color="#f43f5e" />
+                  </Pressable>
+                  <Text className="text-[12px] font-outfit-m text-slate-600 dark:text-slate-400">Remove</Text>
+                </View>
+              ) : null}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Photo Viewer Modal ── */}
+      <Modal visible={isViewerOpen} transparent animationType="fade" onRequestClose={() => setIsViewerOpen(false)}>
+        <View className="flex-1 bg-black items-center justify-center">
+          <View className="absolute top-0 left-0 right-0 p-6 flex-row items-center justify-between z-10" style={{ paddingTop: 60 }}>
+            <Pressable onPress={() => setIsViewerOpen(false)} className="h-10 w-10 items-center justify-center rounded-full bg-black/40">
+              <Ionicons name="close" size={24} color="white" />
+            </Pressable>
+            <Text className="text-white font-outfit-sb text-[16px]">Profile Photo</Text>
+            <View className="w-10" />
+          </View>
+          {avatarUri && (
+            <Image 
+              source={{ uri: avatarUri }} 
+              style={{ width: "100%", height: "70%" }} 
+              contentFit="contain" 
+            />
+          )}
+        </View>
+      </Modal>
     </ScrollView>
   );
 };

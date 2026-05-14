@@ -4,12 +4,13 @@ import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackI
 
 export const ProductImageGallery = ({ product, currentIndex, onIndexChange }) => {
   return (
-    <div className="space-y-5">
-      <div className="relative w-full overflow-hidden rounded-4xl bg-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] border border-gray-100" style={{aspectRatio:'1/1'}}>
+    <div className="space-y-6">
+      <div className="relative w-full overflow-hidden rounded-[2.5rem] bg-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] border border-gray-100 group" style={{aspectRatio:'1/1'}}>
+        <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none" />
         <img
           src={product.images[currentIndex] || PRODUCT_FALLBACK_IMAGE}
           alt={product.title}
-          className="w-full h-full object-contain p-3"
+          className="w-full h-full object-contain p-6 transition-transform duration-700 group-hover:scale-105"
           onError={setFallbackImage}
         />
         {product.isSold && (
@@ -25,10 +26,10 @@ export const ProductImageGallery = ({ product, currentIndex, onIndexChange }) =>
             <button
               key={`${image}-${index}`}
               onClick={() => onIndexChange(index)}
-              className={`shrink-0 w-24 h-24 rounded-xl overflow-hidden border-2 transition-all ${
+              className={`shrink-0 w-24 h-24 rounded-2xl overflow-hidden border-2 transition-all duration-300 ${
                 currentIndex === index
-                  ? 'border-primary-600 ring-2 ring-primary-100'
-                  : 'border-gray-200 hover:border-primary-300'
+                  ? 'border-primary-600 ring-4 ring-primary-600/20 scale-105 shadow-lg'
+                  : 'border-transparent hover:border-primary-300 opacity-70 hover:opacity-100 bg-white shadow-sm'
               }`}
             >
               <img

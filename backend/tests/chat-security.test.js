@@ -10,7 +10,6 @@ const {
 } = require('../src/shared/utils/messageValidation.utils');
 
 const {
-  validateImageFile,
   validateImageDimensions,
   validateCloudinaryResponse,
   sanitizeImageCaption,

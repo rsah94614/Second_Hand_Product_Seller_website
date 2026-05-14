@@ -13,7 +13,7 @@ const ResetPasswordPage = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { resetPassword } = useAuth();
+  const { resetPassword, user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
@@ -44,8 +44,9 @@ const ResetPasswordPage = () => {
 
     if (result.success) {
       toast.success(result.message);
-      navigate('/login');
+      navigate(user ? '/settings' : '/login');
     } else {
+
       toast.error(result.message);
     }
   };
@@ -56,9 +57,10 @@ const ResetPasswordPage = () => {
     <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ec_0%,#f8fafc_24%,#f8fafc_100%)] flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-md overflow-hidden rounded-4xl bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)] flex flex-col p-8 sm:p-12 animate-fade-in border border-stone-100">
         <div>
-          <Link to="/login" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors mb-8">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Login
+          <Link to={user ? "/settings" : "/login"} className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors mb-8">
+            <ArrowLeft className="w-4 h-4 mr-2" /> {user ? "Back to Settings" : "Back to Login"}
           </Link>
+
           <h2 className="text-3xl font-black text-gray-900 tracking-tight">
             Create new password
           </h2>

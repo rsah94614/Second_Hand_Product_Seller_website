@@ -15,12 +15,13 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Screen } from "../../components/ui/Screen";
-import { KeyboardShiftView } from "../../components/ui/KeyboardShiftView";
+import { ChatKeyboardAvoidingView } from "../../components/chat/ChatKeyboardAvoidingView";
 import { useAuth } from "../../context/AuthContext";
 import { useChatThread, getId } from "../../lib/hooks/useChatThread";
 import { ChatHeader } from "../../components/chat/ChatHeader";
 import { MessageItem } from "../../components/chat/MessageItem";
 import { ChatInputArea } from "../../components/chat/ChatInputArea";
+import { FullScreenImageViewer } from "../../components/chat/FullScreenImageViewer";
 import type { Msg } from "../../lib/types";
 
 const QUICK_TEMPLATES = [
@@ -85,18 +86,27 @@ function ChatThreadContent({ params, user, isDark }: { params: any; user: any; i
     deleteMessage,
     togglePin,
     block,
+    unblock,
     report,
     emitTyping,
     isConnected,
     isSendingImage,
+    isBlocked,
+    hasMore,
+    loadingMore,
+    loadMore,
   } = useChatThread(partnerId);
 
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState("spam");
   const [reportDetails, setReportDetails] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
+  
+  const [viewerVisible, setViewerVisible] = useState(false);
+  const [viewerUri, setViewerUri] = useState<string | null>(null);
 
   const listRef = useRef<FlatList>(null);
+  const isAtTopRef = useRef(false);
   const partnerName = partnerNameFromQuery || "Chat";
 
   useEffect(() => {
@@ -129,6 +139,11 @@ function ChatThreadContent({ params, user, isDark }: { params: any; user: any; i
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  const handleImagePress = (uri: string) => {
+    setViewerUri(uri);
+    setViewerVisible(true);
+  };
+
   return (
     <Screen className="bg-slate-50 dark:bg-slate-950" safeAreaTop={false} safeAreaBottom={false}>
       <ChatHeader
@@ -136,6 +151,8 @@ function ChatThreadContent({ params, user, isDark }: { params: any; user: any; i
         isPinned={isPinned}
         onTogglePin={togglePin}
         onBlock={block}
+        onUnblock={unblock}
+        isBlocked={isBlocked}
         onReport={() => setReportOpen(true)}
         isDark={isDark}
       />
@@ -164,7 +181,7 @@ function ChatThreadContent({ params, user, isDark }: { params: any; user: any; i
           </Text>
         </View>
       ) : (
-        <KeyboardShiftView style={{ flex: 1 }}>
+        <ChatKeyboardAvoidingView style={{ flex: 1 }}>
           <View style={{ flex: 1 }}>
             <FlatList
               ref={listRef}
@@ -179,6 +196,29 @@ function ChatThreadContent({ params, user, isDark }: { params: any; user: any; i
                 listRef.current?.scrollToEnd({ animated: true });
               }
             }}
+            onScroll={(e) => {
+              isAtTopRef.current = e.nativeEvent.contentOffset.y < 50;
+            }}
+            scrollEventThrottle={200}
+            onScrollBeginDrag={() => {
+              if (isAtTopRef.current && hasMore && !loadingMore) {
+                loadMore();
+              }
+            }}
+            ListHeaderComponent={
+              loadingMore ? (
+                <View className="items-center py-3">
+                  <ActivityIndicator size="small" color="#6366f1" />
+                </View>
+              ) : hasMore ? (
+                <Pressable
+                  onPress={loadMore}
+                  className="items-center py-3"
+                >
+                  <Text className="text-[13px] font-outfit-m text-primary-500">Load older messages</Text>
+                </Pressable>
+              ) : null
+            }
             ListEmptyComponent={
               <View className="flex-1 items-center justify-center py-10">
                 <View className="h-20 w-20 rounded-full bg-primary-50 dark:bg-primary-900/30 items-center justify-center mb-4">
@@ -214,6 +254,7 @@ function ChatThreadContent({ params, user, isDark }: { params: any; user: any; i
                   showDate={showDate}
                   formattedTime={formatTime(item)}
                   onLongPress={openMessageActions}
+                  onImagePress={handleImagePress}
                 />
               );
             }}
@@ -232,26 +273,45 @@ function ChatThreadContent({ params, user, isDark }: { params: any; user: any; i
             </View>
           )}
 
-          <ChatInputArea
-            initialText={editingMessageId ? (messages.find(m => m._id === editingMessageId)?.content || "") : ""}
-            onSend={sendMessage}
-            onSendImage={sendImage}
-            onTyping={emitTyping}
-            editingMessageId={editingMessageId}
-            onCancelEdit={() => {
-              setEditingMessageId(null);
-            }}
-            sendingImage={isSendingImage}
-            isConnected={isConnected}
-          />
+          {isBlocked ? (
+            <View className="mx-4 mb-4 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 p-4">
+              <View className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/40 items-center justify-center mb-2">
+                <Ionicons name="lock-closed-outline" size={20} color="#92400e" />
+              </View>
+              <Text className="text-center text-[14px] font-outfit-m text-amber-800 dark:text-amber-200">
+                You have blocked this user.
+              </Text>
+              <Pressable 
+                onPress={unblock}
+                className="mt-2"
+              >
+                <Text className="text-[14px] font-outfit-b text-primary-600 dark:text-primary-400">
+                  Unblock to send a message
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            <ChatInputArea
+              initialText={editingMessageId ? (messages.find(m => m._id === editingMessageId)?.content || "") : ""}
+              onSend={sendMessage}
+              onSendImage={sendImage}
+              onTyping={emitTyping}
+              editingMessageId={editingMessageId}
+              onCancelEdit={() => {
+                setEditingMessageId(null);
+              }}
+              sendingImage={isSendingImage}
+              isConnected={isConnected}
+            />
+          )}
           </View>
-        </KeyboardShiftView>
+        </ChatKeyboardAvoidingView>
       )}
 
       {/* Report Modal */}
       <Modal visible={reportOpen} transparent animationType="slide" onRequestClose={() => setReportOpen(false)}>
         <View className="flex-1 bg-black/50 justify-end">
-          <KeyboardShiftView
+          <ChatKeyboardAvoidingView
             style={{ flex: 1, justifyContent: "flex-end" }}
           >
             <View className="bg-white dark:bg-slate-900 rounded-t-[32px] p-6 pb-10">
@@ -316,9 +376,15 @@ function ChatThreadContent({ params, user, isDark }: { params: any; user: any; i
                 </View>
               </View>
             </View>
-          </KeyboardShiftView>
+          </ChatKeyboardAvoidingView>
         </View>
       </Modal>
+
+      <FullScreenImageViewer
+        visible={viewerVisible}
+        uri={viewerUri}
+        onClose={() => setViewerVisible(false)}
+      />
     </Screen>
   );
 }

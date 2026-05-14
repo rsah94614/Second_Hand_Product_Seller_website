@@ -2,16 +2,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useEffect } from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
-import { Screen } from "../components/ui/Screen";
-import { Loading } from "../components/Loading";
-import { useAuth } from "../context/AuthContext";
-import { EmptyState } from "../components/EmptyState";
+import { Screen } from "../../components/ui/Screen";
+import { Loading } from "../../components/Loading";
+import { useAuth } from "../../context/AuthContext";
+import { EmptyState } from "../../components/EmptyState";
 import {
   getNotifications,
   markAllNotificationsRead,
   markNotificationRead,
-} from "../lib/api/notifications";
-import { notificationLinkToHref } from "../lib/notificationLink";
+} from "../../lib/api/notifications";
+import { notificationLinkToHref } from "../../lib/notificationLink";
 import { Ionicons } from "@expo/vector-icons";
 
 type Notif = {
@@ -112,7 +112,7 @@ export default function NotificationsScreen() {
       </View>
       <FlatList
         data={list}
-        keyExtractor={(n) => n._id}
+        keyExtractor={(n, i) => n._id || `notif-${i}`}
         refreshing={isRefetching}
         onRefresh={() => refetch()}
         contentContainerStyle={{ paddingBottom: 24 }}
@@ -133,9 +133,8 @@ export default function NotificationsScreen() {
               <View className="flex-row justify-between items-start">
                 <View className="flex-1 pr-4">
                   <Text
-                    className={`text-[16px] ${
-                      n.isRead ? "font-outfit-sb text-slate-700 dark:text-slate-300" : "font-outfit-b text-slate-900 dark:text-white"
-                    }`}
+                    className={`text-[16px] ${n.isRead ? "font-outfit-sb text-slate-700 dark:text-slate-300" : "font-outfit-b text-slate-900 dark:text-white"
+                      }`}
                   >
                     {n.title}
                   </Text>
@@ -143,9 +142,8 @@ export default function NotificationsScreen() {
                 {!n.isRead && <View className="h-2.5 w-2.5 rounded-full bg-primary-500 mt-1.5" />}
               </View>
               <Text
-                className={`mt-1 text-[14px] font-outfit ${
-                  n.isRead ? "text-slate-500 dark:text-slate-400" : "text-slate-700 dark:text-slate-300"
-                } leading-snug`}
+                className={`mt-1 text-[14px] font-outfit ${n.isRead ? "text-slate-500 dark:text-slate-400" : "text-slate-700 dark:text-slate-300"
+                  } leading-snug`}
               >
                 {n.message}
               </Text>
@@ -160,7 +158,7 @@ export default function NotificationsScreen() {
                     {formatTimeAgo(n.createdAt)}
                   </Text>
                 </View>
-                
+
                 {/* Visual indicator for new notifications */}
                 {!n.isRead && (
                   <View className="px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/30">

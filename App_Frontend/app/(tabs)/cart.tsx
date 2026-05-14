@@ -165,7 +165,7 @@ export default function CartScreen() {
 
   return (
     <Screen>
-      <PageHeader title="My Cart" subtitle="Review your items before checkout" />
+      <PageHeader title="My Cart" /* subtitle="Review your items before checkout" */ />
       {items.length === 0 ? (
         <EmptyState
           title="Your cart is empty"
@@ -176,12 +176,12 @@ export default function CartScreen() {
       ) : (
         <ScrollView className="flex-1 px-4 pt-4">
           <Text className="text-xl font-outfit-b text-slate-800 dark:text-slate-200 mb-4 ml-1">Your Items</Text>
-          {items.map((row) => {
+          {items.map((row, i) => {
             const isItemUnavailable = !row.product || row.product.isSold || row.product.isActive === false;
             const uri = getImageUri(row.product?.images?.[0]);
             return (
               <View
-                key={row._id || row.product?._id || Math.random().toString()}
+                key={`cart-${row._id || row.product?._id || i}`}
                 className={`mb-4 flex-row overflow-hidden rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-sm shadow-slate-200/50 dark:shadow-none ${isItemUnavailable ? 'opacity-60 bg-slate-50 dark:bg-slate-950' : ''}`}
               >
                 <Image source={{ uri }} style={{ width: 100, height: 100, borderRadius: 16 }} transition={300} />

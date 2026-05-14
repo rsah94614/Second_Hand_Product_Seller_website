@@ -51,7 +51,7 @@ export const OrderHistoryCard = ({ order, user, actions }) => {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-4">
-              <div className="flex items-center text-xl font-black text-primary-600">
+              <div className="flex items-center text-xl font-black text-gray-900">
                 <IndianRupee className="w-5 h-5 mr-0.5" />
                 {formatPrice(order.total).replace('₹', '')}
               </div>

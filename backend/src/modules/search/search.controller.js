@@ -1,6 +1,7 @@
 const User = require('../../../models/User');
 const Product = require('../../../models/Product');
 const SearchHistory = require('../../../models/SearchHistory');
+const { buildSearchClause, rankByRelevance } = require('../../shared/utils/searchUtils');
 
 // ─── Search History (Phase 3 - Task 3.5.1) ───────────────────────────────────
 
@@ -81,7 +82,7 @@ exports.getSuggestions = async (req, res) => {
     }
 };
 
-// ─── Main Search (Tasks 2.6.1, 2.6.2 + Phase 4 text index) ──────────────────
+// ─── Main Search ─────────────────────────────────────────────────────────────
 
 exports.search = async (req, res) => {
     try {
@@ -92,58 +93,79 @@ exports.search = async (req, res) => {
         }
 
         const cap = Math.min(parseInt(limit, 10) || 20, 100);
-        const escaped = q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const searchRegex = new RegExp(escaped, 'i');
+        const trimmedQ = q.trim();
+
+        // Build a rich search clause with synonyms + typo tolerance
+        const searchClause = buildSearchClause(trimmedQ);
+        const baseProductQuery = { isActive: true, isSold: false };
 
         let productQuery;
         const sortOptions = {};
+        const isRelevanceSort = sort === 'relevance';
 
-        if (sort === 'relevance') {
-            productQuery = { $text: { $search: q.trim() }, isActive: true, isSold: false };
-            sortOptions.score = { $meta: 'textScore' };
+        if (isRelevanceSort) {
+            // For relevance: fetch a larger pool and re-rank in JS
+            productQuery = { ...baseProductQuery, ...searchClause };
+            sortOptions.createdAt = -1; // DB sort for the pool
         } else {
-            productQuery = {
-                $or: [{ title: searchRegex }, { description: searchRegex }, { category: searchRegex }],
-                isActive: true,
-                isSold: false,
-            };
+            productQuery = { ...baseProductQuery, ...searchClause };
             if (cursor) productQuery._id = { $lt: cursor };
 
             switch (sort) {
-                case 'price': sortOptions.price = order === 'asc' ? 1 : -1; break;
-                case 'date': sortOptions.createdAt = order === 'asc' ? 1 : -1; break;
+                case 'price':  sortOptions.price         = order === 'asc' ? 1 : -1; break;
+                case 'date':   sortOptions.createdAt     = order === 'asc' ? 1 : -1; break;
                 case 'rating': sortOptions.averageRating = order === 'asc' ? 1 : -1; break;
-                default: sortOptions.createdAt = -1;
+                default:       sortOptions.createdAt     = -1;
             }
             sortOptions._id = -1;
         }
 
-        const [products, users] = await Promise.all([
+        // Build user search — also expand synonyms for name matching
+        const escaped = trimmedQ.replace(/[.*+?^${}()|[\]\]\\]/g, '\\$&');
+        const nameRegex = new RegExp(escaped, 'i');
+
+        // Fetch a pool for re-ranking (4× cap for relevance sort, cap+1 otherwise)
+        const poolSize = isRelevanceSort ? Math.min(cap * 4, 200) : cap + 1;
+
+        const [rawProducts, users] = await Promise.all([
             Product.find(productQuery)
-                .select('title images category location price averageRating reviewCount createdAt')
+                .select('title images category location price averageRating reviewCount views description createdAt')
                 .populate('seller', 'name location')
                 .sort(sortOptions)
-                .limit(cap + 1)
+                .limit(poolSize)
                 .lean(),
-            User.find({ $or: [{ name: searchRegex }, { email: q.trim().toLowerCase() }], role: 'user', isActive: true })
+            User.find({ $or: [{ name: nameRegex }, { email: trimmedQ.toLowerCase() }], role: 'user', isActive: true })
                 .select('name email avatar campus.department')
                 .limit(Math.min(cap, 10))
                 .lean(),
         ]);
 
-        const hasMore = products.length > cap;
-        const productResults = hasMore ? products.slice(0, cap) : products;
-        const nextCursor = hasMore && productResults.length > 0
-            ? productResults[productResults.length - 1]._id.toString()
-            : null;
+        let productResults;
+        let hasMore;
+        let nextCursor;
+
+        if (isRelevanceSort) {
+            // Re-rank by relevance score
+            const ranked = rankByRelevance(rawProducts, trimmedQ);
+            productResults = ranked.slice(0, cap);
+            hasMore = ranked.length > cap;
+            nextCursor = null; // cursor-based pagination not used with re-ranking
+        } else {
+            hasMore = rawProducts.length > cap;
+            productResults = hasMore ? rawProducts.slice(0, cap) : rawProducts;
+            nextCursor = hasMore && productResults.length > 0
+                ? productResults[productResults.length - 1]._id.toString()
+                : null;
+        }
 
         let total = 0;
         if (!cursor) total = await Product.countDocuments(productQuery);
 
+        // Save search history
         if (!cursor) {
             const userId = req.user?._id || null;
             if (userId) {
-                SearchHistory.create({ user: userId, query: q.trim(), resultsCount: total }).catch(() => { });
+                SearchHistory.create({ user: userId, query: trimmedQ, resultsCount: total }).catch(() => {});
             }
         }
 

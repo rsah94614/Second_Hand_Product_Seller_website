@@ -11,6 +11,10 @@ export function notificationLinkToHref(link: string): string | null {
     const id = path.replace("/order/", "");
     if (id) return `/order/${id}`;
   }
+  if (path.startsWith("/review/")) {
+    // Preserve the full path including query params (orderId)
+    return link.replace("/review/", "/review/");
+  }
   if (path === "/profile") return "/(tabs)/profile";
   if (path === "/wishlist") return "/wishlist";
   if (path === "/notifications") return "/notifications";

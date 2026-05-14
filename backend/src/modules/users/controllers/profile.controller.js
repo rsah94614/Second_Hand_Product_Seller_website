@@ -134,9 +134,39 @@ const getProfileCompletion = async (req, res) => {
   }
 };
 
+const deleteAccount = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Soft delete & Anonymize
+    user.isActive = false;
+    user.name = 'Deleted User';
+    user.email = `deleted_${Date.now()}_${user._id}@deleted.local`;
+    user.avatar = '';
+    user.location = '';
+    user.refreshTokens = [];
+    user.campus = {
+      department: '',
+      course: '',
+      year: '',
+      semester: '',
+      hostel: '',
+      residentType: ''
+    };
+    
+    await user.save();
+
+    res.json({ message: 'Account successfully deleted' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getUserProfile,
   updateUserProfile,
   uploadAvatar,
   getProfileCompletion,
+  deleteAccount,
 };

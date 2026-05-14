@@ -12,6 +12,16 @@ import ProfilePage from '../features/users/pages/ProfilePage';
 import WishlistPage from '../features/users/pages/WishlistPage';
 import NotificationsPage from '../features/notifications/pages/NotificationsPage';
 import NotificationPreferencesPage from '../features/notifications/pages/NotificationPreferencesPage';
+import ReviewSellerPage from '../features/users/pages/ReviewSellerPage';
+import SettingsPage from '../features/users/pages/settings/SettingsPage';
+import BlockedUsersPage from '../features/users/pages/settings/BlockedUsersPage';
+import DeleteAccountPage from '../features/users/pages/settings/DeleteAccountPage';
+import ActiveDevicesPage from '../features/users/pages/settings/ActiveDevicesPage';
+
+
+import HelpCenterPage from '../features/users/pages/settings/HelpCenterPage';
+import LegalPage from '../features/users/pages/settings/LegalPage';
+
 import CreateProductPage from '../features/products/pages/CreateProductPage';
 import EditProductPage from '../features/products/pages/EditProductPage';
 import MyProductsPage from '../features/products/pages/MyProductsPage';
@@ -62,6 +72,15 @@ const AppRouter = () => (
     <Route path="/order/:id" element={<ProtectedRoute><PlaceOrderPage /></ProtectedRoute>} />
     <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
     <Route path="/orders" element={<ProtectedRoute><OrderHistoryPage /></ProtectedRoute>} />
+    <Route path="/review/:sellerId" element={<ProtectedRoute><ReviewSellerPage /></ProtectedRoute>} />
+    <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+    <Route path="/settings/blocked-users" element={<ProtectedRoute><BlockedUsersPage /></ProtectedRoute>} />
+    <Route path="/settings/devices" element={<ProtectedRoute><ActiveDevicesPage /></ProtectedRoute>} />
+    <Route path="/settings/delete-account" element={<ProtectedRoute><DeleteAccountPage /></ProtectedRoute>} />
+
+    <Route path="/help" element={<HelpCenterPage />} />
+    <Route path="/terms" element={<LegalPage />} />
+    <Route path="/privacy" element={<LegalPage />} />
     <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
   </Routes>
 );

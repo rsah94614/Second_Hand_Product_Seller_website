@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, CheckCircle, AlertTriangle, Camera, Flag } from 'lucide-react';
+import { X, CheckCircle, AlertTriangle, Camera, Flag, Star } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 
 export const OrderActionButtons = ({ 
@@ -11,10 +11,12 @@ export const OrderActionButtons = ({
   onNoShow, 
   onPhotoUpload, 
   onDispute, 
+  onReview,
   isMutating 
 }) => {
-  const isSeller = order.seller?._id === user?.id;
-  const isBuyer = order.user?._id === user?.id;
+  const isSeller = order.seller?._id === user?.id || order.seller === user?.id;
+  const isBuyer = order.user?._id === user?.id || order.user === user?.id;
+  const canReview = order.reviewUnlocked === true && isBuyer;
 
   return (
     <div className="mt-3 md:mt-0 flex flex-wrap items-center gap-2">
@@ -108,6 +110,20 @@ export const OrderActionButtons = ({
         >
           <Flag className="w-4 h-4 mr-1" />
           Dispute
+        </Button>
+      )}
+
+      {/* Review Seller button */}
+      {canReview && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onReview(order)}
+          disabled={isMutating}
+          className="text-amber-600 border-amber-200 hover:bg-amber-50"
+        >
+          <Star className="w-4 h-4 mr-1 fill-amber-500 text-amber-500" />
+          Rate Seller
         </Button>
       )}
     </div>

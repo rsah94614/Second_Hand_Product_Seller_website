@@ -18,6 +18,7 @@ const sanitizeMessage = (content) => {
   }
 
   // Step 1: Remove control characters (except newline, tab, carriage return)
+  // eslint-disable-next-line no-control-regex
   let sanitized = content.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 
   // Step 2: Validate UTF-8 encoding
@@ -101,7 +102,7 @@ const validateMessageContent = (content) => {
   }
 
   // Check for excessive special characters (potential spam/obfuscation)
-  const specialCharCount = (trimmed.match(/[!@#$%^&*()_+=\[\]{};:'",.<>?/\\|`~]/g) || []).length;
+  const specialCharCount = (trimmed.match(/[!@#$%^&*()_+=[\]{};:'",.<>?/\\|`~]/g) || []).length;
   if (specialCharCount > trimmed.length * 0.5) {
     return { valid: false, error: 'Message contains too many special characters' };
   }

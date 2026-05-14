@@ -25,7 +25,10 @@ const normalizeUserRole = async (user) => {
 
 const auth = async (req, res, next) => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    const authHeader = req.header('Authorization');
+    const token = authHeader && (authHeader.startsWith('Bearer ') || authHeader.startsWith('bearer '))
+      ? authHeader.slice(7)
+      : null;
 
     if (!token) {
       return res.status(401).json({ message: 'No token, authorization denied' });
@@ -47,7 +50,10 @@ const auth = async (req, res, next) => {
     req.user = user;
     return next();
   } catch (error) {
-    return res.status(401).json({ message: 'Token is not valid' });
+    return res.status(401).json({ 
+      message: 'Token is not valid',
+      error: error.name === 'TokenExpiredError' ? 'Token expired' : 'Invalid format'
+    });
   }
 };
 

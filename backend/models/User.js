@@ -146,6 +146,8 @@ const userSchema = new mongoose.Schema({
 
   // Chat: Pinned conversations (Phase 3 - Task 3.1.3)
   pinnedConversations: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  // Chat: Archived conversations
+  archivedConversations: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   reviews: [sellerReviewSchema],
   averageRating: { type: Number, default: 0 },
   reviewCount: { type: Number, default: 0 },

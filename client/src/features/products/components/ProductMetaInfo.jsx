@@ -18,9 +18,22 @@ export const ProductMetaInfo = ({ product, isOwner, userRole, onDelete }) => {
     : null;
 
   return (
-    <div className="mb-8">
-      <div className="flex items-start justify-between mb-4">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-gray-900 leading-tight tracking-tight">
+    <div className="mb-2">
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <Badge className="border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 tracking-wide uppercase">
+          {product.condition}
+        </Badge>
+        <Badge variant="secondary" className="px-3 py-1 text-xs font-bold tracking-wide uppercase">
+          {product.category}
+        </Badge>
+        <div className="flex items-center text-xs font-bold text-gray-500 ml-1 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+          <MapPin className="w-3.5 h-3.5 mr-1" />
+          <span>{getCampusPickupLabel(product.seller?.location)}</span>
+        </div>
+      </div>
+
+      <div className="flex items-start justify-between mb-6">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 leading-[1.1] tracking-tight">
           {product.title}
         </h1>
         {isOwner && (
@@ -43,22 +56,9 @@ export const ProductMetaInfo = ({ product, isOwner, userRole, onDelete }) => {
         )}
       </div>
 
-      <p className="text-4xl font-black text-primary-600 mb-4">
+      <p className="text-5xl font-black text-gray-900 mb-8 tracking-tight flex items-baseline gap-2">
         {formatPrice(product.price)}
       </p>
-
-      <div className="flex flex-wrap items-center gap-3 mb-8">
-        <Badge className="border border-blue-100 bg-blue-50 px-4 py-1.5 text-sm font-medium text-blue-700">
-          {product.condition}
-        </Badge>
-        <Badge variant="secondary" className="px-4 py-1.5 text-sm font-medium">
-          {product.category}
-        </Badge>
-        <div className="flex items-center text-sm font-medium text-gray-600 ml-2">
-          <MapPin className="w-4 h-4 mr-1 text-gray-400" />
-          <span>{getCampusPickupLabel(product.seller?.location)}</span>
-        </div>
-      </div>
 
       {daysRemaining !== null && daysRemaining <= 10 && (
         <p className="text-sm font-bold text-orange-600 mb-6 flex items-center bg-orange-50 p-2 rounded-xl border border-orange-100 animate-pulse">

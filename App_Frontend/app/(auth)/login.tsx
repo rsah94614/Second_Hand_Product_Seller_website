@@ -113,6 +113,8 @@ export default function LoginScreen() {
            </Link>
         </View>
         <View className="h-20" />
+        <View className="h-20" />
+        <View className="h-10" />
       </ScrollView>
       </KeyboardShiftView>
     </Screen>

@@ -16,11 +16,17 @@ const getConversations = async (req, res) => {
   try {
     const popConversations = await getConversationsAggregation(req.user._id);
 
-    // Get pinned conversation IDs for this user
-    const currentUser = await User.findById(req.user._id).select('pinnedConversations').lean();
+    // Get pinned and archived conversation IDs for this user
+    const currentUser = await User.findById(req.user._id)
+      .select('pinnedConversations archivedConversations')
+      .lean();
     const pinnedIds = new Set(
       (currentUser?.pinnedConversations || []).map((id) => id.toString())
     );
+    const archivedIds = new Set(
+      (currentUser?.archivedConversations || []).map((id) => id.toString())
+    );
+    const includeArchived = req.query.includeArchived === 'true';
 
     const formattedConversations = popConversations.map((conv) => {
       const otherUser = conv._id;
@@ -33,17 +39,23 @@ const getConversations = async (req, res) => {
         timestamp: conv.timestamp,
         unreadCount: conv.unreadCount,
         isPinned: pinnedIds.has(otherId),
+        isArchived: archivedIds.has(otherId),
       };
     });
 
+    // Filter out archived conversations unless explicitly requested
+    const filtered = includeArchived
+      ? formattedConversations
+      : formattedConversations.filter((c) => !c.isArchived);
+
     // Sort: pinned first, then by timestamp
-    formattedConversations.sort((a, b) => {
+    filtered.sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
       return new Date(b.timestamp) - new Date(a.timestamp);
     });
 
-    return res.json(formattedConversations);
+    return res.json(filtered);
   } catch (error) {
     console.error(error.message);
     return res.status(500).send('Server Error');
@@ -52,12 +64,28 @@ const getConversations = async (req, res) => {
 
 const getMessages = async (req, res) => {
   try {
-    const messages = await Message.find({
+    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 100);
+    const before = req.query.before; // cursor: ISO timestamp of oldest loaded message
+
+    const query = {
       $or: [
         { sender: req.user._id, receiver: req.params.userId },
         { sender: req.params.userId, receiver: req.user._id },
       ],
-    }).sort({ timestamp: 1 });
+    };
+
+    if (before) {
+      // Use createdAt for new messages, fall back to timestamp for old ones
+      query.createdAt = { $lt: new Date(before) };
+    }
+
+    const messages = await Message.find(query)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+
+    // Reverse so client receives oldest-first order
+    messages.reverse();
 
     return res.json(messages);
   } catch (error) {
@@ -421,6 +449,41 @@ const uploadChatImage = async (req, res) => {
   }
 };
 
+// ─── Conversation Archiving ───────────────────────────────────────────────────
+
+const archiveConversation = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const targetUser = await User.findById(userId).select('_id');
+    if (!targetUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    await User.findByIdAndUpdate(req.user._id, {
+      $addToSet: { archivedConversations: userId },
+    });
+
+    return res.json({ message: 'Conversation archived' });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const unarchiveConversation = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    await User.findByIdAndUpdate(req.user._id, {
+      $pull: { archivedConversations: userId },
+    });
+
+    return res.json({ message: 'Conversation unarchived' });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getConversations,
   getMessages,
@@ -432,4 +495,6 @@ module.exports = {
   unpinConversation,
   uploadChatImage,
   handleUploadChatImage,
+  archiveConversation,
+  unarchiveConversation,
 };

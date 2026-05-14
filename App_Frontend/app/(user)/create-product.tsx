@@ -1,21 +1,24 @@
+/// <reference types="nativewind/types" />
 import { useQuery } from "@tanstack/react-query";
-import { router } from "expo-router";
+import { router, Stack } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, InteractionManager, Modal, ScrollView, Text, View, Pressable, Platform, KeyboardAvoidingView } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
-import { Screen } from "../components/ui/Screen";
-import { Button } from "../components/ui/Button";
-import { Input } from "../components/ui/Input";
-import { Loading } from "../components/Loading";
-import { useAuth } from "../context/AuthContext";
-import { createProduct, getProductCategories } from "../lib/api/products";
-import { PRODUCT_CONDITIONS } from "../lib/product-options";
+import { Screen } from "../../components/ui/Screen";
+import { Button } from "../../components/ui/Button";
+import { Input } from "../../components/ui/Input";
+import { Loading } from "../../components/Loading";
+import { useAuth } from "../../context/AuthContext";
+import { createProduct, getProductCategories } from "../../lib/api/products";
+import { PRODUCT_CONDITIONS } from "../../lib/product-options";
 import { Ionicons } from "@expo/vector-icons";
-import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
-import { api } from "@/lib/api/client";
-import { KeyboardShiftView } from "../components/ui/KeyboardShiftView";
-import { useToast } from "../components/ui/AppToast";
+import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
+import { api } from "../../lib/api/client";
+import { KeyboardShiftView } from "../../components/ui/KeyboardShiftView";
+import { useToast } from "../../components/ui/AppToast";
+
+
 
 const LISTING_POLICIES = [
   {
@@ -307,57 +310,66 @@ function CreateProductContent() {
             style={{ flex: 1, justifyContent: "flex-end" }}
           >
             <View className="h-[88%] rounded-t-3xl bg-white dark:bg-slate-950 overflow-hidden">
-            {/* Header */}
-            <View className="flex-row items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-              <View>
-                <Text className="text-[20px] font-outfit-bl text-slate-900 dark:text-white">Listing Policies</Text>
-                <Text className="text-[13px] font-outfit text-slate-500 dark:text-slate-400">Read before you publish</Text>
-              </View>
-              <Pressable
-                onPress={() => setPolicyOpen(false)}
-                className="h-9 w-9 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center active:bg-slate-200"
-              >
-                <Ionicons name="close" size={18} color="#64748b" />
-              </Pressable>
-            </View>
-            {/* Content */}
-            <ScrollView className="flex-1 px-6 py-4" showsVerticalScrollIndicator={false}>
-              {LISTING_POLICIES.map((section) => (
-                <View key={section.title} className="mb-6">
-                  <View className="flex-row items-center gap-2 mb-3">
-                    <Text className="text-[20px]">{section.icon}</Text>
-                    <Text className="text-[16px] font-outfit-sb text-slate-900 dark:text-white">{section.title}</Text>
-                  </View>
-                  {section.items.map((item, i) => (
-                    <View key={i} className="flex-row items-start gap-2.5 mb-2">
-                    <View className="mt-2 h-1.5 w-1.5 rounded-full bg-primary-500 dark:bg-primary-400 shrink-0" />
-                      <Text className="flex-1 text-[14px] font-outfit text-slate-600 dark:text-slate-400 leading-relaxed">{item}</Text>
-                    </View>
-                  ))}
+              {/* Header */}
+              <View className="flex-row items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+                <View>
+                  <Text className="text-[20px] font-outfit-bl text-slate-900 dark:text-white">Listing Policies</Text>
+                  <Text className="text-[13px] font-outfit text-slate-500 dark:text-slate-400">Read before you publish</Text>
                 </View>
-              ))}
-              <View className="h-4" />
-            </ScrollView>
-            {/* Footer */}
-            <View className="px-6 py-4 border-t border-slate-100 dark:border-slate-800">
-              <Button title="Got it" onPress={() => setPolicyOpen(false)} />
+                <Pressable
+                  onPress={() => setPolicyOpen(false)}
+                  className="h-9 w-9 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center active:bg-slate-200"
+                >
+                  <Ionicons name="close" size={18} color="#64748b" />
+                </Pressable>
+              </View>
+              {/* Content */}
+              <ScrollView className="flex-1 px-6 py-4" showsVerticalScrollIndicator={false}>
+                {LISTING_POLICIES.map((section) => (
+                  <View key={section.title} className="mb-6">
+                    <View className="flex-row items-center gap-2 mb-3">
+                      <Text className="text-[20px]">{section.icon}</Text>
+                      <Text className="text-[16px] font-outfit-sb text-slate-900 dark:text-white">{section.title}</Text>
+                    </View>
+                    {section.items.map((item, i) => (
+                      <View key={i} className="flex-row items-start gap-2.5 mb-2">
+                        <View className="mt-2 h-1.5 w-1.5 rounded-full bg-primary-500 dark:bg-primary-400 shrink-0" />
+                        <Text className="flex-1 text-[14px] font-outfit text-slate-600 dark:text-slate-400 leading-relaxed">{item}</Text>
+                      </View>
+                    ))}
+                  </View>
+                ))}
+                <View className="h-4" />
+              </ScrollView>
+              {/* Footer */}
+              <View className="px-6 py-4 border-t border-slate-100 dark:border-slate-800">
+                <Button title="Got it" onPress={() => setPolicyOpen(false)} />
+              </View>
             </View>
-          </View>
           </KeyboardAvoidingView>
         </View>
       </Modal>
 
-      <KeyboardShiftView>
-        <ScrollView className="flex-1 px-5 pt-6 pb-12" keyboardShouldPersistTaps="handled">
-          <View className="flex-row items-center gap-3 mb-2">
-            <Text className="text-[28px] font-outfit-bl text-slate-900 dark:text-white leading-tight flex-1">Create Listing</Text>
+      <Stack.Screen
+        options={{
+          headerRight: () => (
             <Pressable
               onPress={() => setPolicyOpen(true)}
-              className="h-9 w-9 rounded-full bg-primary-50 dark:bg-primary-950/40 items-center justify-center active:bg-primary-100"
+              className="pr-4 active:opacity-60"
             >
-              <Ionicons name="information-circle-outline" size={22} color="#6366f1" />
+              <Ionicons name="information-circle-outline" size={24} color="#6366f1" />
             </Pressable>
-          </View>
+          ),
+        }}
+      />
+
+      <KeyboardShiftView>
+        <ScrollView
+          className="flex-1 px-5 pt-4"
+          contentContainerStyle={{ paddingBottom: 180 }}
+          keyboardShouldPersistTaps="handled"
+        >
+
           <Text className="text-[15px] font-outfit text-slate-500 dark:text-slate-400 mb-8">Add details about what you&apos;re selling.</Text>
 
           <View className="mb-8">
@@ -445,9 +457,12 @@ function CreateProductContent() {
             <Input label="Contact Email" placeholder="Enter contact email address" value={form.email} onChangeText={(t) => setF("email", t)} keyboardType="email-address" />
           </View>
 
-          <View className="mb-16">
+          <View className="mb-10">
             <Button title="Publish Listing" onPress={submit} loading={submitting} />
           </View>
+          <View className="h-20" />
+          <View className="h-20" />
+          <View className="h-10" />
         </ScrollView>
       </KeyboardShiftView>
     </Screen>

@@ -172,8 +172,11 @@ const productSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for search functionality (text search)
-productSchema.index({ title: 'text', description: 'text', category: 'text' });
+// Weighted text index — title matches rank far above description
+productSchema.index(
+  { title: 'text', category: 'text', description: 'text' },
+  { weights: { title: 10, category: 6, description: 1 }, name: 'product_text_search' }
+);
 // Index for expiry jobs
 productSchema.index({ expiresAt: 1, isExpired: 1, isActive: 1 });
 // Index for suspicious listing queue
