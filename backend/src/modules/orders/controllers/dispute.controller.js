@@ -3,10 +3,12 @@ const Dispute = require('../../../../models/Dispute');
 const User = require('../../../../models/User');
 const { createNotification } = require('../../../shared/utils/notification.utils');
 const cloudinary = require('cloudinary').v2;
+const fs = require('fs');
 
 const formatOrderId = (id) => id.toString().slice(-6).toUpperCase();
 
 const createDispute = async (req, res) => {
+  const tempFilePaths = (req.files || []).map((f) => f.path).filter(Boolean);
   try {
     const { reason, description } = req.body;
     const order = await Order.findById(req.params.id).populate('user seller', 'name email');
@@ -59,6 +61,9 @@ const createDispute = async (req, res) => {
     return res.status(201).json({ message: 'Dispute filed successfully', dispute });
   } catch (error) {
     return res.status(500).json({ message: error.message });
+  } finally {
+    // Clean up temp files regardless of success or failure
+    tempFilePaths.forEach((p) => { try { fs.unlinkSync(p); } catch { /* ignore */ } });
   }
 };
 

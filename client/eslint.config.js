@@ -27,4 +27,12 @@ export default defineConfig([
       'react-refresh/only-export-components': 'off',
     },
   },
+  {
+    files: ['**/*.test.{js,jsx}', '**/__tests__/**/*.{js,jsx}'],
+    languageOptions: {
+      globals: {
+        ...globals.vitest,
+      },
+    },
+  },
 ])

@@ -16,7 +16,6 @@ import { useAuth } from "../../context/AuthContext";
 import { getProduct, updateProduct, getProductCategories } from "../../lib/api/products";
 import { PRODUCT_CONDITIONS } from "../../lib/product-options";
 import { getImageUri } from "../../lib/product-image";
-import { Ionicons } from "@expo/vector-icons";
 import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
 import { KeyboardShiftView } from "../../components/ui/KeyboardShiftView";
 import { Screen } from "../../components/ui/Screen";
@@ -194,21 +193,11 @@ export default function EditProductScreen() {
       <KeyboardShiftView>
         <ScrollView
           className="flex-1"
-          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 180 }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 180 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View className="flex-row items-center gap-3 mb-6">
-            <Pressable
-              onPress={() => router.back()}
-              className="h-10 w-10 rounded-full bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 items-center justify-center active:bg-slate-50"
-            >
-              <Ionicons name="arrow-back" size={20} color="#64748b" />
-            </Pressable>
-            <View className="flex-1">
-              <Text className="text-[24px] font-outfit-bl text-slate-900 dark:text-white leading-tight">Edit Listing</Text>
-            </View>
-          </View>
+
 
           <Text className="text-[14px] font-outfit text-slate-500 dark:text-slate-400 leading-5 mb-3 px-1">
             Add new images to replace gallery (optional). Existing images stay if you add none.

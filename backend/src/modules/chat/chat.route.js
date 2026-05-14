@@ -13,6 +13,8 @@ router.patch('/mark-read/:userId', auth, chatController.markRead);
 router.get('/search', auth, chatController.searchMessages);
 router.post('/pin/:userId', auth, chatController.pinConversation);
 router.delete('/pin/:userId', auth, chatController.unpinConversation);
+router.post('/archive/:userId', auth, chatController.archiveConversation);
+router.delete('/archive/:userId', auth, chatController.unarchiveConversation);
 router.get('/:userId', auth, chatController.getMessages);
 
 // ── Image Sharing (Phase 3) ───────────────────────────────────────────────────

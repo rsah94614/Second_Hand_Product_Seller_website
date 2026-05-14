@@ -1,21 +1,24 @@
+/// <reference types="nativewind/types" />
 import { useQuery } from "@tanstack/react-query";
-import { router } from "expo-router";
+import { router, Stack } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, InteractionManager, Modal, ScrollView, Text, View, Pressable, Platform, KeyboardAvoidingView } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
-import { Screen } from "../components/ui/Screen";
-import { Button } from "../components/ui/Button";
-import { Input } from "../components/ui/Input";
-import { Loading } from "../components/Loading";
-import { useAuth } from "../context/AuthContext";
-import { createProduct, getProductCategories } from "../lib/api/products";
-import { PRODUCT_CONDITIONS } from "../lib/product-options";
+import { Screen } from "../../components/ui/Screen";
+import { Button } from "../../components/ui/Button";
+import { Input } from "../../components/ui/Input";
+import { Loading } from "../../components/Loading";
+import { useAuth } from "../../context/AuthContext";
+import { createProduct, getProductCategories } from "../../lib/api/products";
+import { PRODUCT_CONDITIONS } from "../../lib/product-options";
 import { Ionicons } from "@expo/vector-icons";
-import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
-import { api } from "@/lib/api/client";
-import { KeyboardShiftView } from "../components/ui/KeyboardShiftView";
-import { useToast } from "../components/ui/AppToast";
+import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
+import { api } from "../../lib/api/client";
+import { KeyboardShiftView } from "../../components/ui/KeyboardShiftView";
+import { useToast } from "../../components/ui/AppToast";
+
+
 
 const LISTING_POLICIES = [
   {
@@ -347,29 +350,26 @@ function CreateProductContent() {
         </View>
       </Modal>
 
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <Pressable
+              onPress={() => setPolicyOpen(true)}
+              className="pr-4 active:opacity-60"
+            >
+              <Ionicons name="information-circle-outline" size={24} color="#6366f1" />
+            </Pressable>
+          ),
+        }}
+      />
+
       <KeyboardShiftView>
         <ScrollView
-          className="flex-1 px-5 pt-6"
+          className="flex-1 px-5 pt-4"
           contentContainerStyle={{ paddingBottom: 180 }}
           keyboardShouldPersistTaps="handled"
         >
-          <View className="flex-row items-center gap-3 mb-6">
-            <Pressable
-              onPress={() => router.back()}
-              className="h-10 w-10 rounded-full bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 items-center justify-center active:bg-slate-50"
-            >
-              <Ionicons name="arrow-back" size={20} color="#64748b" />
-            </Pressable>
-            <View className="flex-1">
-              <Text className="text-[24px] font-outfit-bl text-slate-900 dark:text-white leading-tight">Create Listing</Text>
-            </View>
-            <Pressable
-              onPress={() => setPolicyOpen(true)}
-              className="h-10 w-10 rounded-full bg-primary-50 dark:bg-primary-950/40 items-center justify-center active:bg-primary-100"
-            >
-              <Ionicons name="information-circle-outline" size={22} color="#6366f1" />
-            </Pressable>
-          </View>
+
           <Text className="text-[15px] font-outfit text-slate-500 dark:text-slate-400 mb-8">Add details about what you&apos;re selling.</Text>
 
           <View className="mb-8">

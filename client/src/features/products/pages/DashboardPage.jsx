@@ -248,7 +248,7 @@ const DashboardPage = () => {
                           {product.title}
                         </h3>
                         <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-gray-500">
-                          <span className="font-bold text-primary-600 text-sm">
+                          <span className="font-bold text-gray-900 text-sm">
                             ₹{Number(product.price || 0).toLocaleString('en-IN')}
                           </span>
                           <span className="inline-flex items-center gap-1">

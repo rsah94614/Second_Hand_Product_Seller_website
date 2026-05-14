@@ -1,7 +1,7 @@
 const User = require('../../../models/User');
 const Product = require('../../../models/Product');
 const SearchHistory = require('../../../models/SearchHistory');
-const { buildSearchClause, rankByRelevance, expandWithSynonyms } = require('../../shared/utils/searchUtils');
+const { buildSearchClause, rankByRelevance } = require('../../shared/utils/searchUtils');
 
 // ─── Search History (Phase 3 - Task 3.5.1) ───────────────────────────────────
 

@@ -92,6 +92,9 @@ function ChatThreadContent({ params, user, isDark }: { params: any; user: any; i
     isConnected,
     isSendingImage,
     isBlocked,
+    hasMore,
+    loadingMore,
+    loadMore,
   } = useChatThread(partnerId);
 
   const [reportOpen, setReportOpen] = useState(false);
@@ -103,6 +106,7 @@ function ChatThreadContent({ params, user, isDark }: { params: any; user: any; i
   const [viewerUri, setViewerUri] = useState<string | null>(null);
 
   const listRef = useRef<FlatList>(null);
+  const isAtTopRef = useRef(false);
   const partnerName = partnerNameFromQuery || "Chat";
 
   useEffect(() => {
@@ -192,6 +196,29 @@ function ChatThreadContent({ params, user, isDark }: { params: any; user: any; i
                 listRef.current?.scrollToEnd({ animated: true });
               }
             }}
+            onScroll={(e) => {
+              isAtTopRef.current = e.nativeEvent.contentOffset.y < 50;
+            }}
+            scrollEventThrottle={200}
+            onScrollBeginDrag={() => {
+              if (isAtTopRef.current && hasMore && !loadingMore) {
+                loadMore();
+              }
+            }}
+            ListHeaderComponent={
+              loadingMore ? (
+                <View className="items-center py-3">
+                  <ActivityIndicator size="small" color="#6366f1" />
+                </View>
+              ) : hasMore ? (
+                <Pressable
+                  onPress={loadMore}
+                  className="items-center py-3"
+                >
+                  <Text className="text-[13px] font-outfit-m text-primary-500">Load older messages</Text>
+                </Pressable>
+              ) : null
+            }
             ListEmptyComponent={
               <View className="flex-1 items-center justify-center py-10">
                 <View className="h-20 w-20 rounded-full bg-primary-50 dark:bg-primary-900/30 items-center justify-center mb-4">

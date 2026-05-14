@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, router } from "expo-router";
-import { ScrollView, Text, View, Pressable, TextInput, RefreshControl } from "react-native";
+import { ScrollView, Text, View, Pressable, TextInput, RefreshControl, Appearance } from "react-native";
 import { Screen } from "../../components/ui/Screen";
 import { ProductCard, type ProductListItem } from "../../components/ProductCard";
 import { getProducts, getProductCategories } from "../../lib/api/products";
@@ -150,10 +150,10 @@ export default function HomeScreen() {
   return (
     <Screen className="bg-slate-50 dark:bg-slate-950">
       {/* ── Top Header ── */}
-      <View className="bg-primary-600 dark:bg-primary-900 px-5 pb-3 pt-4 z-10">
+      <View className="bg-indigo-600 dark:bg-indigo-900 px-5 pb-4 pt-4 z-10">
         <View className="flex-row items-center justify-between mb-3">
           <View>
-            <Text className="text-[12px] font-outfit-m text-primary-200 uppercase tracking-widest">
+            <Text className="text-[12px] font-outfit-m text-indigo-200 dark:text-slate-500 uppercase tracking-widest">
               {user ? `Hey, ${user.name?.split(" ")[0]}` : "Welcome to"}
             </Text>
             <Text className="text-[24px] font-outfit-bl text-white leading-tight">Campus Mitra</Text>
@@ -202,25 +202,25 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetchLatest} />}
       >
         {/* ── Hero Banner ── */}
-        <View className="mx-4 mt-4 mb-5 rounded-3xl overflow-hidden bg-slate-900" style={{ minHeight: 200 }}>
-          <View className="absolute inset-0 bg-indigo-950 opacity-95" />
+        <View className="mx-4 mt-4 mb-5 rounded-3xl overflow-hidden bg-indigo-700 dark:bg-slate-900 shadow-xl shadow-indigo-200 dark:shadow-none" style={{ minHeight: 200 }}>
+          <View className="absolute inset-0 bg-indigo-700/40 dark:bg-indigo-900 opacity-95" />
           <View
             className="absolute top-[-50px] left-[-50px] w-48 h-48 rounded-full opacity-30"
-            style={{ backgroundColor: "rgba(99,102,241,0.4)" }}
+            style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
           />
           <View
             className="absolute bottom-[-30px] right-[-30px] w-40 h-40 rounded-full opacity-20"
-            style={{ backgroundColor: "rgba(34,211,238,0.4)" }}
+            style={{ backgroundColor: "rgba(255,255,255,0.15)" }}
           />
           <View className="relative z-10 p-7 items-center">
-            <View className="flex-row items-center gap-2 mb-4 bg-white/10 border border-white/15 px-3 py-1.5 rounded-full">
-              <View className="h-2 w-2 rounded-full bg-cyan-400" />
-              <Text className="text-[11px] font-outfit-sb text-white/80 uppercase tracking-wider">CampusMitra Marketplace</Text>
+            <View className="flex-row items-center gap-2 mb-4 bg-white/15 border border-white/20 px-3 py-1.5 rounded-full">
+              <View className="h-2 w-2 rounded-full bg-cyan-300" />
+              <Text className="text-[11px] font-outfit-sb text-white uppercase tracking-wider">CampusMitra Marketplace</Text>
             </View>
             <Text className="text-[26px] font-outfit-bl text-white text-center leading-tight mb-2">
               Buy campus essentials before they&apos;re gone.
             </Text>
-            <Text className="text-[14px] font-outfit text-white/60 text-center mb-6">
+            <Text className="text-[14px] font-outfit text-indigo-100 dark:text-white/60 text-center mb-6">
               Student-to-student deals, fresh listings every day.
             </Text>
             <View className="flex-row gap-3 w-full">
@@ -233,9 +233,9 @@ export default function HomeScreen() {
               </Pressable>
               <Pressable
                 onPress={() => router.push((user ? "/create-product" : "/(auth)/register") as never)}
-                className="flex-1 flex-row items-center justify-center gap-2 bg-primary-500 border border-primary-400/30 rounded-2xl py-3 active:bg-primary-600 shadow-lg shadow-primary-900/50"
+                className="flex-1 flex-row items-center justify-center gap-2 bg-white border border-white/20 rounded-2xl py-3 active:bg-white/90"
               >
-                <Text className="text-[14px] font-outfit-sb text-white">{user ? "List an Item" : "Start Selling"}</Text>
+                <Text className="text-[14px] font-outfit-sb text-indigo-700">{user ? "List an Item" : "Start Selling"}</Text>
               </Pressable>
             </View>
           </View>
@@ -254,7 +254,7 @@ export default function HomeScreen() {
             const emoji = CATEGORY_EMOJI[cat] || "📦";
             return (
               <Pressable
-                key={cat}
+                key={`${cat}-${i}`}
                 onPress={() => router.push(`/products?category=${encodeURIComponent(cat)}` as never)}
                 className={`items-center justify-center rounded-2xl px-2 py-3 w-[100px] h-[95px] active:opacity-80 ${color.bg}`}
               >
@@ -303,24 +303,19 @@ export default function HomeScreen() {
         )}
 
         {/* ── Stats Band ── */}
-        <View className="mx-4 mb-6 rounded-3xl overflow-hidden bg-slate-900">
-          <View className="absolute inset-0 bg-indigo-950 opacity-95" />
-          <View
-            className="absolute top-0 right-0 w-48 h-48 rounded-full opacity-20"
-            style={{ backgroundColor: "rgba(34,211,238,0.5)" }}
-          />
-          <View className="relative z-10 flex-row divide-x divide-white/10">
+        <View className="mx-4 mb-6 rounded-3xl overflow-hidden bg-indigo-200 dark:bg-indigo-900 border border-indigo-100 dark:border-slate-800 shadow-sm shadow-indigo-200/50 dark:shadow-none">
+          <View className="relative z-10 flex-row divide-x divide-indigo-100 dark:divide-white/10">
             {[
-              { icon: "flash-outline" as const, value: liveCount, label: "Live Listings", color: "text-cyan-300" },
-              { icon: "pricetag-outline" as const, value: budgetCount, label: "Budget Picks", color: "text-amber-300" },
-              { icon: "grid-outline" as const, value: categories.length, label: "Categories", color: "text-emerald-300" },
+              { icon: "flash-outline" as const, value: liveCount, label: "Live Listings", color: "text-indigo-800 dark:text-cyan-300", iconBg: "bg-indigo-100 dark:bg-white/10", iconColor: "#4f46e5", darkIconColor: "#67e8f9" },
+              { icon: "pricetag-outline" as const, value: budgetCount, label: "Budget Picks", color: "text-amber-600 dark:text-amber-300", iconBg: "bg-amber-100 dark:bg-white/10", iconColor: "#d97706", darkIconColor: "#fcd34d" },
+              { icon: "grid-outline" as const, value: categories.length, label: "Categories", color: "text-emerald-600 dark:text-emerald-300", iconBg: "bg-emerald-100 dark:bg-white/10", iconColor: "#059669", darkIconColor: "#6ee7b7" },
             ].map((s) => (
               <View key={s.label} className="flex-1 items-center py-6 px-2">
-                <View className="h-10 w-10 rounded-2xl bg-white/10 items-center justify-center mb-2">
-                  <Ionicons name={s.icon} size={20} color={s.color === "text-cyan-300" ? "#67e8f9" : s.color === "text-amber-300" ? "#fcd34d" : "#6ee7b7"} />
+                <View className={`h-10 w-10 rounded-2xl ${s.iconBg} items-center justify-center mb-2`}>
+                  <Ionicons name={s.icon} size={20} color={Appearance.getColorScheme() === "dark" ? s.darkIconColor : s.iconColor} />
                 </View>
                 <Text className={`text-[26px] font-outfit-bl ${s.color}`}>{s.value}</Text>
-                <Text className="text-[10px] font-outfit-sb text-white/50 uppercase tracking-widest text-center mt-0.5">{s.label}</Text>
+                <Text className="text-[10px] font-outfit-sb text-slate-500 dark:text-white/50 uppercase tracking-widest text-center mt-0.5">{s.label}</Text>
               </View>
             ))}
           </View>

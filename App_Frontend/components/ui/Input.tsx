@@ -13,7 +13,9 @@ type Props = {
   className?: string;
   inputClassName?: string;
   errorMessage?: string;
+  editable?: boolean;
 };
+
 
 export function Input({
   label,
@@ -26,7 +28,9 @@ export function Input({
   className = "",
   inputClassName = "",
   errorMessage,
+  editable = true,
 }: Props) {
+
   const [isFocused, setIsFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const colorScheme = useColorScheme();
@@ -54,7 +58,9 @@ export function Input({
     shadowOpacity: isFocused && !errorMessage ? 0.1 : 0,
     shadowRadius: isFocused && !errorMessage ? 4 : 0,
     elevation: isFocused && !errorMessage ? 1 : 0,
+    opacity: editable ? 1 : 0.7,
   };
+
 
   return (
     <View className={`mb-4 w-full ${className}`}>
@@ -77,7 +83,9 @@ export function Input({
           className={`rounded-2xl border px-4 py-4 ${secureTextEntry ? "pr-12" : ""} text-[16px] font-outfit text-slate-900 dark:text-white ${inputClassName}`}
           placeholderTextColor="#94a3b8"
           style={inputStyle}
+          editable={editable}
         />
+
         {secureTextEntry ? (
           <Pressable 
             className="absolute right-4 top-0 bottom-0 justify-center h-full"

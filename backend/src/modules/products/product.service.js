@@ -10,7 +10,7 @@ const {
 } = require('../../shared/utils/notification.utils');
 const { buildSearchClause, rankByRelevance } = require('../../shared/utils/searchUtils');
 
-const escapeRegex = (text = '') => String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// const escapeRegex = (text = '') => String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value));
 
 const allowedSortFields = new Set(['createdAt', 'price', 'title', 'views', 'averageRating', 'reviewCount']);
@@ -62,7 +62,7 @@ const parseContactInfo = (value) => {
   if (typeof value === 'string') {
     try {
       return JSON.parse(value);
-    } catch (e) {
+    } catch{
       console.warn('[ProductService] Failed to parse contactInfo JSON:', value);
       return {};
     }

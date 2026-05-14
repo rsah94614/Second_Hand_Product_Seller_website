@@ -13,6 +13,7 @@ router.get('/me/wishlist', auth, wishlistController.getWishlist);
 router.get('/me/recently-viewed', auth, wishlistController.getRecentlyViewed);
 router.get('/me/profile-completion', auth, profileController.getProfileCompletion);
 router.post('/me/wishlist/:productId', auth, wishlistController.toggleWishlist);
+router.delete('/me', auth, profileController.deleteAccount);
 
 // ── Reviews ───────────────────────────────────────────────────────────────────
 router.post('/:id/reviews', auth, reputationController.addSellerReview);

@@ -9,14 +9,14 @@ import {
   Appearance,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { Screen } from "../components/ui/Screen";
-import { Loading } from "../components/Loading";
-import { EmptyState } from "../components/EmptyState";
-import { useAuth } from "../context/AuthContext";
-import { useOrders } from "../lib/hooks/useOrders";
-import { OrderCard } from "../components/orders/OrderCard";
-import { ScheduleModal } from "../components/orders/ScheduleModal";
-import { DisputeModal } from "../components/orders/DisputeModal";
+import { Screen } from "../../components/ui/Screen";
+import { Loading } from "../../components/Loading";
+import { EmptyState } from "../../components/EmptyState";
+import { useAuth } from "../../context/AuthContext";
+import { useOrders } from "../../lib/hooks/useOrders";
+import { OrderCard } from "../../components/orders/OrderCard";
+import { ScheduleModal } from "../../components/orders/ScheduleModal";
+import { DisputeModal } from "../../components/orders/DisputeModal";
 
 export default function OrdersScreen() {
   const { user, loading: authLoading } = useAuth();
@@ -38,7 +38,7 @@ export default function OrdersScreen() {
   } = useOrders();
 
   const [activeTab, setActiveTab] = useState<"buying" | "selling">("buying");
-  
+
   // Modal states
   const [scheduleOrderId, setScheduleOrderId] = useState<string | null>(null);
   const [disputeOrderId, setDisputeOrderId] = useState<string | null>(null);
@@ -52,7 +52,7 @@ export default function OrdersScreen() {
     });
   }, [orders, activeTab, currentId]);
 
-  const handlePickPhoto = async (orderId: string) => {
+  const handlePickPhoto = useCallback(async (orderId: string) => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
@@ -68,10 +68,10 @@ export default function OrdersScreen() {
         name: `proof.${ext}`,
         type: type || "image/jpeg",
       } as any);
-      
+
       photoM.mutate({ orderId, formData });
     }
-  };
+  }, [photoM]);
 
   const handleTabChange = useCallback((tab: "buying" | "selling") => {
     InteractionManager.runAfterInteractions(() => {
@@ -165,25 +165,25 @@ export default function OrdersScreen() {
         </View>
       </View>
 
-        <FlatList
-          data={filteredOrders}
-          keyExtractor={(item) => item._id}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
-          showsVerticalScrollIndicator={false}
-          refreshing={isRefetching}
-          onRefresh={refetch}
-          ListEmptyComponent={
-            <EmptyState
-              title={activeTab === "buying" ? "No purchases yet" : "No sales yet"}
-              message={
-                activeTab === "buying"
-                  ? "When you buy something, your orders will appear here."
-                  : "When someone buys your items, those orders will appear here."
-              }
-            />
-          }
-          renderItem={renderOrder}
-        />
+      <FlatList
+        data={filteredOrders}
+        keyExtractor={(item) => item._id}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+        refreshing={isRefetching}
+        onRefresh={refetch}
+        ListEmptyComponent={
+          <EmptyState
+            title={activeTab === "buying" ? "No purchases yet" : "No sales yet"}
+            message={
+              activeTab === "buying"
+                ? "When you buy something, your orders will appear here."
+                : "When someone buys your items, those orders will appear here."
+            }
+          />
+        }
+        renderItem={renderOrder}
+      />
 
       <ScheduleModal
         visible={!!scheduleOrderId}

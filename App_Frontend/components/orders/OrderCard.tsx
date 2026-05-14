@@ -28,6 +28,8 @@ const ActionBtn = memo(({ label, onPress, color, loading = false, disabled = fal
   );
 });
 
+ActionBtn.displayName = "ActionBtn";
+
 const statusTone = (s: string) => {
   switch (s) {
     case "requested": return { bg: "bg-amber-100 dark:bg-amber-900/40", text: "text-amber-700 dark:text-amber-400" };

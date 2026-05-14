@@ -70,7 +70,7 @@ export const OrderSummaryCard = ({ product, quantity, setQuantity, totalAmount }
             <div className="h-px bg-gray-200 my-2" />
             <div className="flex justify-between text-lg font-bold text-gray-900">
               <span>Total Amount</span>
-              <span className="text-primary-600">{formatPrice(totalAmount)}</span>
+              <span className="text-gray-900">{formatPrice(totalAmount)}</span>
             </div>
           </div>
           <div className="space-y-3 text-sm text-gray-600 bg-blue-50 p-4 rounded-xl border border-blue-100">
