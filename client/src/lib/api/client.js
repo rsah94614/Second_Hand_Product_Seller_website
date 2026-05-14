@@ -23,6 +23,11 @@ export const authApi = axios.create({
 
 let refreshPromise = null;
 let globalsConfigured = false;
+let onUnauthorizedCallback = null;
+
+export const setUnauthorizedCallback = (callback) => {
+  onUnauthorizedCallback = callback;
+};
 
 const applyRequestAuth = async (config) => {
   const nextConfig = config;
@@ -99,6 +104,9 @@ const attachResponseInterceptor = (instance) => {
         originalRequest.headers.Authorization = `Bearer ${nextToken}`;
         return instance(originalRequest);
       } catch (refreshError) {
+        if (onUnauthorizedCallback) {
+          onUnauthorizedCallback();
+        }
         return Promise.reject(refreshError);
       }
     }

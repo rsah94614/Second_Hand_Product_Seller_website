@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, ScrollView } from "react-native";
+import { Text, ScrollView } from "react-native";
 import { Screen } from "../../components/ui/Screen";
 
 export default function TermsOfServiceScreen() {

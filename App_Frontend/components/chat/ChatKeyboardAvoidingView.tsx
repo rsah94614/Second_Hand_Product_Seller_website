@@ -3,7 +3,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleProp,
-  View,
   ViewStyle,
 } from "react-native";
 import { useHeaderHeight } from "@react-navigation/elements";

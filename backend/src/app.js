@@ -20,7 +20,6 @@ const {
   registerPendingDelivery,
   handleDeliveryAck,
   handleReadAck,
-  getPendingDeliveriesForUser,
 } = require('./shared/utils/messageDelivery.utils');
 
 const parseAllowedOrigins = () => {
@@ -480,7 +479,7 @@ const createApp = () => {
 
         // Issue 1 Fix: Only mark as read after delivery is confirmed
         // Get pending deliveries for this user
-        const pendingDeliveries = getPendingDeliveriesForUser(userId);
+        // const pendingDeliveries = getPendingDeliveriesForUser(userId);
 
         // Update messages in database
         const result = await Message.updateMany(

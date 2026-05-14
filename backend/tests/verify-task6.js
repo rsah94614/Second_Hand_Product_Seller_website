@@ -11,8 +11,6 @@
 const assert = require('node:assert/strict');
 const request = require('supertest');
 const { io: Client } = require('socket.io-client');
-const Message = require('../models/Message');
-const User = require('../models/User');
 const { clearDatabase } = require('./helpers/testApp');
 const { registerAndLogin } = require('./helpers/auth');
 

@@ -27,7 +27,7 @@ const SettingsPage = () => {
     { id: 'support', label: 'Support & Legal', icon: HelpCircle },
   ];
 
-  const SettingRow = ({ icon: Icon, title, subtitle, to, onClick, danger }) => {
+  const SettingRow = ({ icon: title, subtitle, to, onClick, danger }) => {
     const Component = to ? Link : 'button';
     return (
       <Component
@@ -54,7 +54,7 @@ const SettingsPage = () => {
       case 'account':
         return (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 px-1">Account & Security</h2>
+            <h2 className="hidden md:block text-lg font-bold text-gray-900 mb-4 px-1">Account & Security</h2>
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
               <SettingRow 
                 icon={Lock} 
@@ -82,7 +82,7 @@ const SettingsPage = () => {
       case 'privacy':
         return (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 px-1">Privacy & Notifications</h2>
+            <h2 className="hidden md:block text-lg font-bold text-gray-900 mb-4 px-1">Privacy & Notifications</h2>
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
               <SettingRow 
                 icon={Bell} 
@@ -102,7 +102,7 @@ const SettingsPage = () => {
       case 'support':
         return (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 px-1">Support & Legal</h2>
+            <h2 className="hidden md:block text-lg font-bold text-gray-900 mb-4 px-1">Support & Legal</h2>
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
               <SettingRow 
                 icon={HelpCircle} 
@@ -132,22 +132,22 @@ const SettingsPage = () => {
     <>
       <Header />
 
-    <div className="min-h-screen bg-gray-50/50 py-12 px-4">
+    <div className="min-h-screen bg-gray-50/50 py-6 md:py-12 px-4">
       <div className="max-w-5xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-black text-gray-900">Settings</h1>
-          <p className="text-gray-500 mt-2 font-medium">Manage your account preferences and security.</p>
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-black text-gray-900">Settings</h1>
+          <p className="text-gray-500 mt-1 md:mt-2 font-medium text-sm md:text-base">Manage your account preferences and security.</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="flex flex-col lg:flex-row gap-6 md:gap-8">
           {/* Sidebar */}
-          <div className="lg:col-span-4">
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-2 space-y-1">
+          <div className="w-full lg:w-1/3 flex flex-col gap-6">
+            <div className="bg-white rounded-2xl lg:rounded-3xl border border-gray-100 shadow-sm p-2 flex overflow-x-auto lg:flex-col gap-2 hide-scrollbar">
               {navItems.map((item) => (
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl lg:rounded-2xl transition-all duration-200 whitespace-nowrap shrink-0 ${
                     activeTab === item.id 
                       ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' 
                       : 'text-gray-600 hover:bg-gray-50'
@@ -160,7 +160,7 @@ const SettingsPage = () => {
             </div>
 
             {/* Profile Brief */}
-            <div className="mt-6 bg-indigo-600 rounded-3xl p-6 text-white shadow-xl shadow-indigo-100 relative overflow-hidden group">
+            <div className="hidden lg:block mt-6 bg-indigo-600 rounded-3xl p-6 text-white shadow-xl shadow-indigo-100 relative overflow-hidden group">
               <div className="relative z-10">
                 <p className="text-indigo-100 text-xs font-bold uppercase tracking-wider mb-1">Signed in as</p>
                 <p className="text-lg font-bold truncate">{user?.name}</p>
@@ -177,8 +177,26 @@ const SettingsPage = () => {
           </div>
 
           {/* Content Area */}
-          <div className="lg:col-span-8">
+          <div className="w-full lg:w-2/3">
             {renderContent()}
+
+            {/* Profile Brief - Mobile (Bottom) */}
+            <div className="lg:hidden mt-8 bg-indigo-600 rounded-2xl p-5 text-white shadow-xl shadow-indigo-100 relative overflow-hidden">
+              <div className="relative z-10 flex items-center justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="text-indigo-100 text-[10px] font-bold uppercase tracking-wider mb-0.5">Signed in as</p>
+                  <p className="text-base font-bold truncate">{user?.name}</p>
+                  <p className="text-indigo-200 text-xs truncate">{user?.email}</p>
+                </div>
+                <Link 
+                  to="/profile" 
+                  className="shrink-0 inline-flex items-center justify-center bg-white/20 hover:bg-white/30 p-3 rounded-xl transition-colors backdrop-blur-md"
+                >
+                  <ChevronRight className="w-5 h-5 text-white" />
+                </Link>
+              </div>
+              <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+            </div>
           </div>
         </div>
       </div>

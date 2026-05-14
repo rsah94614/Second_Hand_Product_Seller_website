@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Pressable, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Screen } from "../../components/ui/Screen";
-import { useAuth } from "../../context/AuthContext";
+
 import { useAppTheme, ThemeType } from "../../context/ThemeContext";
 
 type SettingRowProps = {
@@ -60,7 +60,7 @@ const SettingGroup = ({ title, children }: { title: string; children: React.Reac
 );
 
 export default function SettingsScreen() {
-  const { user } = useAuth();
+  // const { user } = useAuth();
   const { theme, setTheme } = useAppTheme();
 
   const themeLabels: Record<ThemeType, string> = {

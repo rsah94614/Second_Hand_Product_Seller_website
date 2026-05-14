@@ -60,7 +60,7 @@ export default function DeleteAccountScreen() {
           </Text>
           
           <Text className="text-[16px] font-outfit text-slate-600 dark:text-slate-400 leading-relaxed mb-6">
-            We're sorry to see you go. Deleting your account will immediately remove your access to Campus Mitra.
+            We&apos;re sorry to see you go. Deleting your account will immediately remove your access to Campus Mitra.
           </Text>
 
           <View className="bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-2xl p-4 mb-8">

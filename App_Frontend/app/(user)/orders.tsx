@@ -52,7 +52,7 @@ export default function OrdersScreen() {
     });
   }, [orders, activeTab, currentId]);
 
-  const handlePickPhoto = async (orderId: string) => {
+  const handlePickPhoto = useCallback(async (orderId: string) => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
@@ -71,7 +71,7 @@ export default function OrdersScreen() {
 
       photoM.mutate({ orderId, formData });
     }
-  };
+  }, [photoM]);
 
   const handleTabChange = useCallback((tab: "buying" | "selling") => {
     InteractionManager.runAfterInteractions(() => {

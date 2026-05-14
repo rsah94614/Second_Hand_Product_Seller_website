@@ -58,7 +58,7 @@ export default function BlockedUsersScreen() {
             No blocked users
           </Text>
           <Text className="text-center text-slate-500 font-outfit">
-            You haven't blocked anyone. Users you block will appear here.
+            You haven&apos;t blocked anyone. Users you block will appear here.
           </Text>
         </View>
       ) : (

@@ -22,7 +22,7 @@ const BlockedUsersPage = () => {
     try {
       const data = await getBlockedUsers();
       setBlockedUsers(data || []);
-    } catch (error) {
+    } catch {
       toast.error('Failed to load blocked users');
 
     } finally {
@@ -37,7 +37,7 @@ const BlockedUsersPage = () => {
       toast.success('User unblocked successfully');
 
       setBlockedUsers(blockedUsers.filter(user => user._id !== userId));
-    } catch (error) {
+    } catch {
       toast.error('Failed to unblock user');
 
     } finally {

@@ -1,6 +1,6 @@
 /// <reference types="nativewind/types" />
 import { useQuery } from "@tanstack/react-query";
-import { router } from "expo-router";
+import { router, Stack } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, InteractionManager, Modal, ScrollView, Text, View, Pressable, Platform, KeyboardAvoidingView } from "react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -17,7 +17,7 @@ import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandl
 import { api } from "../../lib/api/client";
 import { KeyboardShiftView } from "../../components/ui/KeyboardShiftView";
 import { useToast } from "../../components/ui/AppToast";
-import { Stack } from "expo-router";
+
 
 
 const LISTING_POLICIES = [

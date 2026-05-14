@@ -230,7 +230,7 @@ const sanitizeImageCaption = (caption) => {
   // Remove HTML tags and dangerous characters
   const sanitized = caption
     .replace(/<[^>]*>/g, '') // Remove HTML tags
-    .replace(/[<>\"']/g, '') // Remove dangerous characters
+    .replace(/[<>"']/g, '') // Remove dangerous characters
     .trim();
 
   // Limit caption length

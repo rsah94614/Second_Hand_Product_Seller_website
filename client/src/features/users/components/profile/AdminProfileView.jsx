@@ -22,8 +22,8 @@ const AdminProfileView = ({
   handleAvatarChange,
   avatarUploading,
   avatarInputRef,
+  onPhotoClick,
   setIsLogoutDialogOpen,
-
 }) => {
   return (
     <div className="animate-fade-in">
@@ -41,7 +41,7 @@ const AdminProfileView = ({
             />
             <button
               type="button"
-              onClick={() => avatarInputRef.current?.click()}
+              onClick={onPhotoClick}
               disabled={avatarUploading}
               className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
             >

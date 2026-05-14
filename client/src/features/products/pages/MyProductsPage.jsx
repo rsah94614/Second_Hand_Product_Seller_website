@@ -191,7 +191,7 @@ const MyProductsPage = () => {
                     {product.title}
                   </h3>
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-xl font-black text-primary-600">
+                    <span className="text-xl font-black text-gray-900">
                       ₹{product.price?.toLocaleString('en-IN')}
                     </span>
                     <div className="flex items-center gap-1 text-xs text-gray-400">

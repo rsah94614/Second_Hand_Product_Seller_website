@@ -23,7 +23,7 @@ const ActiveDevicesPage = () => {
       toast.success('Device removed');
       queryClient.invalidateQueries({ queryKey: ['my-devices'] });
     },
-    onError: (err) => {
+    onError: () => {
       toast.error('Failed to remove device');
     },
   });

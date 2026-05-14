@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -8,7 +8,6 @@ import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import { Button } from '../../../components/ui/Button';
 import { Card, CardContent } from '../../../components/ui/Card';
-import { useAuth } from '../../../context/AuthContext';
 
 const RATING_LABELS = {
   1: "Poor",
@@ -31,7 +30,6 @@ const ReviewSellerPage = () => {
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('orderId');
   const navigate = useNavigate();
-  const { user } = useAuth();
   
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");

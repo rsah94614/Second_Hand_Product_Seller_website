@@ -1,12 +1,12 @@
 import React from 'react';
-import { 
-  User, Mail, MapPin, Edit, Save, X, ShieldCheck, LogOut, 
-  GraduationCap, Building2, CheckCircle2, BadgeCheck, 
-  AlertCircle, Star, Award, Smartphone, Trash2, Shield, Camera, Loader2, Info 
+import {
+  User, Mail, MapPin, Edit, Save, X, ShieldCheck, LogOut,
+  GraduationCap, Building2, CheckCircle2, BadgeCheck,
+  AlertCircle, Star, Award, Shield, Camera, Loader2, Info
 } from 'lucide-react';
 import { Badge } from '../../../../components/ui/Badge';
 import { Button } from '../../../../components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/Card';
+import { Card, CardContent } from '../../../../components/ui/Card';
 import { Input } from '../../../../components/ui/Input';
 import { Avatar } from '../../../../components/ui/Avatar';
 
@@ -40,11 +40,11 @@ const UserProfileView = ({
   handleAvatarChange,
   avatarUploading,
   avatarInputRef,
+  onPhotoClick,
   showTradingInfo,
   setShowTradingInfo,
   verificationMutation,
   setIsLogoutDialogOpen,
-
 }) => {
   return (
     <div className="animate-fade-in">
@@ -62,7 +62,7 @@ const UserProfileView = ({
             />
             <button
               type="button"
-              onClick={() => avatarInputRef.current?.click()}
+              onClick={onPhotoClick}
               disabled={avatarUploading}
               className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
             >
@@ -188,7 +188,7 @@ const UserProfileView = ({
                   <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">{item.label}</label>
                   {isEditing ? (
                     item.type === 'select' ? (
-                      <select name={item.name} value={item.value} onChange={handleChange} className="w-full h-10 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary-500/20">
+                      <select name={item.name} value={item.value} onChange={handleChange} className="w-full h-10 rounded-xl border border-black bg-white px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary-500/20">
                         {item.options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                       </select>
                     ) : <Input type={item.type} name={item.name} value={item.value} onChange={handleChange} className="h-10" />
@@ -218,8 +218,8 @@ const UserProfileView = ({
               <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Department</label><Input name="department" value={campusForm.department} onChange={handleCampusFormChange} /></div>
               <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Course</label><Input name="course" value={campusForm.course} onChange={handleCampusFormChange} /></div>
               <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Semester</label><Input name="semester" value={campusForm.semester} onChange={handleCampusFormChange} /></div>
-              <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Year</label><select name="year" value={campusForm.year} onChange={handleCampusFormChange} className="w-full h-11 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary-500/20"><option value="">Select Year</option><option value="1st">1st Year</option><option value="2nd">2nd Year</option><option value="3rd">3rd Year</option><option value="4th">4th Year</option><option value="5th">5th Year</option><option value="Alumni">Alumni</option><option value="Faculty">Faculty</option></select></div>
-              <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Resident Type</label><select name="residentType" value={campusForm.residentType} onChange={handleCampusFormChange} className="w-full h-11 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary-500/20"><option value="">Select Type</option><option value="hosteler">Hosteler</option><option value="day_scholar">Day Scholar</option><option value="faculty">Faculty Quarter</option></select></div>
+              <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Year</label><select name="year" value={campusForm.year} onChange={handleCampusFormChange} className="w-full h-11 rounded-xl border border-black bg-white px-4 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary-500/20"><option value="">Select Year</option><option value="1st">1st Year</option><option value="2nd">2nd Year</option><option value="3rd">3rd Year</option><option value="4th">4th Year</option><option value="5th">5th Year</option><option value="Alumni">Alumni</option><option value="Faculty">Faculty</option></select></div>
+              <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Resident Type</label><select name="residentType" value={campusForm.residentType} onChange={handleCampusFormChange} className="w-full h-11 rounded-xl border border-black bg-white px-4 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary-500/20"><option value="">Select Type</option><option value="hosteler">Hosteler</option><option value="day_scholar">Day Scholar</option><option value="faculty">Faculty Quarter</option></select></div>
               <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Hostel Name</label><Input name="hostel" value={campusForm.hostel} onChange={handleCampusFormChange} /></div>
             </div>
           ) : (

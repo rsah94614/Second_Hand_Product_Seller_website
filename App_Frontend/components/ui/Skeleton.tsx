@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { View, StyleSheet, useColorScheme, DimensionValue } from "react-native";
+import { useColorScheme, DimensionValue } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -38,7 +38,7 @@ export function Skeleton({
       -1,
       true
     );
-  }, []);
+  }, [opacity]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {

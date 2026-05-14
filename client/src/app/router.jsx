@@ -19,8 +19,9 @@ import DeleteAccountPage from '../features/users/pages/settings/DeleteAccountPag
 import ActiveDevicesPage from '../features/users/pages/settings/ActiveDevicesPage';
 
 
-import HelpCenterPage from '../features/users/pages/HelpCenterPage';
-import LegalPage from '../features/users/pages/LegalPage';
+import HelpCenterPage from '../features/users/pages/settings/HelpCenterPage';
+import LegalPage from '../features/users/pages/settings/LegalPage';
+
 import CreateProductPage from '../features/products/pages/CreateProductPage';
 import EditProductPage from '../features/products/pages/EditProductPage';
 import MyProductsPage from '../features/products/pages/MyProductsPage';

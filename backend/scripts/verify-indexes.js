@@ -7,7 +7,6 @@
  * Usage: node scripts/verify-indexes.js
  */
 
-const mongoose = require('mongoose');
 const Message = require('../models/Message');
 
 async function verifyIndexes() {

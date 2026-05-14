@@ -1,5 +1,5 @@
 import "../global.css";
-import { Appearance, Platform } from "react-native";
+import { Platform } from "react-native";
 import { Stack } from "expo-router";
 import { useMemo, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

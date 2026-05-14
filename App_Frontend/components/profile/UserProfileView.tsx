@@ -121,7 +121,7 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
             setIsMenuOpen(false);
             try {
               await saveProfileDirectly({ avatar: "" });
-            } catch (err) {
+            } catch {
               // Error handled in saveProfileDirectly
             }
           } 

@@ -10,7 +10,7 @@ import {
   resendVerificationEmailApi,
 } from '../features/auth/api/authApi';
 import { updateUserProfile } from '../features/users/api/userApi';
-import { authApi, api } from '../lib/api/client';
+import { authApi, api, setUnauthorizedCallback } from '../lib/api/client';
 import * as storage from '../lib/auth-storage';
 import { parseApiError, formatErrorForDisplay } from '../lib/errorHandler';
 
@@ -29,6 +29,11 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setUnauthorizedCallback(async () => {
+      await storage.clearTokens();
+      setUser(null);
+    });
+
     (async () => {
       const token = await storage.getAccessToken();
       const refreshToken = await storage.getRefreshToken();

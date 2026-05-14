@@ -16,7 +16,6 @@ import { useAuth } from "../../context/AuthContext";
 import { getProduct, updateProduct, getProductCategories } from "../../lib/api/products";
 import { PRODUCT_CONDITIONS } from "../../lib/product-options";
 import { getImageUri } from "../../lib/product-image";
-import { Ionicons } from "@expo/vector-icons";
 import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
 import { KeyboardShiftView } from "../../components/ui/KeyboardShiftView";
 import { Screen } from "../../components/ui/Screen";
