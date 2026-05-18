@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, useMemo } from "react";
 import { useFocusEffect, router } from "expo-router";
-import { Alert, FlatList, Pressable, Text, View, TextInput, Platform } from "react-native";
+import { Alert, FlatList, Pressable, Text, View, TextInput, Platform, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Screen } from "../../components/ui/Screen";
 import { PageHeader } from "../../components/ui/PageHeader";
@@ -120,7 +120,10 @@ export default function MessagesScreen() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.replace("/(auth)/login");
+      const timer = setTimeout(() => {
+        router.replace("/(auth)/login");
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [authLoading, user]);
 
@@ -131,18 +134,28 @@ export default function MessagesScreen() {
         <View className="bg-white dark:bg-slate-900 px-5 pt-2 pb-4 shadow-sm">
           <Skeleton className="w-full h-10 rounded-xl" />
         </View>
-        {[...Array(6)].map((_, i) => (
-          <View key={i} className="flex-row items-center bg-white dark:bg-slate-900 px-5 py-4 mb-[1px] border-b border-slate-50 dark:border-slate-800/50">
-            <Skeleton circle className="w-14 h-14" />
-            <View className="ml-4 flex-1">
-              <View className="flex-row justify-between mb-2">
-                <Skeleton className="w-1/3 h-5 rounded-md" />
-                <Skeleton className="w-12 h-3 rounded-md" />
+        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+          {[
+            { nameWidth: "w-1/3", msgWidth: "w-2/3" },
+            { nameWidth: "w-1/4", msgWidth: "w-1/2" },
+            { nameWidth: "w-2/5", msgWidth: "w-3/4" },
+            { nameWidth: "w-1/3", msgWidth: "w-3/5" },
+            { nameWidth: "w-1/2", msgWidth: "w-2/5" },
+            { nameWidth: "w-1/4", msgWidth: "w-2/3" },
+            { nameWidth: "w-1/3", msgWidth: "w-1/2" },
+          ].map((item, i) => (
+            <View key={i} className="flex-row items-center bg-white dark:bg-slate-900 px-5 py-4 mb-[1px] border-b border-slate-50 dark:border-slate-800/50">
+              <Skeleton circle className="w-14 h-14" />
+              <View className="ml-4 flex-1">
+                <View className="flex-row justify-between mb-2">
+                  <Skeleton className={`${item.nameWidth} h-5 rounded-md`} />
+                  <Skeleton className="w-12 h-3 rounded-md" />
+                </View>
+                <Skeleton className={`${item.msgWidth} h-4 rounded-md`} />
               </View>
-              <Skeleton className="w-2/3 h-4 rounded-md" />
             </View>
-          </View>
-        ))}
+          ))}
+        </ScrollView>
       </Screen>
     );
   }
@@ -177,7 +190,7 @@ export default function MessagesScreen() {
             style={{ position: "absolute", left: 12, zIndex: 1 }}
           />
           <TextInput
-            placeholder="Search people or messages..."
+            placeholder="Search people here..."
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholderTextColor="#94a3b8"

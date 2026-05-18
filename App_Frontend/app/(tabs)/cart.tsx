@@ -105,7 +105,10 @@ export default function CartScreen() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.replace("/(auth)/login");
+      const timer = setTimeout(() => {
+        router.replace("/(auth)/login");
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [authLoading, user]);
 

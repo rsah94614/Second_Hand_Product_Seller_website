@@ -74,7 +74,7 @@ const UserProfileView = ({
             </div>
           </div>
           <div>
-            <div className="flex flex-wrap items-center gap-2 mb-2">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-2">
               <Badge className="text-xs font-bold px-3 py-1 border-0 bg-white/10 text-white/80 backdrop-blur-sm">
                 <ShieldCheck className="w-3 h-3 mr-1" />
                 User
@@ -94,7 +94,7 @@ const UserProfileView = ({
             <h1 className="text-3xl font-black text-white tracking-tight">{profile.name}</h1>
             <p className="text-primary-200/70 text-sm mt-0.5">{profile.email}</p>
             {profile.campus?.department && (
-              <p className="text-white/50 text-xs mt-1 flex items-center gap-1">
+              <p className="text-white/50 text-xs mt-1 flex items-center justify-center sm:justify-start gap-1">
                 <Building2 className="w-3 h-3" />
                 {profile.campus.department}
               </p>
