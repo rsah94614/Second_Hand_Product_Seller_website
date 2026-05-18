@@ -46,7 +46,13 @@ const AdminProfileView: React.FC<AdminProfileViewProps> = ({
   router,
 }) => {
   return (
-    <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      className="flex-1"
+      contentContainerStyle={{ padding: 16, paddingBottom: 48 }}
+      keyboardDismissMode="none"
+      keyboardShouldPersistTaps="always"
+      showsVerticalScrollIndicator={false}
+    >
       {/* ── Admin Hero Card ── */}
       <View className="overflow-hidden rounded-3xl bg-slate-900 shadow-xl mb-6">
         <View className="bg-rose-600 dark:bg-rose-900 px-5 pt-8 pb-16 items-center">

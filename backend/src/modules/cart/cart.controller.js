@@ -49,6 +49,11 @@ const addToCart = async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
+    // Prevent sellers from adding their own product to cart
+    if (product.seller.toString() === req.user._id.toString()) {
+      return res.status(400).json({ message: 'You cannot add your own listing to your cart' });
+    }
+
     let cart = await Cart.findOne({ user: req.user._id });
     if (!cart) {
       cart = new Cart({ user: req.user._id, items: [] });

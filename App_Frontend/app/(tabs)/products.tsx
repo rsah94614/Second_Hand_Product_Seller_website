@@ -149,7 +149,7 @@ export default function ProductsBrowseScreen() {
 
 
   return (
-    <Screen className="bg-slate-50 dark:bg-slate-950">
+    <Screen className="bg-slate-50 dark:bg-slate-950" safeAreaBottom={false}>
 
       {/* ── Page Header ── */}
       <PageHeader title="Browse Products" subtitle="Find exactly what you need" />

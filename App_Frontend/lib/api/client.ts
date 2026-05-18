@@ -45,6 +45,12 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
+let unauthorizedCallback: (() => void) | null = null;
+
+export const setUnauthorizedCallback = (cb: () => void) => {
+  unauthorizedCallback = cb;
+};
+
 let refreshingPromise: Promise<string> | null = null;
 
 const refreshAccessToken = async () => {
@@ -151,6 +157,13 @@ api.interceptors.response.use(
     };
 
     if (!originalRequest || error.response?.status !== 401 || originalRequest._retry) {
+      if (error.response?.status === 401) {
+        const url = String(originalRequest?.url || "");
+        if (!url.includes("/api/auth/login") && !url.includes("/api/auth/register")) {
+          await storage.clearTokens();
+          unauthorizedCallback?.();
+        }
+      }
       return Promise.reject(error);
     }
 
@@ -164,6 +177,7 @@ api.interceptors.response.use(
     const refreshToken = await storage.getRefreshToken();
     if (!refreshToken) {
       await storage.clearTokens();
+      unauthorizedCallback?.();
       return Promise.reject(error);
     }
 
@@ -181,6 +195,7 @@ api.interceptors.response.use(
       const status = refreshError?.response?.status;
       if (status === 401 || status === 403) {
         await storage.clearTokens();
+        unauthorizedCallback?.();
       }
       return Promise.reject(error);
     }

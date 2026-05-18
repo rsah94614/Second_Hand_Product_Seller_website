@@ -136,8 +136,11 @@ function MyProductsContent() {
           return (
             <Pressable
               onPress={() => {
-                openEditProduct(p._id);
+                if (!p.isSold) {
+                  openEditProduct(p._id);
+                }
               }}
+              style={{ opacity: p.isSold ? 0.7 : 1 }}
               className="mb-4 flex-row rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-sm shadow-slate-200/50 dark:shadow-none"
             >
               <View className="relative bg-slate-100 dark:bg-slate-800 rounded-2xl overflow-hidden">
@@ -168,10 +171,16 @@ function MyProductsContent() {
                     </Text>
                   </View>
 
-                  <View className="flex-row items-center gap-1.5 bg-slate-50 dark:bg-slate-800/50 px-3 py-1 rounded-lg border border-slate-100 dark:border-slate-700">
-                    <Text className="text-[11px] font-outfit-sb text-slate-600 dark:text-slate-300 uppercase tracking-widest">Edit</Text>
-                    <Ionicons name="create-outline" size={12} color="#64748b" />
-                  </View>
+                  {p.isSold ? (
+                    <View className="flex-row items-center gap-1 bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1 rounded-lg border border-emerald-150 dark:border-emerald-900/40">
+                      <Text className="text-[10px] font-outfit-b text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">✓ Completed 🎉</Text>
+                    </View>
+                  ) : (
+                    <View className="flex-row items-center gap-1.5 bg-slate-50 dark:bg-slate-800/50 px-3 py-1 rounded-lg border border-slate-100 dark:border-slate-700">
+                      <Text className="text-[11px] font-outfit-sb text-slate-600 dark:text-slate-300 uppercase tracking-widest">Edit</Text>
+                      <Ionicons name="create-outline" size={12} color="#64748b" />
+                    </View>
+                  )}
                 </View>
 
                 {/* Expiry info */}

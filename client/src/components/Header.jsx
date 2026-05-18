@@ -124,7 +124,11 @@ const Header = () => {
 
   const openNotification = useCallback(async (notification) => {
     if (!notification.isRead) {
-      await markNotificationAsRead(notification._id);
+      try {
+        await markNotificationAsRead(notification._id);
+      } catch (error) {
+        console.error('Failed to mark notification as read:', error);
+      }
     }
 
     navigate(notification.link || '/notifications');

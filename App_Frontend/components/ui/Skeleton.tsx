@@ -46,11 +46,11 @@ export function Skeleton({
     };
   });
 
-  const baseStyle = {
-    width: width,
-    height: height,
+  const baseStyle: Record<string, any> = {
     borderRadius: circle ? 9999 : borderRadius,
   };
+  if (width !== undefined) baseStyle.width = width;
+  if (height !== undefined) baseStyle.height = height;
 
   return (
     <Animated.View

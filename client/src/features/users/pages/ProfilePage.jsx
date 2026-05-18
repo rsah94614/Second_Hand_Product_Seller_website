@@ -170,6 +170,13 @@ const ProfilePage = () => {
     }));
   };
 
+  const handleCampusFormChange = (e) => {
+    setCampusForm((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
+
 
 
   const handleSave = async () => {
@@ -262,6 +269,8 @@ const ProfilePage = () => {
             onPhotoClick={() => setIsPhotoDialogOpen(true)}
             showTradingInfo={showTradingInfo}
             verificationMutation={verificationMutation}
+            campusForm={campusForm}
+            handleCampusFormChange={handleCampusFormChange}
           />
         )}
       </div>

@@ -4,6 +4,8 @@ import { useAuth } from '../../../context/AuthContext';
 import { 
   getOrders, 
   cancelOrder, 
+  acceptOrder,
+  scheduleMeetup,
   completeOrder, 
   markOrderDelivered, 
   reportNoShow, 
@@ -30,6 +32,24 @@ export const useOrderHistoryLogic = () => {
       invalidateOrders();
     },
     onError: (error) => toast.error(error.response?.data?.message || 'Failed to cancel order'),
+  });
+
+  const acceptOrderMutation = useMutation({
+    mutationFn: (orderId) => acceptOrder(orderId),
+    onSuccess: () => {
+      toast.success('Order accepted');
+      invalidateOrders();
+    },
+    onError: (error) => toast.error(error.response?.data?.message || 'Failed to accept order'),
+  });
+
+  const scheduleMeetupMutation = useMutation({
+    mutationFn: ({ orderId, location, scheduledAt, notes }) => scheduleMeetup(orderId, { location, scheduledAt, notes }),
+    onSuccess: () => {
+      toast.success('Meetup scheduled');
+      invalidateOrders();
+    },
+    onError: (error) => toast.error(error.response?.data?.message || 'Failed to schedule meetup'),
   });
 
   const completeOrderMutation = useMutation({
@@ -100,6 +120,10 @@ export const useOrderHistoryLogic = () => {
     }
   };
 
+  const handleAcceptOrder = (orderId) => {
+    acceptOrderMutation.mutate(orderId);
+  };
+
   const handleDeliverOrder = (orderId) => {
     if (window.confirm('Confirm that you have physically handed the item over to the buyer?')) {
       deliverOrderMutation.mutate(orderId);
@@ -125,13 +149,17 @@ export const useOrderHistoryLogic = () => {
     isError,
     refetch,
     handleCancelOrder,
+    handleAcceptOrder,
     handleDeliverOrder,
     handleCompleteOrder,
     handleNoShow,
     handlePhotoUpload,
     handleDispute,
+    scheduleMeetupMutation,
     isMutating: 
       cancelOrderMutation.isPending || 
+      acceptOrderMutation.isPending ||
+      scheduleMeetupMutation.isPending ||
       completeOrderMutation.isPending || 
       deliverOrderMutation.isPending || 
       noShowMutation.isPending || 

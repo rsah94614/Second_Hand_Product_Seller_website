@@ -95,7 +95,10 @@ export function useProductDetails(id: string) {
 
   // ── Mutations ──────────────────────────────────────────────────────────────
   const addCartM = useMutation({
-    mutationFn: () => addToCart(id, quantity),
+    mutationFn: () => {
+      if (isOwner) return Promise.reject(new Error('You cannot add your own listing to your cart'));
+      return addToCart(id, quantity);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
       showToast("Item added to cart.");
