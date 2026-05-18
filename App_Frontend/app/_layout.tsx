@@ -92,6 +92,7 @@ function InnerLayout() {
                     headerTintColor: sharedTintColor,
                     headerStyle: sharedHeaderStyle,
                     headerShadowVisible: false,
+                    headerBackTitle: " ",
                     contentStyle: {
                       backgroundColor: isDark ? "#020617" : "#f8fafc",
                     },
@@ -99,7 +100,7 @@ function InnerLayout() {
                     gestureEnabled: true,
                   }}
                 >
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: "none" }} />
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: "none", title: "" }} />
                   <Stack.Screen name="(auth)" options={{ headerShown: false, animation: stackAnimation }} />
                   <Stack.Screen name="admin" options={{ headerShown: false, animation: stackAnimation }} />
                   <Stack.Screen name="(settings)/notification-preferences" options={{ title: "Notification Preferences" }} />

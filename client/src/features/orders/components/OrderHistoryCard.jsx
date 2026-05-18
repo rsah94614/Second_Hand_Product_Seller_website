@@ -102,14 +102,28 @@ export const OrderHistoryCard = ({ order, user, actions }) => {
             ))}
           </div>
 
-          {order.shippingDetails?.fullName && (
+          {(order.shippingDetails?.fullName || order.meetupDetails) && (
             <div className="bg-gray-50/80 border border-gray-100 p-5 rounded-2xl text-sm">
               <p className="font-black text-gray-900 uppercase tracking-widest text-[10px] mb-3">
-                Delivery / Meetup Details
+                Meetup & Delivery Details
               </p>
+              
+              {order.status === 'meetup_scheduled' && order.meetupDetails && (
+                <div className="mb-4 p-4 bg-indigo-50/50 rounded-xl border border-indigo-100">
+                  <p className="text-xs font-bold text-indigo-800 uppercase tracking-wider mb-2">Scheduled Meetup</p>
+                  <p className="text-gray-900 font-medium">📍 {order.meetupDetails.location || "Location TBD"}</p>
+                  {order.meetupDetails.scheduledAt && (
+                    <p className="text-gray-700 mt-1">🕒 {order.meetupDetails.scheduledAt}</p>
+                  )}
+                  {order.meetupDetails.notes && (
+                    <p className="text-gray-600 mt-2 text-xs italic bg-white/50 p-2 rounded-lg">"{order.meetupDetails.notes}"</p>
+                  )}
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="font-bold text-gray-800">{order.shippingDetails.fullName}</p>
+                  <p className="font-bold text-gray-800">{order.shippingDetails?.fullName || 'Buyer'}</p>
                   <p className="text-gray-600 mt-1">{shippingAddress.primaryLine}</p>
                   <p className="text-gray-600">{shippingAddress.secondaryLine}</p>
                 </div>

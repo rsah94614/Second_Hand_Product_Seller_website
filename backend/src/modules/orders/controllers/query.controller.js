@@ -2,8 +2,12 @@ const Order = require('../../../../models/Order');
 
 const getOrders = async (req, res) => {
   try {
-    const { role = 'buyer' } = req.query;
-    const query = role === 'seller' ? { seller: req.user._id } : { user: req.user._id };
+    const query = {
+      $or: [
+        { user: req.user._id },
+        { seller: req.user._id }
+      ]
+    };
 
     const orders = await Order.find(query)
       .populate('items.product', 'title images price category')

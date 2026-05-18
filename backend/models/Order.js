@@ -61,7 +61,7 @@ const orderSchema = new mongoose.Schema(
     // Meetup details (NEW — campus specific)
     meetupDetails: {
       location: { type: String, trim: true, default: '' },
-      scheduledAt: { type: Date },
+      scheduledAt: { type: String, trim: true, default: '' },
       notes: { type: String, trim: true, maxlength: 500, default: '' },
     },
 

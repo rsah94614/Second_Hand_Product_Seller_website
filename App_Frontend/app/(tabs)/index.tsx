@@ -148,7 +148,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <Screen className="bg-slate-50 dark:bg-slate-950">
+    <Screen className="bg-slate-50 dark:bg-slate-950" safeAreaBottom={false}>
       {/* ── Top Header ── */}
       <View className="bg-indigo-600 dark:bg-indigo-900 px-5 pb-4 pt-4 z-10">
         <View className="flex-row items-center justify-between mb-3">

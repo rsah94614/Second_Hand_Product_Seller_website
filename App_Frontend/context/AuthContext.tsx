@@ -7,7 +7,7 @@ import React, {
   useState,
 } from "react";
 import axios from "axios";
-import { api } from "../lib/api/client";
+import { api, setUnauthorizedCallback } from "../lib/api/client";
 import { API_BASE_URL } from "../lib/config";
 import {
   forgotPasswordApi,
@@ -63,6 +63,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    setUnauthorizedCallback(() => {
+      setUser(null);
+    });
+    return () => {
+      setUnauthorizedCallback(() => {});
+    };
   }, []);
 
   useEffect(() => {

@@ -27,7 +27,7 @@ const SettingsPage = () => {
     { id: 'support', label: 'Support & Legal', icon: HelpCircle },
   ];
 
-  const SettingRow = ({ icon: title, subtitle, to, onClick, danger }) => {
+  const SettingRow = ({ icon: Icon, title, subtitle, to, onClick, danger }) => {
     const Component = to ? Link : 'button';
     return (
       <Component
@@ -134,7 +134,7 @@ const SettingsPage = () => {
 
     <div className="min-h-screen bg-gray-50/50 py-6 md:py-12 px-4">
       <div className="max-w-5xl mx-auto">
-        <div className="mb-6 md:mb-8">
+        <div className="pb-6 border-b border-gray-200 mb-6 md:mb-8">
           <h1 className="text-2xl md:text-3xl font-black text-gray-900">Settings</h1>
           <p className="text-gray-500 mt-1 md:mt-2 font-medium text-sm md:text-base">Manage your account preferences and security.</p>
         </div>

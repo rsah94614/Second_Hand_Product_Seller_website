@@ -143,7 +143,7 @@ export const OrderCard = memo(({
           </Text>
           {order.meetupDetails?.scheduledAt ? (
             <Text className="mt-1 text-[12px] text-slate-600 dark:text-slate-300">
-              {new Date(order.meetupDetails.scheduledAt).toLocaleString()}
+              🕒 {order.meetupDetails.scheduledAt}
             </Text>
           ) : null}
           {order.meetupDetails?.notes ? (
@@ -166,6 +166,16 @@ export const OrderCard = memo(({
       ) : null}
 
       <View className="mt-4 flex-row flex-wrap gap-2">
+        <ActionBtn
+          label={isBuyer ? "Message Seller" : "Message Buyer"}
+          color="bg-primary-50 dark:bg-primary-900/30"
+          onPress={() => {
+            const otherUserId = isBuyer ? order.seller : order.user;
+            const id = typeof otherUserId === "object" && otherUserId ? (otherUserId as any)._id : otherUserId;
+            if (id) router.push(`/chat/${id}` as never);
+          }}
+        />
+
         {canCancel && (
           <ActionBtn
             label="Cancel"
