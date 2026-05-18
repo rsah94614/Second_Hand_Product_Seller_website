@@ -114,7 +114,7 @@ export default function CartScreen() {
 
   if (authLoading || !user) {
     return (
-      <Screen>
+      <Screen safeAreaBottom={false}>
         <Loading />
       </Screen>
     );
@@ -122,7 +122,7 @@ export default function CartScreen() {
 
   if (isLoading) {
     return (
-      <Screen>
+      <Screen safeAreaBottom={false}>
         <Loading />
       </Screen>
     );
@@ -130,7 +130,7 @@ export default function CartScreen() {
 
   if (isError) {
     return (
-      <Screen>
+      <Screen safeAreaBottom={false}>
         <EmptyState
           title="Could not load cart"
           message="Please try again and we will fetch your items."
@@ -167,7 +167,7 @@ export default function CartScreen() {
   };
 
   return (
-    <Screen>
+    <Screen safeAreaBottom={false}>
       <PageHeader title="My Cart" /* subtitle="Review your items before checkout" */ />
       {items.length === 0 ? (
         <EmptyState

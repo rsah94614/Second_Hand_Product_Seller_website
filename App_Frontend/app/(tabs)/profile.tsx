@@ -145,7 +145,7 @@ export default function ProfileScreen() {
 
   if (loading) {
     return (
-      <Screen>
+      <Screen safeAreaBottom={false}>
         <PageHeader title="My Profile" />
         <View className="flex-1 px-4 py-6">
           <View className="rounded-3xl bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800 mb-4 overflow-hidden">
@@ -171,7 +171,7 @@ export default function ProfileScreen() {
 
   if (!user) {
     return (
-      <Screen>
+      <Screen safeAreaBottom={false}>
         <View className="flex-1 justify-center px-6 py-12">
           <View className="w-20 h-20 rounded-full bg-primary-100 dark:bg-primary-900/60 items-center justify-center self-center mb-6">
             <Text className="text-3xl">👤</Text>
@@ -273,8 +273,8 @@ export default function ProfileScreen() {
   };
 
   return (
-    <Screen>
-      <PageHeader title="My Profile" subtitle={user?.email} />
+    <Screen safeAreaBottom={false}>
+      <PageHeader title="My Profile" />
       {user.role === 'admin' ? (
         <AdminProfileView {...commonProps} />
       ) : (

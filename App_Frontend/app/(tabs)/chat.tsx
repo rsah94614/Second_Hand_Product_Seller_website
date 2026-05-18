@@ -129,7 +129,7 @@ export default function MessagesScreen() {
 
   if (loading || authLoading || !user) {
     return (
-      <Screen className="bg-slate-50 dark:bg-slate-950">
+      <Screen className="bg-slate-50 dark:bg-slate-950" safeAreaBottom={false}>
         <PageHeader title="Messages" />
         <View className="bg-white dark:bg-slate-900 px-5 pt-2 pb-4 shadow-sm">
           <Skeleton className="w-full h-10 rounded-xl" />
@@ -162,7 +162,7 @@ export default function MessagesScreen() {
 
   if (loadError) {
     return (
-      <Screen>
+      <Screen safeAreaBottom={false}>
         <EmptyState
           title="Could not load messages"
           message="Check your connection and try again."
@@ -177,7 +177,7 @@ export default function MessagesScreen() {
   }
 
   return (
-    <Screen className="bg-slate-50 dark:bg-slate-950">
+    <Screen className="bg-slate-50 dark:bg-slate-950" safeAreaBottom={false}>
       <PageHeader title="Messages" />
 
       {/* Search Bar Section */}
