@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { History } from 'lucide-react';
+import { History, ShoppingBag, Tag, Info } from 'lucide-react';
+import { OrderFlowInfoModal } from '../components/OrderFlowInfoModal';
+
+
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import { Button } from '../../../components/ui/Button';
@@ -8,6 +11,7 @@ import { ErrorState } from '../../../components/ui/ErrorState';
 import { useOrderHistoryLogic } from '../hooks/useOrderHistoryLogic';
 import { OrderHistoryCard } from '../components/OrderHistoryCard';
 import { OrderEmptyState } from '../components/OrderEmptyState';
+import { ScheduleMeetupModal } from '../components/ScheduleMeetupModal';
 
 const OrderHistoryPage = () => {
   const {
@@ -17,18 +21,40 @@ const OrderHistoryPage = () => {
     isError,
     refetch,
     handleCancelOrder,
+    handleAcceptOrder,
     handleDeliverOrder,
     handleCompleteOrder,
     handleNoShow,
     handlePhotoUpload,
     handleDispute,
+    scheduleMeetupMutation,
     isMutating,
   } = useOrderHistoryLogic();
   const navigate = useNavigate();
 
+  const [activeTab, setActiveTab] = useState('buying');
+  const [scheduleOrderId, setScheduleOrderId] = useState(null);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+
+  const filteredOrders = useMemo(() => {
+    return orders.filter((o) => {
+      const buyerId = o.user?._id || o.user;
+      const sellerId = o.seller?._id || o.seller;
+      if (activeTab === 'buying') return buyerId === user?.id;
+      return sellerId === user?.id;
+    });
+  }, [orders, activeTab, user]);
+
   const handleReviewOrder = (order) => {
     const sellerId = order.seller?._id || order.seller;
     navigate(`/review/${sellerId}?orderId=${order._id}`);
+  };
+
+  const handleMessage = (order) => {
+    const buyerId = order.user?._id || order.user;
+    const sellerId = order.seller?._id || order.seller;
+    const otherUserId = buyerId === user?.id ? sellerId : buyerId;
+    navigate(`/chat/${otherUserId}`);
   };
 
   if (!user) {
@@ -82,12 +108,15 @@ const OrderHistoryPage = () => {
 
   const actions = {
     onCancel: handleCancelOrder,
+    onAccept: handleAcceptOrder,
+    onSchedule: setScheduleOrderId,
     onDeliver: handleDeliverOrder,
     onComplete: handleCompleteOrder,
     onNoShow: handleNoShow,
     onPhotoUpload: handlePhotoUpload,
     onDispute: handleDispute,
     onReview: handleReviewOrder,
+    onMessage: handleMessage,
     isMutating,
   };
 
@@ -96,21 +125,56 @@ const OrderHistoryPage = () => {
       <Header />
       <main className="py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-10">
+          <div className="mb-8">
             <h1 className="text-3xl font-black text-gray-900 flex items-center tracking-tight">
               <History className="w-8 h-8 mr-4 text-primary-600" />
-              Order History
+              My Orders
             </h1>
             <p className="text-gray-500 mt-2 text-lg">
               Manage your campus deals and track the fulfillment process in real-time.
             </p>
           </div>
 
-          {orders.length === 0 ? (
-            <OrderEmptyState />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <div className="flex bg-gray-100 p-1.5 rounded-2xl w-full sm:max-w-sm">
+              <button
+                onClick={() => setActiveTab('buying')}
+                className={`flex-1 py-2.5 px-4 rounded-xl font-bold text-sm flex items-center justify-center transition-all ${
+                  activeTab === 'buying'
+                    ? 'bg-white text-primary-600 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <ShoppingBag className="w-4 h-4 mr-2" />
+                Buying
+              </button>
+              <button
+                onClick={() => setActiveTab('selling')}
+                className={`flex-1 py-2.5 px-4 rounded-xl font-bold text-sm flex items-center justify-center transition-all ${
+                  activeTab === 'selling'
+                    ? 'bg-white text-primary-600 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <Tag className="w-4 h-4 mr-2" />
+                Selling
+              </button>
+            </div>
+            <Button 
+              variant="outline" 
+              className="gap-2 rounded-xl text-primary-600 border-primary-200 hover:bg-primary-50 bg-white shadow-sm font-semibold"
+              onClick={() => setIsInfoModalOpen(true)}
+            >
+              <Info className="w-4 h-4" />
+              How it works
+            </Button>
+          </div>
+
+          {filteredOrders.length === 0 ? (
+            <OrderEmptyState activeTab={activeTab} />
           ) : (
             <div className="space-y-8">
-              {orders.map((order) => (
+              {filteredOrders.map((order) => (
                 <OrderHistoryCard 
                   key={order._id} 
                   order={order} 
@@ -123,6 +187,24 @@ const OrderHistoryPage = () => {
         </div>
       </main>
       <Footer />
+
+      <ScheduleMeetupModal
+        isOpen={!!scheduleOrderId}
+        onClose={() => setScheduleOrderId(null)}
+        isMutating={scheduleMeetupMutation.isPending}
+        onSubmit={(data) => {
+          scheduleMeetupMutation.mutate(
+            { orderId: scheduleOrderId, ...data },
+            { onSuccess: () => setScheduleOrderId(null) }
+          );
+        }}
+      />
+
+      <OrderFlowInfoModal 
+        isOpen={isInfoModalOpen} 
+        onClose={() => setIsInfoModalOpen(false)} 
+        activeTab={activeTab} 
+      />
     </div>
   );
 };

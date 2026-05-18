@@ -58,7 +58,11 @@ export const useNotificationsLogic = () => {
 
   const handleOpenNotification = async (notification) => {
     if (!notification.isRead) {
-      await markOneMutation.mutateAsync(notification._id);
+      try {
+        await markOneMutation.mutateAsync(notification._id);
+      } catch (error) {
+        console.error('Failed to mark notification as read:', error);
+      }
     }
     if (notification.link) navigate(notification.link);
   };

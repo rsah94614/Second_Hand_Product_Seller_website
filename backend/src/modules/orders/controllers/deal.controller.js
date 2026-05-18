@@ -27,7 +27,7 @@ const createOrder = async (req, res) => {
     const duplicate = await Order.findOne({
       user: req.user._id,
       'items.product': productId,
-      status: { $in: ['requested', 'accepted', 'meetup_scheduled'] },
+      status: { $in: ['requested', 'accepted', 'meetup_scheduled', 'delivered'] },
     });
     if (duplicate) {
       return res.status(400).json({
@@ -143,7 +143,7 @@ const scheduleMeetup = async (req, res) => {
     order.status = 'meetup_scheduled';
     order.meetupDetails = {
       location,
-      scheduledAt: scheduledAt ? new Date(scheduledAt) : undefined,
+      scheduledAt: scheduledAt || '',
       notes: notes.trim(),
     };
     await order.save();
@@ -155,7 +155,7 @@ const scheduleMeetup = async (req, res) => {
       orderId: order._id,
       type: 'meetup_scheduled',
       title: 'Meetup scheduled 📍',
-      message: `Meetup at "${location}"${scheduledAt ? ` on ${new Date(scheduledAt).toLocaleDateString('en-IN')}` : ''}.`,
+      message: `Meetup at "${location}"${scheduledAt ? ` at ${scheduledAt}` : ''}.`,
       link: '/orders',
       metadata: { location, scheduledAt },
     });

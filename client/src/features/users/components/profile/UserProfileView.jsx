@@ -41,11 +41,13 @@ const UserProfileView = ({
   avatarUploading,
   avatarInputRef,
   onPhotoClick,
-  showTradingInfo,
-  setShowTradingInfo,
   verificationMutation,
   setIsLogoutDialogOpen,
 }) => {
+  const [showTradingInfo, setShowTradingInfo] = React.useState(false);
+  const [showReputationInfo, setShowReputationInfo] = React.useState(false);
+  const [showVerificationInfo, setShowVerificationInfo] = React.useState(false);
+
   return (
     <div className="animate-fade-in">
       {/* Profile Hero */}
@@ -247,8 +249,29 @@ const UserProfileView = ({
           <CardContent className="p-5 md:p-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center"><Star className="w-5 h-5 text-amber-500" /></div>
-              <div><h2 className="text-xl font-black text-gray-900 tracking-tight">Reputation</h2><p className="text-gray-500 text-sm">Your seller performance metrics</p></div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-black text-gray-900 tracking-tight">Reputation</h2>
+                  <button type="button" onClick={() => setShowReputationInfo(!showReputationInfo)} className="text-indigo-400 hover:text-indigo-600 transition-colors">
+                    <Info className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <p className="text-gray-500 text-sm">Your seller performance metrics</p>
+              </div>
             </div>
+
+            {showReputationInfo && (
+              <div className="mb-6 p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 animate-fade-in">
+                <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-2">How to improve your score</h4>
+                <ul className="space-y-1.5 text-xs text-indigo-700/80">
+                  <li className="flex items-center gap-2">✓ Complete campus deals without cancelling</li>
+                  <li className="flex items-center gap-2">✓ Encourage buyers to leave positive star reviews</li>
+                  <li className="flex items-center gap-2">✓ Reply to chat messages within 2 hours</li>
+                  <li className="flex items-center gap-2">✓ Successfully finish more orders</li>
+                </ul>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
               {[
                 { label: 'Score', value: `${reputationData?.reputation?.score ?? 0}/100` },
@@ -270,12 +293,43 @@ const UserProfileView = ({
           <div className="flex items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center"><Award className="w-5 h-5 text-indigo-600" /></div>
-              <div><h2 className="text-xl font-black text-gray-900 tracking-tight">Seller Verification</h2><p className="text-gray-500 text-sm">Get a verified badge to build buyer trust</p></div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-black text-gray-900 tracking-tight">Seller Verification</h2>
+                  <button type="button" onClick={() => setShowVerificationInfo(!showVerificationInfo)} className="text-indigo-400 hover:text-indigo-600 transition-colors">
+                    <Info className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <p className="text-gray-500 text-sm">Get a verified badge to build buyer trust</p>
+              </div>
             </div>
             {verificationData?.status === 'verified' && <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">Verified ✓</Badge>}
             {verificationData?.status === 'pending' && <Badge className="bg-amber-100 text-amber-700 border-amber-200">Pending Review</Badge>}
             {verificationData?.status === 'rejected' && <Badge className="bg-red-100 text-red-700 border-red-200">Rejected</Badge>}
           </div>
+
+          {showVerificationInfo && (
+            <div className="mb-6 p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 animate-fade-in">
+              <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-3">Verification Criteria</h4>
+              <p className="text-xs text-indigo-700/80 mb-3 leading-relaxed">Verified sellers earn a badge that builds trust. To apply, you must meet these minimum requirements:</p>
+              <div className="space-y-2">
+                {[
+                  { label: "Email Verified", done: profile.isVerified },
+                  { label: "Min. 5 Completed Orders", done: (reputationData?.reputation?.totalOrders ?? 0) >= 5 },
+                  { label: "Min. 4.0 Average Rating", done: (reputationData?.reputation?.averageRating ?? 0) >= 4.0 },
+                  { label: "Account in Good Standing", done: !profile.isSuspended },
+                ].map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between px-3 py-2 rounded-xl bg-white border border-indigo-50">
+                    <span className="text-xs text-slate-700 font-medium">{item.label}</span>
+                    <span className={item.done ? "text-emerald-600 font-bold text-xs" : "text-rose-500 font-bold text-xs"}>
+                      {item.done ? "✓ Done" : "✗ Missing"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {(!verificationData?.status || verificationData?.status === 'none' || verificationData?.status === 'rejected') && (
 
             <div>
