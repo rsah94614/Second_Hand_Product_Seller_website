@@ -27,6 +27,7 @@ const SettingsPage = () => {
     { id: 'support', label: 'Support & Legal', icon: HelpCircle },
   ];
 
+  // eslint-disable-next-line no-unused-vars
   const SettingRow = ({ icon: Icon, title, subtitle, to, onClick, danger }) => {
     const Component = to ? Link : 'button';
     return (
