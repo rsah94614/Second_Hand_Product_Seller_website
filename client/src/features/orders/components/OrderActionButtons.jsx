@@ -1,23 +1,68 @@
 import React from 'react';
-import { X, CheckCircle, AlertTriangle, Camera, Flag } from 'lucide-react';
+import { X, CheckCircle, AlertTriangle, Camera, Flag, Star, MessageCircle, Calendar } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 
 export const OrderActionButtons = ({ 
   order, 
   user, 
+  onAccept,
   onCancel, 
+  onSchedule,
   onDeliver, 
   onComplete, 
   onNoShow, 
   onPhotoUpload, 
   onDispute, 
+  onReview,
+  onMessage,
   isMutating 
 }) => {
-  const isSeller = order.seller?._id === user?.id;
-  const isBuyer = order.user?._id === user?.id;
+  const isSeller = order.seller?._id === user?.id || order.seller === user?.id;
+  const isBuyer = order.user?._id === user?.id || order.user === user?.id;
+  const canReview = order.reviewUnlocked === true && isBuyer;
 
   return (
     <div className="mt-3 md:mt-0 flex flex-wrap items-center gap-2">
+      {/* Message button - available to both parties */}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => onMessage(order)}
+        disabled={isMutating}
+        className="text-primary-600 border-primary-200 hover:bg-primary-50"
+      >
+        <MessageCircle className="w-4 h-4 mr-1" />
+        {isBuyer ? 'Message Seller' : 'Message Buyer'}
+      </Button>
+
+      {/* Accept button - for seller when requested */}
+      {order.status === 'requested' && isSeller && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onAccept(order._id)}
+          disabled={isMutating}
+          className="bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
+        >
+          <CheckCircle className="w-4 h-4 mr-1" />
+          Accept Order
+        </Button>
+      )}
+
+      {/* Schedule Meetup button - for both when accepted */}
+      {order.status === 'accepted' && (isBuyer || isSeller) && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onSchedule(order._id)}
+          disabled={isMutating}
+          className="bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
+        >
+          <Calendar className="w-4 h-4 mr-1" />
+          Schedule Meetup
+        </Button>
+      )}
+
       {/* Cancel button - available to both in early stages */}
       {(order.status === 'requested' || order.status === 'accepted') && (
         <Button
@@ -108,6 +153,20 @@ export const OrderActionButtons = ({
         >
           <Flag className="w-4 h-4 mr-1" />
           Dispute
+        </Button>
+      )}
+
+      {/* Review Seller button */}
+      {canReview && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onReview(order)}
+          disabled={isMutating}
+          className="text-amber-600 border-amber-200 hover:bg-amber-50"
+        >
+          <Star className="w-4 h-4 mr-1 fill-amber-500 text-amber-500" />
+          Rate Seller
         </Button>
       )}
     </div>

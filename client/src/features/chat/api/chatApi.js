@@ -3,8 +3,8 @@ import { api } from '../../../lib/api/client';
 export const getConversations = () =>
   api.get('/api/chat/conversations/all').then((res) => res.data);
 
-export const getConversationMessages = (userId) =>
-  api.get(`/api/chat/${userId}`).then((res) => res.data);
+export const getConversationMessages = (userId, before, limit = 50) =>
+  api.get(`/api/chat/${userId}`, { params: { limit, ...(before && { before }) } }).then((res) => res.data);
 
 export const markConversationAsRead = (userId) =>
   api.patch(`/api/chat/mark-read/${userId}`).then((res) => res.data);

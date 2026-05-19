@@ -10,7 +10,14 @@ const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSent, setIsSent] = useState(false);
-  const { forgotPassword } = useAuth();
+  const { forgotPassword, user } = useAuth();
+  
+  React.useEffect(() => {
+    if (user?.email) {
+      setEmail(user.email);
+    }
+  }, [user]);
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -40,16 +47,20 @@ const ForgotPasswordPage = () => {
         {!isSent ? (
           <>
             <div>
-              <Link to="/login" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors mb-8">
-                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Login
+              <Link to={user ? "/settings" : "/login"} className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors mb-8">
+                <ArrowLeft className="w-4 h-4 mr-2" /> {user ? "Back to Settings" : "Back to Login"}
               </Link>
               <h2 className="text-3xl font-black text-gray-900 tracking-tight">
-                Reset Password
+                {user ? "Change Password" : "Forgot Password"}
               </h2>
               <p className="mt-3 text-sm text-gray-600 leading-relaxed">
-                Enter the email address associated with your account and we'll send you a link to reset your password.
+                {user 
+                  ? "To change your password, we'll send a secure reset link to your registered email address."
+                  : "Enter the email address associated with your account and we'll send you a link to reset your password."
+                }
               </p>
             </div>
+
 
             <form className="mt-10 space-y-6" onSubmit={handleSubmit}>
               <div className="space-y-5">
@@ -66,10 +77,12 @@ const ForgotPasswordPage = () => {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="pl-11 h-12 bg-white placeholder:text-gray-600"
+                      readOnly={!!user}
+                      className={`pl-11 h-12 bg-white placeholder:text-gray-600 ${user ? 'bg-gray-50 cursor-not-allowed opacity-80' : ''}`}
                       placeholder="Enter your email"
                     />
                     <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-600 w-5 h-5" />
+
                   </div>
                 </div>
               </div>
@@ -100,10 +113,13 @@ const ForgotPasswordPage = () => {
               </button>
             </p>
             <div className="mt-8">
-              <Link to="/login">
-                <Button variant="outline" className="w-full h-12 rounded-xl">Return to Login</Button>
+              <Link to={user ? "/settings" : "/login"}>
+                <Button variant="outline" className="w-full h-12 rounded-xl">
+                  {user ? "Return to Settings" : "Return to Login"}
+                </Button>
               </Link>
             </div>
+
           </div>
         )}
       </div>

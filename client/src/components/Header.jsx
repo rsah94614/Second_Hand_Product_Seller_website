@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { globalSearch, getSearchSuggestions } from '../features/search/api/searchApi';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
-import { Search, Plus, User, LogOut, Menu, Briefcase, ShoppingCart, History, MessageCircle, LayoutDashboard, ShieldCheck, Users, FolderTree, Package, Heart, Flag, Bell, CheckCheck, Clock, TrendingUp } from 'lucide-react';
+import { Search, Plus, User, LogOut, Menu, Briefcase, ShoppingCart, History, MessageCircle, LayoutDashboard, ShieldCheck, Users, FolderTree, Package, Heart, Flag, Bell, CheckCheck, Clock, TrendingUp, Settings } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Badge } from './ui/Badge';
@@ -124,7 +124,11 @@ const Header = () => {
 
   const openNotification = useCallback(async (notification) => {
     if (!notification.isRead) {
-      await markNotificationAsRead(notification._id);
+      try {
+        await markNotificationAsRead(notification._id);
+      } catch (error) {
+        console.error('Failed to mark notification as read:', error);
+      }
     }
 
     navigate(notification.link || '/notifications');
@@ -285,11 +289,13 @@ const Header = () => {
   const utilityLinks = isAdmin
     ? [
       { to: '/notifications', label: 'Notifications', icon: Bell },
+      { to: '/settings', label: 'Settings', icon: Settings },
       { to: '/profile', label: 'Profile', icon: User },
     ]
     : [
       { to: '/chat', label: 'Chat', icon: MessageCircle },
       { to: '/notifications', label: 'Notifications', icon: Bell },
+      { to: '/settings', label: 'Settings', icon: Settings },
       { to: '/profile', label: 'Profile', icon: User },
     ];
 

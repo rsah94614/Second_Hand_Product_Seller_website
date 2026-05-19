@@ -23,6 +23,7 @@ import { ProductCard, type ProductListItem } from "../../components/ProductCard"
 import { Loading } from "../../components/Loading";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { getProducts, getProductCategories } from "../../lib/api/products";
+import { Skeleton } from "../../components/ui/Skeleton";
 import { getSearchSuggestions } from "../../lib/api/search";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -131,7 +132,15 @@ export default function ProductsBrowseScreen() {
       getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     });
 
-  const products: ProductListItem[] = data?.pages.flatMap((p) => p.products || []) || [];
+  const products: ProductListItem[] = useMemo(() => {
+    const all = data?.pages.flatMap((p) => p.products || []) || [];
+    const seen = new Set();
+    return all.filter((p) => {
+      if (seen.has(p._id)) return false;
+      seen.add(p._id);
+      return true;
+    });
+  }, [data?.pages]);
 
   const onEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
@@ -140,7 +149,7 @@ export default function ProductsBrowseScreen() {
 
 
   return (
-    <Screen className="bg-slate-50 dark:bg-slate-950">
+    <Screen className="bg-slate-50 dark:bg-slate-950" safeAreaBottom={false}>
 
       {/* ── Page Header ── */}
       <PageHeader title="Browse Products" subtitle="Find exactly what you need" />
@@ -207,11 +216,11 @@ export default function ProductsBrowseScreen() {
           <View className="px-4 pb-4 animate-fade-in">
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
               <View className="flex-row gap-2 pr-4">
-                {categories.slice(0, 9).map((c: string) => {
+                {categories.slice(0, 9).map((c: string, i: number) => {
                   const isActive = c === "All" ? category === "" : category === c;
                   return (
                   <Pressable
-                    key={c}
+                    key={`${c}-${i}`}
                     onPress={() => setCategory(c === "All" ? "" : (isActive ? "" : c))}
                     className={`rounded-xl px-4 py-2 border ${isActive ? "bg-primary-600 border-primary-600 dark:bg-primary-500 dark:border-primary-500" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 active:bg-slate-50"}`}
                   >
@@ -283,7 +292,19 @@ export default function ProductsBrowseScreen() {
         )}
         ListEmptyComponent={
           isLoading ? (
-            <View className="py-20"><Loading /></View>
+            <View className="px-4 py-4 flex-row flex-wrap justify-between">
+              {[...Array(6)].map((_, i) => (
+                <View key={i} className="w-[48%] mb-4">
+                  <View className="h-64 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-2 overflow-hidden shadow-sm shadow-slate-200/50 dark:shadow-none">
+                    <Skeleton className="w-full h-40 rounded-2xl mb-3" />
+                    <View className="px-2">
+                      <Skeleton className="w-3/4 h-4 rounded-md mb-2" />
+                      <Skeleton className="w-1/2 h-5 rounded-md" />
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
           ) : (
             <View className="px-4 py-20 flex-1 items-center justify-center">
                <Text className="text-4xl mb-4">🏜️</Text>

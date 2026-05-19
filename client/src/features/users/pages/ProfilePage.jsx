@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Eye, Camera, Trash2, X } from 'lucide-react';
 import { PageShell } from '../../../components/layout/PageShell';
 import {
   AlertDialog,
@@ -13,12 +14,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../../../components/ui/AlertDialog';
-import { getUserProfile, getMyReputation, getMySellerVerification, requestSellerVerification, getMyDevices, removeDevice, trustDevice, uploadUserAvatar, getProfileCompletion } from '../api/userApi';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '../../../components/ui/Dialog';
+import { getUserProfile, getMyReputation, getMySellerVerification, requestSellerVerification, uploadUserAvatar, getProfileCompletion } from '../api/userApi';
 import { parseApiError, formatErrorForDisplay } from '../../../lib/errorHandler';
+import { Button } from '@/components/ui/Button';
 
 // Modular Profile Views
 import UserProfileView from '../components/profile/UserProfileView';
 import AdminProfileView from '../components/profile/AdminProfileView';
+import ProfileSkeleton from '../components/profile/ProfileSkeleton';
 
 const ProfilePage = () => {
   const { user: authUser, logout, updateProfile } = useAuth();
@@ -26,7 +35,9 @@ const ProfilePage = () => {
   const avatarInputRef = useRef(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
-  const [showTradingInfo, setShowTradingInfo] = useState(false);
+  const [isPhotoDialogOpen, setIsPhotoDialogOpen] = useState(false);
+  const [showFullPhoto, setShowFullPhoto] = useState(false);
+  const [showTradingInfo] = useState(false);
 
   const { data: profileData, isLoading, refetch } = useQuery({
     queryKey: ['profile', authUser?.id],
@@ -52,11 +63,7 @@ const ProfilePage = () => {
     enabled: !!authUser?.id && authUser?.role !== 'admin',
   });
 
-  const { data: devicesData } = useQuery({
-    queryKey: ['my-devices'],
-    queryFn: getMyDevices,
-    enabled: !!authUser?.id,
-  });
+
 
   const verificationMutation = useMutation({
     mutationFn: requestSellerVerification,
@@ -70,25 +77,7 @@ const ProfilePage = () => {
     },
   });
 
-  const removeDeviceMutation = useMutation({
-    mutationFn: removeDevice,
-    onSuccess: () => {
-      toast.success('Device removed');
-      queryClient.invalidateQueries({ queryKey: ['my-devices'] });
-    },
-    onError: (err) => {
-      const parsedError = parseApiError(err, 'Failed to remove device');
-      toast.error(formatErrorForDisplay(parsedError));
-    },
-  });
 
-  const trustDeviceMutation = useMutation({
-    mutationFn: trustDevice,
-    onSuccess: () => {
-      toast.success('Device marked as trusted');
-      queryClient.invalidateQueries({ queryKey: ['my-devices'] });
-    },
-  });
 
   const profile = profileData?.user || authUser;
   const trustSignals = profileData?.trustSignals;
@@ -114,7 +103,26 @@ const ProfilePage = () => {
       toast.error(formatErrorForDisplay(parsedError));
     } finally {
       setAvatarUploading(false);
+      setIsPhotoDialogOpen(false);
       if (avatarInputRef.current) avatarInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    try {
+      setAvatarUploading(true);
+      await updateProfile({ avatar: '' });
+      toast.success('Profile photo removed');
+      refetch();
+      if (authUser?.role !== 'admin') refetchCompletion();
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['profile-completion'] });
+    } catch (err) {
+      const parsedError = parseApiError(err, 'Failed to remove photo');
+      toast.error(formatErrorForDisplay(parsedError));
+    } finally {
+      setAvatarUploading(false);
+      setIsPhotoDialogOpen(false);
     }
   };
 
@@ -169,6 +177,8 @@ const ProfilePage = () => {
     }));
   };
 
+
+
   const handleSave = async () => {
     try {
       await updateProfile({ ...formData, campus: campusForm });
@@ -216,15 +226,17 @@ const ProfilePage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-      </div>
+      <PageShell maxWidth="max-w-6xl">
+        <div className="px-4 sm:px-6 py-6 md:py-12">
+          <ProfileSkeleton />
+        </div>
+      </PageShell>
     );
   }
 
   const commonProps = {
     profile,
-    devicesData,
+
     isEditing,
     setIsEditing,
     formData,
@@ -234,9 +246,8 @@ const ProfilePage = () => {
     handleAvatarChange,
     avatarUploading,
     avatarInputRef,
-    trustDeviceMutation,
-    removeDeviceMutation,
     setIsLogoutDialogOpen,
+
   };
 
   return (
@@ -251,11 +262,15 @@ const ProfilePage = () => {
             completionData={completionData}
             reputationData={reputationData}
             verificationData={verificationData}
+            handleCancel={handleCancel}
+            handleAvatarChange={handleAvatarChange}
+            avatarUploading={avatarUploading}
+            avatarInputRef={avatarInputRef}
+            onPhotoClick={() => setIsPhotoDialogOpen(true)}
+            showTradingInfo={showTradingInfo}
+            verificationMutation={verificationMutation}
             campusForm={campusForm}
             handleCampusFormChange={handleCampusFormChange}
-            showTradingInfo={showTradingInfo}
-            setShowTradingInfo={setShowTradingInfo}
-            verificationMutation={verificationMutation}
           />
         )}
       </div>
@@ -284,6 +299,78 @@ const ProfilePage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Photo Management Dialog */}
+      <Dialog open={isPhotoDialogOpen} onOpenChange={setIsPhotoDialogOpen}>
+        <DialogContent className="sm:max-w-md p-6 rounded-3xl z-50" aria-describedby={undefined}>
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Profile Photo</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 mt-4">
+            {profile.avatar && (
+              <Button 
+                variant="outline" 
+                className="w-full justify-start gap-3 h-12 rounded-2xl border-gray-200"
+                onClick={() => {
+                  setShowFullPhoto(true);
+                  setIsPhotoDialogOpen(false);
+                }}
+              >
+                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                  <Eye className="w-4 h-4" />
+                </div>
+                <span className="font-semibold">View Photo</span>
+              </Button>
+            )}
+            
+            <Button 
+              variant="outline" 
+              className="w-full justify-start gap-3 h-12 rounded-2xl border-gray-200"
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={avatarUploading}
+            >
+              <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
+                <Camera className="w-4 h-4" />
+              </div>
+              <span className="font-semibold">{profile.avatar ? 'Change Photo' : 'Upload Photo'}</span>
+            </Button>
+
+            {profile.avatar && (
+              <Button 
+                variant="outline" 
+                className="w-full justify-start gap-3 h-12 rounded-2xl border-red-100 text-red-600 hover:bg-red-50"
+                onClick={handleRemoveAvatar}
+                disabled={avatarUploading}
+              >
+                <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-red-600">
+                  <Trash2 className="w-4 h-4" />
+                </div>
+                <span className="font-semibold">Remove Photo</span>
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Full Photo Viewer */}
+      <Dialog open={showFullPhoto} onOpenChange={setShowFullPhoto}>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-black/90 border-0 rounded-4xl z-50" aria-describedby={undefined}>
+          <DialogTitle className="sr-only">Full Photo Viewer</DialogTitle>
+          <div className="relative aspect-square w-full max-h-[80vh] flex items-center justify-center p-4">
+            <img 
+              src={profile.avatar} 
+              alt={profile.name} 
+              className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl"
+            />
+            <button 
+              onClick={() => setShowFullPhoto(false)}
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md flex items-center justify-center text-white transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 };

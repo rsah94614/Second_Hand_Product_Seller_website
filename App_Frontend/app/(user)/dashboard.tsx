@@ -3,16 +3,16 @@ import { Link, router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, View, InteractionManager, ActivityIndicator } from "react-native";
 import { Image } from "expo-image";
-import { Screen } from "../components/ui/Screen";
-import { Loading } from "../components/Loading";
-import { useAuth } from "../context/AuthContext";
-import { getUserProducts, patchProduct, getSellerAnalyticsSummary } from "../lib/api/products";
-import { formatInr } from "../lib/format";
-import { getImageUri } from "../lib/product-image";
-import type { ProductImage } from "../lib/types";
+import { Screen } from "../../components/ui/Screen";
+import { Loading } from "../../components/Loading";
+import { useAuth } from "../../context/AuthContext";
+import { getUserProducts, patchProduct, getSellerAnalyticsSummary } from "../../lib/api/products";
+import { formatInr } from "../../lib/format";
+import { getImageUri } from "../../lib/product-image";
+import type { ProductImage } from "../../lib/types";
 import { Ionicons } from "@expo/vector-icons";
-import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
-import { useToast } from "../components/ui/AppToast";
+import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
+import { useToast } from "../../components/ui/AppToast";
 
 const openEditProduct = (productId: string) => {
   setTimeout(() => {

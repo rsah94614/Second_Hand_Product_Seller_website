@@ -3,15 +3,15 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, FlatList, Pressable, Text, View, InteractionManager, ActivityIndicator } from "react-native";
 import { Image } from "expo-image";
-import { Screen } from "../components/ui/Screen";
-import { Loading } from "../components/Loading";
-import { EmptyState } from "../components/EmptyState";
-import { useAuth } from "../context/AuthContext";
-import { getWishlist, toggleWishlist } from "../lib/api/users";
-import { formatInr } from "../lib/format";
-import { getImageUri } from "../lib/product-image";
-import type { ProductImage } from "../lib/types";
-import { parseApiError, formatErrorForDisplay } from "../lib/utils/errorHandler";
+import { Screen } from "../../components/ui/Screen";
+import { Loading } from "../../components/Loading";
+import { EmptyState } from "../../components/EmptyState";
+import { useAuth } from "../../context/AuthContext";
+import { getWishlist, toggleWishlist } from "../../lib/api/users";
+import { formatInr } from "../../lib/format";
+import { getImageUri } from "../../lib/product-image";
+import type { ProductImage } from "../../lib/types";
+import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
 
 export default function WishlistScreen() {
   const [ready, setReady] = useState(false);

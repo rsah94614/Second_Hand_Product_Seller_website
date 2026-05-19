@@ -10,9 +10,10 @@ type Props = {
   showDate: boolean;
   formattedTime: string;
   onLongPress: (message: Msg) => void;
+  onImagePress?: (uri: string) => void;
 };
 
-export const MessageItem = memo(({ message, isMine, showDate, formattedTime, onLongPress }: Props) => {
+export const MessageItem = memo(({ message, isMine, showDate, formattedTime, onLongPress, onImagePress }: Props) => {
   const getMessageDate = (msg: Msg) => {
     const time = msg.createdAt || msg.timestamp || new Date().toISOString();
     return new Date(time).toLocaleDateString([], {
@@ -46,14 +47,17 @@ export const MessageItem = memo(({ message, isMine, showDate, formattedTime, onL
             }`}
           >
             {message.image ? (
-              <View className="mb-2 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800">
+              <Pressable 
+                onPress={() => onImagePress?.(message.image!)}
+                className="mb-2 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 active:opacity-90"
+              >
                 <Image
                   source={{ uri: message.image }}
                   style={{ width: 220, aspectRatio: 3 / 4 }}
                   contentFit="cover"
                   transition={200}
                 />
-              </View>
+              </Pressable>
             ) : null}
 
             {message.content ? (

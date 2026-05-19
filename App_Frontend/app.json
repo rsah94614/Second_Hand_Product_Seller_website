@@ -4,7 +4,7 @@
     "slug": "campus-mitra",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/icon.jpg",
     "scheme": "appfrontend",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -12,11 +12,10 @@
       "supportsTablet": true
     },
     "android": {
-      "usesCleartextTraffic": false,
       "adaptiveIcon": {
         "backgroundColor": "#0f172a",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png"
+        "foregroundImage": "./assets/images/android-icon-foreground.jpg",
+        "backgroundImage": "./assets/images/android-icon-background.jpg"
       },
       "edgeToEdgeEnabled": true,
       "softwareKeyboardLayoutMode": "resize",
@@ -62,8 +61,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "c2c35317-26e0-4663-894d-ee5f8f9eda13"
+        "projectId": "fdbab212-8254-4e1f-822f-3871cb35055b"
       }
-    }
+    },
+    "owner": "rohitsah25"
   }
 }

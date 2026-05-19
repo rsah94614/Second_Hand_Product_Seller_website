@@ -46,7 +46,13 @@ const AdminProfileView: React.FC<AdminProfileViewProps> = ({
   router,
 }) => {
   return (
-    <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      className="flex-1"
+      contentContainerStyle={{ padding: 16, paddingBottom: 48 }}
+      keyboardDismissMode="none"
+      keyboardShouldPersistTaps="always"
+      showsVerticalScrollIndicator={false}
+    >
       {/* ── Admin Hero Card ── */}
       <View className="overflow-hidden rounded-3xl bg-slate-900 shadow-xl mb-6">
         <View className="bg-rose-600 dark:bg-rose-900 px-5 pt-8 pb-16 items-center">
@@ -153,10 +159,8 @@ const AdminProfileView: React.FC<AdminProfileViewProps> = ({
           <View className="mt-8 mb-4">
              <Button 
                title="Sign Out" 
-               variant="outline" 
+               variant="danger" 
                onPress={logout}
-               className="border-rose-100 dark:border-rose-900/30"
-               textClassName="text-rose-600"
              />
              <Text className="text-[10px] text-slate-400 dark:text-slate-500 text-center mt-3 uppercase tracking-widest font-outfit-sb">Logged in as Administrator</Text>
           </View>

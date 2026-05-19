@@ -1,12 +1,12 @@
 import React from 'react';
-import { 
-  User, Mail, MapPin, Edit, Save, X, ShieldCheck, LogOut, 
-  GraduationCap, Building2, CheckCircle2, BadgeCheck, 
-  AlertCircle, Star, Award, Smartphone, Trash2, Shield, Camera, Loader2, Info 
+import {
+  User, Mail, MapPin, Edit, Save, X, ShieldCheck, LogOut,
+  GraduationCap, Building2, CheckCircle2, BadgeCheck,
+  AlertCircle, Star, Award, Shield, Camera, Loader2, Info
 } from 'lucide-react';
 import { Badge } from '../../../../components/ui/Badge';
 import { Button } from '../../../../components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/Card';
+import { Card, CardContent } from '../../../../components/ui/Card';
 import { Input } from '../../../../components/ui/Input';
 import { Avatar } from '../../../../components/ui/Avatar';
 
@@ -28,8 +28,8 @@ const UserProfileView = ({
   completionData,
   reputationData,
   verificationData,
-  devicesData,
   isEditing,
+
   setIsEditing,
   formData,
   campusForm,
@@ -40,13 +40,14 @@ const UserProfileView = ({
   handleAvatarChange,
   avatarUploading,
   avatarInputRef,
-  showTradingInfo,
-  setShowTradingInfo,
+  onPhotoClick,
   verificationMutation,
-  trustDeviceMutation,
-  removeDeviceMutation,
   setIsLogoutDialogOpen,
 }) => {
+  const [showTradingInfo, setShowTradingInfo] = React.useState(false);
+  const [showReputationInfo, setShowReputationInfo] = React.useState(false);
+  const [showVerificationInfo, setShowVerificationInfo] = React.useState(false);
+
   return (
     <div className="animate-fade-in">
       {/* Profile Hero */}
@@ -63,7 +64,7 @@ const UserProfileView = ({
             />
             <button
               type="button"
-              onClick={() => avatarInputRef.current?.click()}
+              onClick={onPhotoClick}
               disabled={avatarUploading}
               className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
             >
@@ -75,7 +76,7 @@ const UserProfileView = ({
             </div>
           </div>
           <div>
-            <div className="flex flex-wrap items-center gap-2 mb-2">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-2">
               <Badge className="text-xs font-bold px-3 py-1 border-0 bg-white/10 text-white/80 backdrop-blur-sm">
                 <ShieldCheck className="w-3 h-3 mr-1" />
                 User
@@ -95,7 +96,7 @@ const UserProfileView = ({
             <h1 className="text-3xl font-black text-white tracking-tight">{profile.name}</h1>
             <p className="text-primary-200/70 text-sm mt-0.5">{profile.email}</p>
             {profile.campus?.department && (
-              <p className="text-white/50 text-xs mt-1 flex items-center gap-1">
+              <p className="text-white/50 text-xs mt-1 flex items-center justify-center sm:justify-start gap-1">
                 <Building2 className="w-3 h-3" />
                 {profile.campus.department}
               </p>
@@ -189,7 +190,7 @@ const UserProfileView = ({
                   <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">{item.label}</label>
                   {isEditing ? (
                     item.type === 'select' ? (
-                      <select name={item.name} value={item.value} onChange={handleChange} className="w-full h-10 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary-500/20">
+                      <select name={item.name} value={item.value} onChange={handleChange} className="w-full h-10 rounded-xl border border-black bg-white px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary-500/20">
                         {item.options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                       </select>
                     ) : <Input type={item.type} name={item.name} value={item.value} onChange={handleChange} className="h-10" />
@@ -219,8 +220,8 @@ const UserProfileView = ({
               <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Department</label><Input name="department" value={campusForm.department} onChange={handleCampusFormChange} /></div>
               <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Course</label><Input name="course" value={campusForm.course} onChange={handleCampusFormChange} /></div>
               <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Semester</label><Input name="semester" value={campusForm.semester} onChange={handleCampusFormChange} /></div>
-              <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Year</label><select name="year" value={campusForm.year} onChange={handleCampusFormChange} className="w-full h-11 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary-500/20"><option value="">Select Year</option><option value="1st">1st Year</option><option value="2nd">2nd Year</option><option value="3rd">3rd Year</option><option value="4th">4th Year</option><option value="5th">5th Year</option><option value="Alumni">Alumni</option><option value="Faculty">Faculty</option></select></div>
-              <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Resident Type</label><select name="residentType" value={campusForm.residentType} onChange={handleCampusFormChange} className="w-full h-11 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary-500/20"><option value="">Select Type</option><option value="hosteler">Hosteler</option><option value="day_scholar">Day Scholar</option><option value="faculty">Faculty Quarter</option></select></div>
+              <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Year</label><select name="year" value={campusForm.year} onChange={handleCampusFormChange} className="w-full h-11 rounded-xl border border-black bg-white px-4 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary-500/20"><option value="">Select Year</option><option value="1st">1st Year</option><option value="2nd">2nd Year</option><option value="3rd">3rd Year</option><option value="4th">4th Year</option><option value="5th">5th Year</option><option value="Alumni">Alumni</option><option value="Faculty">Faculty</option></select></div>
+              <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Resident Type</label><select name="residentType" value={campusForm.residentType} onChange={handleCampusFormChange} className="w-full h-11 rounded-xl border border-black bg-white px-4 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary-500/20"><option value="">Select Type</option><option value="hosteler">Hosteler</option><option value="day_scholar">Day Scholar</option><option value="faculty">Faculty Quarter</option></select></div>
               <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Hostel Name</label><Input name="hostel" value={campusForm.hostel} onChange={handleCampusFormChange} /></div>
             </div>
           ) : (
@@ -248,15 +249,37 @@ const UserProfileView = ({
           <CardContent className="p-5 md:p-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center"><Star className="w-5 h-5 text-amber-500" /></div>
-              <div><h2 className="text-xl font-black text-gray-900 tracking-tight">Reputation</h2><p className="text-gray-500 text-sm">Your seller performance metrics</p></div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-black text-gray-900 tracking-tight">Reputation</h2>
+                  <button type="button" onClick={() => setShowReputationInfo(!showReputationInfo)} className="text-indigo-400 hover:text-indigo-600 transition-colors">
+                    <Info className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <p className="text-gray-500 text-sm">Your seller performance metrics</p>
+              </div>
             </div>
+
+            {showReputationInfo && (
+              <div className="mb-6 p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 animate-fade-in">
+                <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-2">How to improve your score</h4>
+                <ul className="space-y-1.5 text-xs text-indigo-700/80">
+                  <li className="flex items-center gap-2">✓ Complete campus deals without cancelling</li>
+                  <li className="flex items-center gap-2">✓ Encourage buyers to leave positive star reviews</li>
+                  <li className="flex items-center gap-2">✓ Reply to chat messages within 2 hours</li>
+                  <li className="flex items-center gap-2">✓ Successfully finish more orders</li>
+                </ul>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
               {[
-                { label: 'Score', value: `${reputationData.score}/100` },
-                { label: 'Completion Rate', value: `${reputationData.completionRate}%` },
-                { label: 'Avg Rating', value: `${reputationData.averageRating} ★` },
-                { label: 'Total Orders', value: reputationData.totalOrders },
+                { label: 'Score', value: `${reputationData?.reputation?.score ?? 0}/100` },
+                { label: 'Completion Rate', value: `${reputationData?.reputation?.completionRate ?? 0}%` },
+                { label: 'Avg Rating', value: `${reputationData?.reputation?.averageRating ?? 0} ★` },
+                { label: 'Total Orders', value: reputationData?.reputation?.totalOrders ?? 0 },
               ].map((m) => (
+
                 <div key={m.label} className="bg-gray-50 rounded-2xl p-4 text-center"><p className="text-2xl font-black text-gray-900">{m.value}</p><p className="text-xs text-gray-500 mt-1">{m.label}</p></div>
               ))}
             </div>
@@ -270,13 +293,45 @@ const UserProfileView = ({
           <div className="flex items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center"><Award className="w-5 h-5 text-indigo-600" /></div>
-              <div><h2 className="text-xl font-black text-gray-900 tracking-tight">Seller Verification</h2><p className="text-gray-500 text-sm">Get a verified badge to build buyer trust</p></div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-black text-gray-900 tracking-tight">Seller Verification</h2>
+                  <button type="button" onClick={() => setShowVerificationInfo(!showVerificationInfo)} className="text-indigo-400 hover:text-indigo-600 transition-colors">
+                    <Info className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <p className="text-gray-500 text-sm">Get a verified badge to build buyer trust</p>
+              </div>
             </div>
-            {verificationData?.sellerVerificationStatus === 'verified' && <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">Verified ✓</Badge>}
-            {verificationData?.sellerVerificationStatus === 'pending' && <Badge className="bg-amber-100 text-amber-700 border-amber-200">Pending Review</Badge>}
-            {verificationData?.sellerVerificationStatus === 'rejected' && <Badge className="bg-red-100 text-red-700 border-red-200">Rejected</Badge>}
+            {verificationData?.status === 'verified' && <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">Verified ✓</Badge>}
+            {verificationData?.status === 'pending' && <Badge className="bg-amber-100 text-amber-700 border-amber-200">Pending Review</Badge>}
+            {verificationData?.status === 'rejected' && <Badge className="bg-red-100 text-red-700 border-red-200">Rejected</Badge>}
           </div>
-          {(!verificationData?.sellerVerificationStatus || verificationData?.sellerVerificationStatus === 'none' || verificationData?.sellerVerificationStatus === 'rejected') && (
+
+          {showVerificationInfo && (
+            <div className="mb-6 p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 animate-fade-in">
+              <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-3">Verification Criteria</h4>
+              <p className="text-xs text-indigo-700/80 mb-3 leading-relaxed">Verified sellers earn a badge that builds trust. To apply, you must meet these minimum requirements:</p>
+              <div className="space-y-2">
+                {[
+                  { label: "Email Verified", done: profile.isVerified },
+                  { label: "Min. 5 Completed Orders", done: (reputationData?.reputation?.totalOrders ?? 0) >= 5 },
+                  { label: "Min. 4.0 Average Rating", done: (reputationData?.reputation?.averageRating ?? 0) >= 4.0 },
+                  { label: "Account in Good Standing", done: !profile.isSuspended },
+                ].map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between px-3 py-2 rounded-xl bg-white border border-indigo-50">
+                    <span className="text-xs text-slate-700 font-medium">{item.label}</span>
+                    <span className={item.done ? "text-emerald-600 font-bold text-xs" : "text-rose-500 font-bold text-xs"}>
+                      {item.done ? "✓ Done" : "✗ Missing"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(!verificationData?.status || verificationData?.status === 'none' || verificationData?.status === 'rejected') && (
+
             <div>
               <p className="text-sm text-gray-600 mb-4">Requirements: email verified, 5+ completed orders, 4.0+ rating, 80%+ completion rate.</p>
               <Button onClick={() => verificationMutation.mutate()} disabled={verificationMutation.isPending} className="rounded-full gap-2"><Shield className="w-4 h-4" /> Request Verification</Button>
@@ -285,34 +340,7 @@ const UserProfileView = ({
         </CardContent>
       </Card>
 
-      {/* Active Devices */}
-      {devicesData?.devices?.length > 0 && (
-        <Card className="rounded-4xl border border-gray-100 shadow-sm">
-          <CardContent className="p-5 md:p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center"><Smartphone className="w-5 h-5 text-gray-600" /></div>
-              <div><h2 className="text-xl font-black text-gray-900 tracking-tight">Active Devices</h2><p className="text-gray-500 text-sm">Devices currently logged into your account</p></div>
-            </div>
-            <div className="space-y-3">
-              {devicesData.devices.map((device) => (
-                <div key={device._id} className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-gray-50 border border-gray-100">
-                  <div className="flex items-center gap-3">
-                    <Smartphone className="w-4 h-4 text-gray-500" />
-                    <div>
-                      <p className="font-semibold text-sm text-gray-900">{device.deviceName}</p>
-                      <p className="text-xs text-gray-500">{device.browser} · {device.os}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {device.isTrusted ? <span className="text-xs text-emerald-600 font-semibold">Trusted</span> : <Button size="sm" variant="outline" onClick={() => trustDeviceMutation.mutate(device._id)} className="text-xs rounded-xl">Trust</Button>}
-                    <Button size="sm" variant="outline" onClick={() => removeDeviceMutation.mutate(device._id)} className="text-red-500 border-red-200 hover:bg-red-50 rounded-xl"><Trash2 className="w-3.5 h-3.5" /></Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+
     </div>
   );
 };

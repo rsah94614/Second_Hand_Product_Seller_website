@@ -1,5 +1,6 @@
 import React, { memo } from "react";
 import { View, Text, Pressable, ActivityIndicator, Alert } from "react-native";
+import { useRouter } from "expo-router";
 import { formatInr } from "../../lib/format";
 import type { OrderRow } from "../../lib/types";
 
@@ -26,6 +27,8 @@ const ActionBtn = memo(({ label, onPress, color, loading = false, disabled = fal
     </Pressable>
   );
 });
+
+ActionBtn.displayName = "ActionBtn";
 
 const statusTone = (s: string) => {
   switch (s) {
@@ -59,7 +62,7 @@ type OrderCardProps = {
   isNoShow?: boolean;
 };
 
-export const OrderCard = memo(({
+export const OrderCard = memo(({ 
   order,
   currentId,
   onAccept,
@@ -76,6 +79,7 @@ export const OrderCard = memo(({
   isCompleting,
   isNoShow,
 }: OrderCardProps) => {
+  const router = useRouter();
   const first = order.items?.[0];
   const buyerId = typeof order.user === 'object' && order.user ? (order.user as any)._id : order.user;
   const sellerId = typeof order.seller === 'object' && order.seller ? (order.seller as any)._id : order.seller;
@@ -91,6 +95,13 @@ export const OrderCard = memo(({
   const canNoShow = status === "meetup_scheduled" && (isBuyer || isSeller);
   const canDispute = ["meetup_scheduled", "delivered", "completed", "no_show"].includes(status) && (isBuyer || isSeller);
   const canConfirmPhoto = status === "completed" && (isBuyer || isSeller);
+  const canReview = order.reviewUnlocked === true && isBuyer;
+
+  const handleReview = () => {
+    const sellerId = typeof order.seller === "object" && order.seller ? (order.seller as any)._id : order.seller;
+    if (!sellerId) return;
+    router.push(`/review/${sellerId}?orderId=${order._id}` as never);
+  };
 
   const tone = statusTone(status);
 
@@ -132,7 +143,7 @@ export const OrderCard = memo(({
           </Text>
           {order.meetupDetails?.scheduledAt ? (
             <Text className="mt-1 text-[12px] text-slate-600 dark:text-slate-300">
-              {new Date(order.meetupDetails.scheduledAt).toLocaleString()}
+              🕒 {order.meetupDetails.scheduledAt}
             </Text>
           ) : null}
           {order.meetupDetails?.notes ? (
@@ -155,6 +166,16 @@ export const OrderCard = memo(({
       ) : null}
 
       <View className="mt-4 flex-row flex-wrap gap-2">
+        <ActionBtn
+          label={isBuyer ? "Message Seller" : "Message Buyer"}
+          color="bg-primary-50 dark:bg-primary-900/30"
+          onPress={() => {
+            const otherUserId = isBuyer ? order.seller : order.user;
+            const id = typeof otherUserId === "object" && otherUserId ? (otherUserId as any)._id : otherUserId;
+            if (id) router.push(`/chat/${id}` as never);
+          }}
+        />
+
         {canCancel && (
           <ActionBtn
             label="Cancel"
@@ -246,6 +267,16 @@ export const OrderCard = memo(({
             color="bg-indigo-50 dark:bg-indigo-900/30"
             onPress={() => onPhoto(order._id)}
           />
+        )}
+
+        {canReview && (
+          <Pressable
+            onPress={handleReview}
+            className="flex-row items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 active:bg-amber-100"
+          >
+            <Text className="text-[13px]">⭐</Text>
+            <Text className="text-[13px] font-outfit-sb text-amber-700 dark:text-amber-400">Rate Seller</Text>
+          </Pressable>
         )}
       </View>
     </View>

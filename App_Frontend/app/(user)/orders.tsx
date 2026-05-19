@@ -8,15 +8,17 @@ import {
   InteractionManager,
   Appearance,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { Screen } from "../components/ui/Screen";
-import { Loading } from "../components/Loading";
-import { EmptyState } from "../components/EmptyState";
-import { useAuth } from "../context/AuthContext";
-import { useOrders } from "../lib/hooks/useOrders";
-import { OrderCard } from "../components/orders/OrderCard";
-import { ScheduleModal } from "../components/orders/ScheduleModal";
-import { DisputeModal } from "../components/orders/DisputeModal";
+import { Screen } from "../../components/ui/Screen";
+import { Loading } from "../../components/Loading";
+import { EmptyState } from "../../components/EmptyState";
+import { useAuth } from "../../context/AuthContext";
+import { useOrders } from "../../lib/hooks/useOrders";
+import { OrderCard } from "../../components/orders/OrderCard";
+import { ScheduleModal } from "../../components/orders/ScheduleModal";
+import { DisputeModal } from "../../components/orders/DisputeModal";
+import { OrderFlowInfoModal } from "../../components/orders/OrderFlowInfoModal";
 
 export default function OrdersScreen() {
   const { user, loading: authLoading } = useAuth();
@@ -38,10 +40,11 @@ export default function OrdersScreen() {
   } = useOrders();
 
   const [activeTab, setActiveTab] = useState<"buying" | "selling">("buying");
-  
+
   // Modal states
   const [scheduleOrderId, setScheduleOrderId] = useState<string | null>(null);
   const [disputeOrderId, setDisputeOrderId] = useState<string | null>(null);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
   const filteredOrders = useMemo(() => {
     return orders.filter((o) => {
@@ -52,7 +55,7 @@ export default function OrdersScreen() {
     });
   }, [orders, activeTab, currentId]);
 
-  const handlePickPhoto = async (orderId: string) => {
+  const handlePickPhoto = useCallback(async (orderId: string) => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
@@ -68,10 +71,10 @@ export default function OrdersScreen() {
         name: `proof.${ext}`,
         type: type || "image/jpeg",
       } as any);
-      
+
       photoM.mutate({ orderId, formData });
     }
-  };
+  }, [photoM]);
 
   const handleTabChange = useCallback((tab: "buying" | "selling") => {
     InteractionManager.runAfterInteractions(() => {
@@ -121,69 +124,108 @@ export default function OrdersScreen() {
     );
   }
 
+  const isDark = Appearance.getColorScheme() === "dark";
+
   return (
     <Screen className="bg-slate-50 dark:bg-slate-950">
       <View className="px-5 pt-4 pb-2">
         <Text className="text-[28px] font-outfit-bl text-slate-900 dark:text-white mb-6">My Orders</Text>
 
-        <View className="flex-row bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl mb-4">
-          {(["buying", "selling"] as const).map((tab) => {
-            const isActive = activeTab === tab;
-            return (
-              <Pressable
-                key={tab}
-                onPress={() => handleTabChange(tab)}
-                style={{
-                  flex: 1,
-                  backgroundColor: isActive ? (Appearance.getColorScheme() === "dark" ? "#334155" : "#ffffff") : "transparent",
-                  borderRadius: 12,
-                  paddingVertical: 10,
-                  alignItems: "center",
-                  // Add subtle shadow for active tab
-                  ...(isActive ? {
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 2,
-                    elevation: 2,
-                  } : {}),
-                }}
-              >
-                <Text
+        {/* Tab bar + Info button row */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 }}>
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              backgroundColor: isDark ? "#1e293b" : "#f1f5f9",
+              padding: 6,
+              borderRadius: 16,
+            }}
+          >
+            {(["buying", "selling"] as const).map((tab) => {
+              const isActive = activeTab === tab;
+              return (
+                <Pressable
+                  key={tab}
+                  onPress={() => handleTabChange(tab)}
                   style={{
-                    fontSize: 14,
-                    fontFamily: "Outfit-SemiBold",
-                    textTransform: "capitalize",
-                    color: isActive ? (Appearance.getColorScheme() === "dark" ? "#cbd5e1" : "#4f46e5") : (Appearance.getColorScheme() === "dark" ? "#94a3b8" : "#64748b"),
+                    flex: 1,
+                    backgroundColor: isActive ? (isDark ? "#334155" : "#ffffff") : "transparent",
+                    borderRadius: 12,
+                    paddingVertical: 10,
+                    alignItems: "center",
+                    ...(isActive ? {
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 2,
+                      elevation: 2,
+                    } : {}),
                   }}
                 >
-                  {tab}
-                </Text>
-              </Pressable>
-            );
-          })}
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontFamily: "Outfit-SemiBold",
+                      textTransform: "capitalize",
+                      color: isActive ? (isDark ? "#c7d2fe" : "#4f46e5") : (isDark ? "#94a3b8" : "#64748b"),
+                    }}
+                  >
+                    {tab}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* Info Button */}
+          <Pressable
+            onPress={() => setIsInfoModalOpen(true)}
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 13,
+              backgroundColor: isDark ? "#1e293b" : "#eef2ff",
+              borderWidth: 1,
+              borderColor: isDark ? "#334155" : "#c7d2fe",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Ionicons
+              name="information-circle-outline"
+              size={22}
+              color={isDark ? "#818cf8" : "#4f46e5"}
+            />
+          </Pressable>
         </View>
       </View>
 
-        <FlatList
-          data={filteredOrders}
-          keyExtractor={(item) => item._id}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
-          showsVerticalScrollIndicator={false}
-          refreshing={isRefetching}
-          onRefresh={refetch}
-          ListEmptyComponent={
-            <EmptyState
-              title={activeTab === "buying" ? "No purchases yet" : "No sales yet"}
-              message={
-                activeTab === "buying"
-                  ? "When you buy something, your orders will appear here."
-                  : "When someone buys your items, those orders will appear here."
-              }
-            />
-          }
-          renderItem={renderOrder}
-        />
+      <FlatList
+        data={filteredOrders}
+        keyExtractor={(item) => item._id}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+        refreshing={isRefetching}
+        onRefresh={refetch}
+        ListEmptyComponent={
+          <EmptyState
+            title={activeTab === "buying" ? "No purchases yet" : "No incoming requests yet"}
+            message={
+              activeTab === "buying"
+                ? "You haven't placed any orders yet. Start browsing the campus marketplace!"
+                : "You don't have any active sales yet. List an item to start selling!"
+            }
+            actionLabel={activeTab === "buying" ? "Browse Products" : "Create Listing"}
+            onAction={() =>
+              activeTab === "buying"
+                ? router.push("/(tabs)/products" as never)
+                : router.push("/create-product" as never)
+            }
+          />
+        }
+        renderItem={renderOrder}
+      />
 
       <ScheduleModal
         visible={!!scheduleOrderId}
@@ -206,6 +248,12 @@ export default function OrdersScreen() {
             setDisputeOrderId(null);
           }
         }}
+      />
+
+      <OrderFlowInfoModal
+        visible={isInfoModalOpen}
+        onClose={() => setIsInfoModalOpen(false)}
+        activeTab={activeTab}
       />
     </Screen>
   );

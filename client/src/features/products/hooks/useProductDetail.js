@@ -67,13 +67,15 @@ export const useProductDetail = () => {
 
   // ── Mutations ────────────────────────────────────────────────────────────
   const addToCart = useMutation({
-    mutationFn: ({ productId, quantity }) =>
-      axios.post(`${API_BASE_URL}/api/cart`, { productId, quantity }),
+    mutationFn: ({ productId, quantity }) => {
+      if (isOwner) return Promise.reject(new Error('You cannot add your own listing to your cart'));
+      return axios.post(`${API_BASE_URL}/api/cart`, { productId, quantity });
+    },
     onSuccess: () => {
       toast.success('Added to cart');
       queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
-    onError: (err) => toast.error(err.response?.data?.message || 'Failed to add to cart'),
+    onError: (err) => toast.error(err.response?.data?.message || err.message || 'Failed to add to cart'),
   });
 
   const wishlistMutation = useMutation({

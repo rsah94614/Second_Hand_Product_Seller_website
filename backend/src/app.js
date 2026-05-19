@@ -20,7 +20,6 @@ const {
   registerPendingDelivery,
   handleDeliveryAck,
   handleReadAck,
-  getPendingDeliveriesForUser,
 } = require('./shared/utils/messageDelivery.utils');
 
 const parseAllowedOrigins = () => {
@@ -207,6 +206,9 @@ const createApp = () => {
       onlineUsers.set(userId, new Set());
     }
     onlineUsers.get(userId).add(socket.id);
+
+    // Typing indicator timers: { `${typerId}:${receiverId}` → timeout }
+    const typingTimers = new Map();
     
     // Issue 8: Cache presence partners once on connection to avoid DB spike on disconnect
     (async () => {
@@ -235,12 +237,41 @@ const createApp = () => {
     socket.on('typing_start', ({ receiverId } = {}) => {
       if (receiverId && typeof receiverId === 'string') {
         io.to(receiverId).emit('user_typing', { userId });
+        io.to(receiverId).emit('typing', { userId }); // alias for App_Frontend client
+
+        // Auto-clear after 6 seconds if typing_stop never arrives
+        const key = `${userId}:${receiverId}`;
+        if (typingTimers.has(key)) clearTimeout(typingTimers.get(key));
+        typingTimers.set(key, setTimeout(() => {
+          io.to(receiverId).emit('user_stop_typing', { userId });
+          typingTimers.delete(key);
+        }, 6000));
       }
     });
 
     socket.on('typing_stop', ({ receiverId } = {}) => {
       if (receiverId && typeof receiverId === 'string') {
         io.to(receiverId).emit('user_stop_typing', { userId });
+        const key = `${userId}:${receiverId}`;
+        if (typingTimers.has(key)) {
+          clearTimeout(typingTimers.get(key));
+          typingTimers.delete(key);
+        }
+      }
+    });
+
+    // Alias: App_Frontend emits 'typing' instead of 'typing_start'
+    socket.on('typing', ({ receiverId } = {}) => {
+      if (receiverId && typeof receiverId === 'string') {
+        io.to(receiverId).emit('user_typing', { userId });
+        io.to(receiverId).emit('typing', { userId }); // alias for App_Frontend client
+
+        const key = `${userId}:${receiverId}`;
+        if (typingTimers.has(key)) clearTimeout(typingTimers.get(key));
+        typingTimers.set(key, setTimeout(() => {
+          io.to(receiverId).emit('user_stop_typing', { userId });
+          typingTimers.delete(key);
+        }, 6000));
       }
     });
 
@@ -305,43 +336,43 @@ const createApp = () => {
           return;
         }
 
-        const hasExistingConversation = await Message.exists({
-          $or: [
-            { sender, receiver: validatedReceiver },
-            { sender: validatedReceiver, receiver: sender },
-          ],
-        });
-
-        if (!hasExistingConversation) {
-          const gating = canTradeOnCampus(senderUser || {});
-          if (!gating.canTrade) {
-            socket.emit('error', {
-              message: 'Please complete and verify your campus profile before starting a new conversation.',
-              code: 'PROFILE_INCOMPLETE',
-              missing: gating.missing,
-            });
-            if (typeof callback === 'function') {
-              callback({ success: false, error: 'Profile incomplete' });
-            }
-            return;
+        // Always check profile completion before sending any message
+        const gating = canTradeOnCampus(senderUser || {});
+        if (!gating.canTrade) {
+          socket.emit('error', {
+            message: 'Please complete and verify your campus profile before sending messages.',
+            code: 'PROFILE_INCOMPLETE',
+            missing: gating.missing,
+          });
+          if (typeof callback === 'function') {
+            callback({ success: false, error: 'Profile incomplete' });
           }
+          return;
         }
 
         if (senderAgeHours < 24) {
-          // Count distinct conversations started today
-          const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
-          const distinctReceivers = await Message.distinct('receiver', {
-            sender,
-            timestamp: { $gte: startOfDay },
+          const hasExistingConversation = await Message.exists({
+            $or: [
+              { sender, receiver: validatedReceiver },
+              { sender: validatedReceiver, receiver: sender },
+            ],
           });
-          if (!distinctReceivers.includes(validatedReceiver) && distinctReceivers.length >= 5) {
-            socket.emit('error', {
-              message: 'New accounts can start up to 5 conversations per day. Try again tomorrow.',
+          if (!hasExistingConversation) {
+            // Count distinct conversations started today
+            const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
+            const distinctReceivers = await Message.distinct('receiver', {
+              sender,
+              timestamp: { $gte: startOfDay },
             });
-            if (typeof callback === 'function') {
-              callback({ success: false, error: 'Daily limit reached' });
+            if (!distinctReceivers.includes(validatedReceiver) && distinctReceivers.length >= 5) {
+              socket.emit('error', {
+                message: 'New accounts can start up to 5 conversations per day. Try again tomorrow.',
+              });
+              if (typeof callback === 'function') {
+                callback({ success: false, error: 'Daily limit reached' });
+              }
+              return;
             }
-            return;
           }
         }
 
@@ -448,7 +479,7 @@ const createApp = () => {
 
         // Issue 1 Fix: Only mark as read after delivery is confirmed
         // Get pending deliveries for this user
-        const pendingDeliveries = getPendingDeliveriesForUser(userId);
+        // const pendingDeliveries = getPendingDeliveriesForUser(userId);
 
         // Update messages in database
         const result = await Message.updateMany(
@@ -471,16 +502,54 @@ const createApp = () => {
     });
 
     // Issue 1 & 4 Fix: Delivery acknowledgment handler
-    socket.on('message_delivered', ({ messageId }, callback) => {
+    socket.on('message_delivered', async ({ messageId }, callback) => {
       const result = handleDeliveryAck(messageId, userId);
+      if (result.success) {
+        try {
+          // Persist delivery status to MongoDB
+          await Message.findByIdAndUpdate(messageId, {
+            $set: { delivered: true, deliveredAt: new Date() },
+          });
+          // Notify sender that message was delivered
+          const msg = await Message.findById(messageId).select('sender');
+          if (msg) {
+            io.to(msg.sender.toString()).emit('message_status_update', {
+              messageId,
+              status: 'delivered',
+              deliveredAt: new Date(),
+            });
+          }
+        } catch (error) {
+          logger.error('Error persisting delivery ack:', { message: error.message });
+        }
+      }
       if (typeof callback === 'function') {
         callback(result);
       }
     });
 
     // Issue 1 & 4 Fix: Read acknowledgment handler
-    socket.on('message_read', ({ messageId }, callback) => {
+    socket.on('message_read', async ({ messageId }, callback) => {
       const result = handleReadAck(messageId, userId);
+      if (result.success) {
+        try {
+          // Persist read status to MongoDB
+          await Message.findByIdAndUpdate(messageId, {
+            $set: { read: true, readAt: new Date() },
+          });
+          // Notify sender that message was read
+          const msg = await Message.findById(messageId).select('sender');
+          if (msg) {
+            io.to(msg.sender.toString()).emit('message_status_update', {
+              messageId,
+              status: 'read',
+              readAt: new Date(),
+            });
+          }
+        } catch (error) {
+          logger.error('Error persisting read ack:', { message: error.message });
+        }
+      }
       if (typeof callback === 'function') {
         callback(result);
       }
@@ -500,6 +569,14 @@ const createApp = () => {
               }
             });
           }
+        }
+      }
+
+      // Clear all typing timers for this user on disconnect
+      for (const [key, timer] of typingTimers.entries()) {
+        if (key.startsWith(`${userId}:`)) {
+          clearTimeout(timer);
+          typingTimers.delete(key);
         }
       }
     });

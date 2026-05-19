@@ -51,7 +51,7 @@ export default function ResetPasswordScreen() {
               <Text className="text-3xl">🔒</Text>
            </View>
            <Text className="text-3xl font-outfit-bl text-slate-900 dark:text-white leading-tight">
-              Create New Password
+              Reset Password
            </Text>
            <Text className="mt-3 text-[15px] font-outfit text-slate-500 dark:text-slate-400">
              Your new password must be unique and at least 8 characters long.

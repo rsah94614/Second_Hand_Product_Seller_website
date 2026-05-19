@@ -30,7 +30,7 @@ const runVerifyTask6Simple = async (app) => {
 
   // Step 1: Create a message from Alice to Bob
   console.log('Step 1: Create a message from Alice to Bob');
-  const message = await Message.create({
+  await Message.create({
     sender: alice.user.id,
     receiver: bob.user.id,
     content: 'Hello Bob from Alice',

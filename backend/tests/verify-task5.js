@@ -119,7 +119,7 @@ const verifyTask5 = async () => {
     });
 
     const message = await receivedMessage;
-    const callbackResponse = await successCallback;
+    await successCallback;
     console.log('    ✓ Success callback works correctly');
 
     // Test 2b: Error callback (invalid receiver)

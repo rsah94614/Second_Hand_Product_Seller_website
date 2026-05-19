@@ -12,7 +12,20 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 validateEnvironment();
 
 const logger = require('./services/logger.service');
-const { server } = createApp();
+const { app, server, io } = createApp();
+
+// Expose io to HTTP route handlers via req.app.get('io')
+app.set('io', io);
+
+// Catch unhandled errors so the process doesn't silently die in production
+process.on('uncaughtException', (err) => {
+  logger.error('Uncaught Exception', { message: err.message, stack: err.stack });
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  logger.error('Unhandled Rejection', { reason: reason instanceof Error ? reason.message : reason });
+});
 
 const startServer = async () => {
   try {

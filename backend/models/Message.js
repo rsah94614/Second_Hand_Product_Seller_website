@@ -85,7 +85,7 @@ const messageSchema = new mongoose.Schema({
     index: true,
     sparse: true,         // only index documents that have this field set
   },
-});
+}, { timestamps: true }); // adds createdAt and updatedAt automatically
 
 // Compound index for fetching messages between two users, sorted by time
 messageSchema.index({ sender: 1, receiver: 1, timestamp: -1 });
@@ -94,5 +94,7 @@ messageSchema.index(
   { receiver: 1, read: 1 },
   { partialFilterExpression: { read: false } }
 );
+// Index for pagination and sorting by createdAt
+messageSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Message', messageSchema);

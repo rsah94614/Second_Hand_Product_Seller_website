@@ -43,6 +43,7 @@ const buildAuthUser = (user) => ({
   reviewCount: user.reviewCount || 0,
   wishlist: (user.wishlist || []).map((item) => item.toString()),
   wishlistCount: user.wishlist?.length || 0,
+  blocked: (user.blocked || []).map((b) => (b.userId || b).toString()),
 });
 
 const signAccessToken = (userId) => jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '15m' });

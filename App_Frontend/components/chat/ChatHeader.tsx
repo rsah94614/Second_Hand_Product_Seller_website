@@ -9,11 +9,13 @@ type Props = {
   isPinned: boolean;
   onTogglePin: () => void;
   onBlock: () => void;
+  onUnblock: () => void;
+  isBlocked: boolean;
   onReport: () => void;
   isDark: boolean;
 };
 
-export function ChatHeader({ partnerName, isPinned, onTogglePin, onBlock, onReport, isDark }: Props) {
+export function ChatHeader({ partnerName, isPinned, onTogglePin, onBlock, onUnblock, isBlocked, onReport, isDark }: Props) {
   const insets = useSafeAreaInsets();
   const iconColor = isDark ? "#fff" : "#1e293b";
 
@@ -27,7 +29,7 @@ export function ChatHeader({ partnerName, isPinned, onTogglePin, onBlock, onRepo
         text: "Report chat",
         onPress: onReport,
       },
-      {
+      !isBlocked ? {
         text: "Block user",
         style: "destructive",
         onPress: () => {
@@ -40,6 +42,9 @@ export function ChatHeader({ partnerName, isPinned, onTogglePin, onBlock, onRepo
             },
           ], { cancelable: true });
         },
+      } : {
+        text: "Unblock user",
+        onPress: onUnblock,
       },
       { text: "Cancel", style: "cancel" },
     ], { cancelable: true });
