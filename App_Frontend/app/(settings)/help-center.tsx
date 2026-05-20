@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, ScrollView } from "react-native";
+import { View, Text, ScrollView, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Screen } from "../../components/ui/Screen";
 import { Button } from "../../components/ui/Button";
@@ -57,7 +57,9 @@ export default function HelpCenterScreen() {
           </Text>
           <Button
             title="Contact Support"
-            onPress={() => {}}
+            onPress={() => {
+              Alert.alert("Coming Soon", "In-app support messaging is currently under development. Please email support@campusmitra.com for assistance in the meantime.");
+            }}
             className="w-full"
           />
         </View>

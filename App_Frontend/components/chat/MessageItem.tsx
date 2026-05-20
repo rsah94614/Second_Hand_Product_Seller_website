@@ -1,8 +1,12 @@
 import React, { memo } from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, Dimensions } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import type { Msg } from "../../lib/types";
+
+const SCREEN_WIDTH = Dimensions.get("window").width;
+// Image fills up to 72% of screen width so it stays within the 85% bubble cap
+const IMAGE_WIDTH = Math.min(260, SCREEN_WIDTH * 0.72);
 
 type Props = {
   message: Msg;
@@ -36,7 +40,8 @@ export const MessageItem = memo(({ message, isMine, showDate, formattedTime, onL
       )}
 
       <View className={`flex-row ${isMine ? "justify-end" : "justify-start"}`}>
-        <View className={`max-w-[85%] ${isMine ? "items-end" : "items-start"}`}>
+        {/* shrink + min-w-0 lets the flex child actually honour max-w-[85%] */}
+        <View style={{ maxWidth: "85%", flexShrink: 1, alignItems: isMine ? "flex-end" : "flex-start" }}>
           <Pressable
             onLongPress={() => onLongPress(message)}
             delayLongPress={200}
@@ -47,13 +52,14 @@ export const MessageItem = memo(({ message, isMine, showDate, formattedTime, onL
             }`}
           >
             {message.image ? (
-              <Pressable 
+              <Pressable
                 onPress={() => onImagePress?.(message.image!)}
-                className="mb-2 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 active:opacity-90"
+                style={{ marginBottom: 6, borderRadius: 12, overflow: "hidden" }}
+                className="bg-slate-100 dark:bg-slate-800 active:opacity-90"
               >
                 <Image
                   source={{ uri: message.image }}
-                  style={{ width: 220, aspectRatio: 3 / 4 }}
+                  style={{ width: IMAGE_WIDTH, aspectRatio: 4 / 3 }}
                   contentFit="cover"
                   transition={200}
                 />
@@ -62,15 +68,17 @@ export const MessageItem = memo(({ message, isMine, showDate, formattedTime, onL
 
             {message.content ? (
               <Text
-                className={`text-[16px] font-outfit leading-normal ${
+                selectable
+                className={`text-[15px] font-outfit leading-relaxed ${
                   isMine ? "text-white" : "text-slate-900 dark:text-white"
                 } ${message.isDeleted ? "italic opacity-50" : ""}`}
+                style={{ flexShrink: 1, flexWrap: "wrap" }}
               >
                 {message.isDeleted ? "This message was deleted" : message.content}
               </Text>
             ) : null}
 
-            <View className="flex-row items-center justify-end mt-1 gap-1">
+            <View className="flex-row flex-wrap items-center justify-end mt-1 gap-1">
               <Text
                 className={`text-[10px] font-outfit ${
                   isMine ? "text-primary-100/80" : "text-slate-400 dark:text-slate-500"

@@ -148,6 +148,7 @@ function ChatThreadContent({ params, user, isDark }: { params: any; user: any; i
     <Screen className="bg-slate-50 dark:bg-slate-950" safeAreaTop={false} safeAreaBottom={false}>
       <ChatHeader
         partnerName={partnerName}
+        partnerId={partnerId}
         isPinned={isPinned}
         onTogglePin={togglePin}
         onBlock={block}

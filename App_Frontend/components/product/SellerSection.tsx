@@ -34,37 +34,53 @@ export function SellerSection({ seller, currentUserId, canTrade }: Props) {
   };
 
   return (
-    <View className="flex-row items-center gap-3 mt-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-      <View className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900 items-center justify-center">
-        <Text className="text-lg font-outfit-sb text-primary-600 dark:text-primary-400">
-          {sellerName?.charAt(0).toUpperCase()}
-        </Text>
-      </View>
-      <View className="flex-1">
-        <Text className="text-[12px] font-outfit-m text-slate-500 uppercase tracking-widest">Sold By</Text>
-        <View className="flex-row items-center gap-1.5 flex-wrap">
-          <Text className="text-[16px] font-outfit-b text-slate-900 dark:text-white">{sellerName}</Text>
-          {sellerVerified && (
-            <View className="bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded-md">
-              <Text className="text-[10px] font-outfit-b text-emerald-600 dark:text-emerald-400">✓ Verified</Text>
-            </View>
-          )}
-        </View>
-        <View className="mt-1 flex-row items-center gap-1">
-          <Ionicons name="star" size={14} color="#fbbf24" />
-          <Text className="text-[13px] font-outfit-m text-slate-600 dark:text-slate-300">
-            {sellerReviewCount > 0
-              ? `${sellerAverageRating.toFixed(1)} (${sellerReviewCount} review${sellerReviewCount === 1 ? "" : "s"})`
-              : "No seller reviews yet"}
+    <View className="mt-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+      <View className="flex-row items-center gap-3">
+        <View className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900 items-center justify-center">
+          <Text className="text-lg font-outfit-sb text-primary-600 dark:text-primary-400">
+            {sellerName?.charAt(0).toUpperCase()}
           </Text>
         </View>
+        <View className="flex-1">
+          <Text className="text-[12px] font-outfit-m text-slate-500 uppercase tracking-widest">Sold By</Text>
+          <View className="flex-row items-center gap-1.5 flex-wrap">
+            <Text className="text-[16px] font-outfit-b text-slate-900 dark:text-white">{sellerName}</Text>
+            {sellerVerified && (
+              <View className="bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded-md">
+                <Text className="text-[10px] font-outfit-b text-emerald-600 dark:text-emerald-400">✓ Verified</Text>
+              </View>
+            )}
+          </View>
+          <View className="mt-1 flex-row items-center gap-1">
+            <Ionicons name="star" size={14} color="#fbbf24" />
+            <Text className="text-[13px] font-outfit-m text-slate-600 dark:text-slate-300">
+              {sellerReviewCount > 0
+                ? `${sellerAverageRating.toFixed(1)} (${sellerReviewCount} review${sellerReviewCount === 1 ? "" : "s"})`
+                : "No seller reviews yet"}
+            </Text>
+          </View>
+        </View>
+
+        {/* Chat button */}
+        {currentUserId && sellerId !== currentUserId && (
+          <Pressable
+            onPress={handleChat}
+            className="h-10 w-10 rounded-full bg-primary-50 dark:bg-primary-900/40 items-center justify-center active:scale-95"
+          >
+            <Ionicons name="chatbubbles" size={20} color="#6366f1" />
+          </Pressable>
+        )}
       </View>
+
+      {/* View Seller Profile button */}
       {currentUserId && sellerId !== currentUserId && (
         <Pressable
-          onPress={handleChat}
-          className="h-10 w-10 rounded-full bg-primary-50 dark:bg-primary-900/40 items-center justify-center active:scale-95"
+          onPress={() => router.push(`/user/${sellerId}` as never)}
+          className="flex-row items-center justify-center gap-2 mt-3 py-2.5 rounded-xl bg-primary-50 dark:bg-primary-900/30 border border-primary-100 dark:border-primary-800/40 active:bg-primary-100"
         >
-          <Ionicons name="chatbubbles" size={20} color="#6366f1" />
+          <Ionicons name="person-circle-outline" size={17} color="#6366f1" />
+          <Text className="text-[13px] font-outfit-b text-primary-600 dark:text-primary-400">View Seller Profile</Text>
+          <Ionicons name="chevron-forward" size={13} color="#6366f1" />
         </Pressable>
       )}
     </View>

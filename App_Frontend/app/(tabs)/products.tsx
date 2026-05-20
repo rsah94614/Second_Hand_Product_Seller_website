@@ -216,7 +216,7 @@ export default function ProductsBrowseScreen() {
           <View className="px-4 pb-4 animate-fade-in">
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
               <View className="flex-row gap-2 pr-4">
-                {categories.slice(0, 9).map((c: string, i: number) => {
+                {categories.map((c: string, i: number) => {
                   const isActive = c === "All" ? category === "" : category === c;
                   return (
                   <Pressable
@@ -264,6 +264,23 @@ export default function ProductsBrowseScreen() {
                 className="flex-1 flex-row items-center justify-center gap-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 px-3 py-2.5 active:bg-slate-200 dark:active:bg-slate-700 border border-slate-200 dark:border-slate-700"
               >
                 <Text className="text-[14px] font-outfit-sb text-slate-700 dark:text-slate-300">By {sortBy}</Text>
+              </Pressable>
+            </View>
+
+            <View className="mt-3">
+              <Pressable
+                onPress={() => {
+                  setSearch("");
+                  setCategory("");
+                  setMinPrice("");
+                  setMaxPrice("");
+                  setSortBy("createdAt");
+                  setSortOrder("desc");
+                }}
+                className="flex-row items-center justify-center gap-1.5 rounded-xl bg-red-50 dark:bg-red-900/20 px-3 py-3 active:bg-red-100 dark:active:bg-red-900/40 border border-red-200 dark:border-red-800/50"
+              >
+                <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                <Text className="text-[14px] font-outfit-sb text-red-600 dark:text-red-400">Clear All Filters</Text>
               </Pressable>
             </View>
           </View>

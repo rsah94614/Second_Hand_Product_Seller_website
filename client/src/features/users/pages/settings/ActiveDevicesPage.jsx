@@ -39,7 +39,7 @@ const ActiveDevicesPage = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50/50">
-        <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
+        <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
       </div>
     );
   }
@@ -49,14 +49,14 @@ const ActiveDevicesPage = () => {
       <Header />
       <div className="min-h-screen bg-gray-50/50 py-12 px-4">
         <div className="max-w-3xl mx-auto">
-          <Link to="/settings" className="inline-flex items-center gap-2 text-indigo-600 font-bold mb-6 hover:gap-3 transition-all">
+          <Link to="/settings" className="inline-flex items-center gap-2 text-gray-500 mb-6 hover:gap-3 transition-all">
             <ArrowLeft className="w-4 h-4" /> Back to Settings
           </Link>
 
           <div className="bg-white rounded-4xl border border-gray-100 shadow-xl p-8">
             <div className="flex items-center gap-4 mb-8">
-              <div className="p-3 bg-indigo-50 rounded-2xl">
-                <Smartphone className="w-8 h-8 text-indigo-600" />
+              <div className="p-3 bg-blue-50 rounded-2xl">
+                <Smartphone className="w-8 h-8 text-blue-600" />
               </div>
               <div>
                 <h1 className="text-2xl font-black text-gray-900">Active Devices</h1>
@@ -66,7 +66,7 @@ const ActiveDevicesPage = () => {
 
             <div className="space-y-4">
               {devicesData?.devices?.map((device) => (
-                <div key={device._id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl bg-gray-50 border border-gray-100 group hover:border-indigo-100 hover:bg-white transition-all duration-300">
+                <div key={device._id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl bg-gray-50 border border-gray-100 group hover:border-blue-100 hover:bg-white transition-all duration-300">
                   <div className="flex items-center gap-4">
                     <div className={`p-3 rounded-2xl ${device.isTrusted ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
                       <Smartphone className="w-6 h-6" />
@@ -107,11 +107,11 @@ const ActiveDevicesPage = () => {
               )}
             </div>
 
-            <div className="mt-8 rounded-3xl bg-indigo-50/50 p-6 border border-indigo-50 flex gap-4 items-start">
-              <ShieldCheck className="w-6 h-6 text-indigo-500 shrink-0 mt-0.5" />
+            <div className="mt-8 rounded-3xl bg-blue-50/50 p-6 border border-blue-50 flex gap-4 items-start">
+              <ShieldCheck className="w-6 h-6 text-blue-500 shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-bold text-indigo-900">Security Tip</p>
-                <p className="text-sm text-indigo-700/80 mt-1 leading-relaxed">
+                <p className="text-sm font-bold text-blue-900">Security Tip</p>
+                <p className="text-sm text-blue-700/80 mt-1 leading-relaxed">
                   Session logs are audited daily. Always sign out from shared or public devices. 
                   If you see a device you don't recognize, remove it immediately and consider changing your password.
                 </p>

@@ -52,7 +52,7 @@ const LegalPage = () => {
       <Header />
       <div className="min-h-screen bg-gray-50/50 py-12 px-4">
         <div className="max-w-3xl mx-auto">
-          <Link to="/settings" className="inline-flex items-center gap-2 text-indigo-600 font-bold mb-6 hover:gap-3 transition-all">
+          <Link to="/settings" className="inline-flex items-center gap-2 text-gray-500 mb-6 hover:gap-3 transition-all">
             <ArrowLeft className="w-4 h-4" /> Back to Settings
           </Link>
 
@@ -67,7 +67,7 @@ const LegalPage = () => {
               </div>
             </div>
 
-            <div className="prose prose-indigo max-w-none">
+            <div className="prose prose-blue max-w-none">
               {content.sections.map((section, i) => (
                 <div key={i} className="mb-10 last:mb-0">
                   <h2 className="text-xl font-black text-gray-900 mb-4">{section.h}</h2>

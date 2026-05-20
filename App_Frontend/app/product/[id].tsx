@@ -184,13 +184,18 @@ function ProductDetailContent() {
             {related.length > 0 && (
               <View className="mt-8 mb-4">
                 <Text className="mb-4 text-[18px] font-outfit-b text-slate-900 dark:text-white tracking-wide">You Might Also Like</Text>
-                <View className="flex-row flex-wrap gap-[10px]">
-                  {related.slice(0, 4).map((p: any) => (
-                    <View key={p._id} className="w-[48%]">
+                <ScrollView 
+                  horizontal 
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ paddingRight: 40, gap: 12 }}
+                  className="-mx-5 px-5 pb-2"
+                >
+                  {related.map((p: any) => (
+                    <View key={p._id} style={{ width: 160 }}>
                       <ProductCard product={p} />
                     </View>
                   ))}
-                </View>
+                </ScrollView>
               </View>
             )}
 

@@ -9,7 +9,6 @@ async function test() {
     console.log('Connected to DB');
     const User = require('../models/User');
     const Product = require('../models/Product');
-    const Order = require('../models/Order');
 
     const user = await User.findOne({ isActive: true });
     if (!user) return console.log('No user');

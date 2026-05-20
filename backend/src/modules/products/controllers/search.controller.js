@@ -9,11 +9,6 @@ const {
 
 const listProducts = async (req, res) => {
   try {
-    const now = new Date();
-    await Product.updateMany(
-      { expiresAt: { $lt: now }, isExpired: false, isActive: true },
-      { $set: { isExpired: true, isActive: false } }
-    );
 
     const result = await findProducts(req.query);
     return res.json(result);
@@ -24,9 +19,15 @@ const listProducts = async (req, res) => {
 
 const getProductsByUser = async (req, res) => {
   try {
+    const limit = parseInt(req.query.limit) || 20;
+    const page = parseInt(req.query.page) || 1;
+    const skip = (page - 1) * limit;
+
     const products = await Product.find({ seller: req.params.userId })
       .populate('seller', 'name location')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
     return res.json(products);
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -64,7 +65,10 @@ const getProduct = async (req, res) => {
         if (userId && product.viewedBy && !product.viewedBy.some((id) => id.toString() === userId)) {
           product.views += 1;
           product.viewedBy.push(userId);
-          await product.save();
+          await Product.updateOne(
+            { _id: product._id },
+            { $inc: { views: 1 }, $addToSet: { viewedBy: userId } }
+          );
         }
         if (userId) {
           await User.findByIdAndUpdate(userId, { $pull: { recentlyViewed: { product: product._id } } });

@@ -9,7 +9,9 @@ export default function ChatSidebar({
   onlineUsers,
   conversationSearch,
   setConversationSearch,
-  handleChatSelect
+  handleChatSelect,
+  searchResults = null,
+  handleMessageSearch
 }) {
   const filteredConversations = conversations.filter((c) => {
     const q = conversationSearch.toLowerCase();
@@ -28,16 +30,50 @@ export default function ChatSidebar({
           <input
             type="text"
             value={conversationSearch}
-            onChange={(e) => setConversationSearch(e.target.value)}
-            placeholder="Search messages..."
+            onChange={(e) => {
+              setConversationSearch(e.target.value);
+              if (handleMessageSearch) {
+                handleMessageSearch(e.target.value);
+              }
+            }}
+            placeholder="Search chats, users, or message content..."
             className="w-full pl-9 pr-8 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-primary-300 focus:bg-white transition-colors"
           />
           {conversationSearch && (
-            <button onClick={() => setConversationSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-gray-200">
+            <button
+              onClick={() => {
+                setConversationSearch('');
+                if (handleMessageSearch) {
+                  handleMessageSearch('');
+                }
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-gray-200"
+            >
               <X className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600" />
             </button>
           )}
         </div>
+
+        {/* Message search results from active chat */}
+        {searchResults !== null && conversationSearch.trim().length >= 2 && (
+          <div className="mt-2 max-h-36 overflow-y-auto bg-white border border-gray-150 rounded-xl shadow-md text-xs relative z-20">
+            <div className="px-3 py-1.5 bg-gray-50/50 border-b border-gray-100 font-semibold text-gray-500 flex justify-between items-center">
+              <span>Message Results</span>
+              {searchResults.length > 0 && <span className="text-[10px] text-gray-400 font-normal">{searchResults.length} found</span>}
+            </div>
+            {searchResults.length === 0 ? (
+              <p className="p-3 text-gray-400 text-center">No messages found in this chat</p>
+            ) : searchResults.map((m) => (
+              <div key={m._id} className="px-3 py-2 border-b border-gray-50 last:border-0 hover:bg-gray-50">
+                <div className="flex justify-between items-center mb-0.5">
+                  <span className="font-semibold text-gray-600">{m.sender?.name || (m.sender === currentChat?._id ? currentChat?.name : 'Me')}:</span>
+                  <span className="text-[9px] text-gray-400">{new Date(m.timestamp).toLocaleDateString()}</span>
+                </div>
+                <p className="text-gray-700 wrap-break-words">{m.content}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-0.5">

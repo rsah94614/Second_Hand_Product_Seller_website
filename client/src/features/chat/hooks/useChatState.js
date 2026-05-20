@@ -47,6 +47,12 @@ export const useChatState = (currentChat) => {
     } catch { setSearchResults([]); }
   };
 
+  useEffect(() => {
+    setConversationSearch('');
+    setMessageSearch('');
+    setSearchResults(null);
+  }, [currentChat]);
+
   const cancelEdit = () => {
     setEditingMessageId(null);
     setNewMessage('');
