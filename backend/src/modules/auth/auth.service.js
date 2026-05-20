@@ -46,8 +46,8 @@ const buildAuthUser = (user) => ({
   blocked: (user.blocked || []).map((b) => (b.userId || b).toString()),
 });
 
-const signAccessToken = (userId) => jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '15m' });
-const signRefreshToken = (userId) => jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
+const signAccessToken = (userId) => jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '60d' });
+const signRefreshToken = (userId) => jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '180d' });
 const hashOtpCode = (code) => crypto.createHash('sha256').update(String(code)).digest('hex');
 const generateOtpCode = () => String(Math.floor(100000 + Math.random() * 900000));
 
@@ -73,7 +73,7 @@ const getRefreshCookieOptions = () => {
     httpOnly: true,
     secure,
     sameSite,
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    maxAge: 180 * 24 * 60 * 60 * 1000,
   };
 };
 

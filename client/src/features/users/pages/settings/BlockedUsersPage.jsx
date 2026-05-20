@@ -48,7 +48,7 @@ const BlockedUsersPage = () => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mb-4" />
+        <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
         <p className="text-gray-500 font-medium">Loading blocked users...</p>
       </div>
     );
@@ -59,7 +59,7 @@ const BlockedUsersPage = () => {
       <Header />
       <div className="min-h-screen bg-gray-50/50 py-12 px-4">
         <div className="max-w-3xl mx-auto">
-          <Link to="/settings" className="inline-flex items-center gap-2 text-indigo-600 font-bold mb-6 hover:gap-3 transition-all">
+          <Link to="/settings" className="inline-flex items-center gap-2 text-gray-500 mb-6 hover:gap-3 transition-all">
             <ArrowLeft className="w-4 h-4" /> Back to Settings
           </Link>
 
@@ -83,12 +83,12 @@ const BlockedUsersPage = () => {
             ) : (
               <div className="space-y-4">
                 {blockedUsers.map((user) => (
-                  <div key={user._id} className="flex items-center justify-between p-4 bg-gray-50/80 rounded-2xl border border-gray-100 group hover:border-indigo-100 hover:bg-white transition-all duration-300">
+                  <div key={user._id} className="flex items-center justify-between p-4 bg-gray-50/80 rounded-2xl border border-gray-100 group hover:border-blue-100 hover:bg-white transition-all duration-300">
                     <div className="flex items-center gap-4">
                       {user.avatar ? (
                         <img src={user.avatar} alt={user.name} className="w-12 h-12 rounded-full object-cover shadow-sm" />
                       ) : (
-                        <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-sm shadow-indigo-100">
+                        <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-sm shadow-blue-100">
                           {user.name.charAt(0)}
                         </div>
                       )}

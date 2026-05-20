@@ -122,6 +122,7 @@ function InnerLayout() {
                   <Stack.Screen name="(user)/orders" options={{ title: "My Orders" }} />
                   <Stack.Screen name="chat/[userId]" options={{ headerShown: false }} />
                   <Stack.Screen name="review/[sellerId]" options={{ title: "Review" }} />
+                  <Stack.Screen name="user/[userId]" options={{ headerShown: false }} />
                 </Stack>
               </ToastProvider>
             </SocketProvider>

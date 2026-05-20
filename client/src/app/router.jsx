@@ -9,6 +9,7 @@ import VerifyEmailPage from '../features/auth/pages/VerifyEmailPage';
 import ProductListPage from '../features/products/pages/ProductListPage';
 import ProductDetailPage from '../features/products/pages/ProductDetailPage';
 import ProfilePage from '../features/users/pages/ProfilePage';
+import PublicProfilePage from '../features/users/pages/PublicProfilePage';
 import WishlistPage from '../features/users/pages/WishlistPage';
 import NotificationsPage from '../features/notifications/pages/NotificationsPage';
 import NotificationPreferencesPage from '../features/notifications/pages/NotificationPreferencesPage';
@@ -52,6 +53,7 @@ const AppRouter = () => (
     <Route path="/reset-password" element={<ResetPasswordPage />} />
     <Route path="/verify-email" element={<VerifyEmailPage />} />
     <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+    <Route path="/users/:id" element={<PublicProfilePage />} />
     <Route path="/wishlist" element={<ProtectedRoute><WishlistPage /></ProtectedRoute>} />
     <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
     <Route path="/notifications/preferences" element={<ProtectedRoute><NotificationPreferencesPage /></ProtectedRoute>} />
