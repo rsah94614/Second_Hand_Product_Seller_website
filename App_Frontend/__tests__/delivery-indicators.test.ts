@@ -5,6 +5,18 @@
  * Validates: Requirements 1.1 - Message Delivery Confirmation System
  */
 
+interface TestMessage {
+  _id: string;
+  content: string;
+  sender: string;
+  receiver: string;
+  delivered?: boolean | null;
+  deliveredAt?: string;
+  read?: boolean | null;
+  readAt?: string;
+  createdAt?: string;
+}
+
 describe('Message Delivery Indicators', () => {
   /**
    * Test: Message shows "sent" status when first sent
@@ -13,7 +25,7 @@ describe('Message Delivery Indicators', () => {
    * but before the receiver acknowledges delivery.
    */
   test('should display "sent" status for messages pending delivery', () => {
-    const message = {
+    const message: TestMessage = {
       _id: 'msg-1',
       content: 'Hello',
       sender: 'user-1',
@@ -39,7 +51,7 @@ describe('Message Delivery Indicators', () => {
    * acknowledges receipt but before reading.
    */
   test('should display "delivered" status for messages that have been delivered but not read', () => {
-    const message = {
+    const message: TestMessage = {
       _id: 'msg-2',
       content: 'Hello',
       sender: 'user-1',
@@ -66,7 +78,7 @@ describe('Message Delivery Indicators', () => {
    * has read the message.
    */
   test('should display "read" status for messages that have been read', () => {
-    const message = {
+    const message: TestMessage = {
       _id: 'msg-3',
       content: 'Hello',
       sender: 'user-1',
@@ -94,7 +106,7 @@ describe('Message Delivery Indicators', () => {
    * receiver acknowledges and reads it.
    */
   test('should transition through all delivery states correctly', () => {
-    let message = {
+    let message: TestMessage = {
       _id: 'msg-4',
       content: 'Hello',
       sender: 'user-1',
@@ -152,7 +164,7 @@ describe('Message Delivery Indicators', () => {
    * status immediately.
    */
   test('should update indicators in real-time when status changes', () => {
-    const messages = [
+    const messages: TestMessage[] = [
       {
         _id: 'msg-5',
         content: 'Hello',
@@ -187,7 +199,7 @@ describe('Message Delivery Indicators', () => {
   test('should only show delivery indicators for sent messages', () => {
     const currentUserId = 'user-1';
 
-    const sentMessage = {
+    const sentMessage: TestMessage = {
       _id: 'msg-6',
       content: 'Hello',
       sender: currentUserId,
@@ -196,7 +208,7 @@ describe('Message Delivery Indicators', () => {
       read: false,
     };
 
-    const receivedMessage = {
+    const receivedMessage: TestMessage = {
       _id: 'msg-7',
       content: 'Hi there',
       sender: 'user-2',
@@ -221,7 +233,7 @@ describe('Message Delivery Indicators', () => {
    * restored when the app is restarted.
    */
   test('should persist delivery status across sessions', () => {
-    const message = {
+    const message: TestMessage = {
       _id: 'msg-8',
       content: 'Hello',
       sender: 'user-1',
@@ -253,7 +265,7 @@ describe('Message Delivery Indicators', () => {
    */
   test('should handle edge cases gracefully', () => {
     // Message with missing fields
-    const incompleteMessage = {
+    const incompleteMessage: TestMessage = {
       _id: 'msg-9',
       content: 'Hello',
       sender: 'user-1',
@@ -265,7 +277,7 @@ describe('Message Delivery Indicators', () => {
     expect(status).toBe('sent');
 
     // Message with null values
-    const nullMessage = {
+    const nullMessage: TestMessage = {
       _id: 'msg-10',
       content: 'Hello',
       sender: 'user-1',

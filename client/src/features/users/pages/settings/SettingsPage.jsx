@@ -27,6 +27,7 @@ const SettingsPage = () => {
     { id: 'support', label: 'Support & Legal', icon: HelpCircle },
   ];
 
+  // eslint-disable-next-line no-unused-vars
   const SettingRow = ({ icon: Icon, title, subtitle, to, onClick, danger }) => {
     const Component = to ? Link : 'button';
     return (
@@ -36,7 +37,7 @@ const SettingsPage = () => {
         className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors group border-b border-gray-100 last:border-0"
       >
         <div className="flex items-center gap-4">
-          <div className={`p-2 rounded-xl ${danger ? 'bg-red-50 text-red-500' : 'bg-indigo-50 text-indigo-600'}`}>
+          <div className={`p-2 rounded-xl ${danger ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-600'}`}>
             <Icon className="w-5 h-5" />
           </div>
           <div className="text-left">
@@ -149,7 +150,7 @@ const SettingsPage = () => {
                   onClick={() => setActiveTab(item.id)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl lg:rounded-2xl transition-all duration-200 whitespace-nowrap shrink-0 ${
                     activeTab === item.id 
-                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' 
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
                       : 'text-gray-600 hover:bg-gray-50'
                   }`}
                 >
@@ -160,11 +161,11 @@ const SettingsPage = () => {
             </div>
 
             {/* Profile Brief */}
-            <div className="hidden lg:block mt-6 bg-indigo-600 rounded-3xl p-6 text-white shadow-xl shadow-indigo-100 relative overflow-hidden group">
+            <div className="hidden lg:block mt-6 bg-blue-600 rounded-3xl p-6 text-white shadow-xl shadow-blue-100 relative overflow-hidden group">
               <div className="relative z-10">
-                <p className="text-indigo-100 text-xs font-bold uppercase tracking-wider mb-1">Signed in as</p>
+                <p className="text-blue-100 text-xs font-bold uppercase tracking-wider mb-1">Signed in as</p>
                 <p className="text-lg font-bold truncate">{user?.name}</p>
-                <p className="text-indigo-200 text-sm truncate">{user?.email}</p>
+                <p className="text-blue-200 text-sm truncate">{user?.email}</p>
                 <Link 
                   to="/profile" 
                   className="mt-4 inline-flex items-center gap-2 text-sm font-bold bg-white/20 hover:bg-white/30 px-4 py-2 rounded-xl transition-colors backdrop-blur-md"
@@ -181,12 +182,12 @@ const SettingsPage = () => {
             {renderContent()}
 
             {/* Profile Brief - Mobile (Bottom) */}
-            <div className="lg:hidden mt-8 bg-indigo-600 rounded-2xl p-5 text-white shadow-xl shadow-indigo-100 relative overflow-hidden">
+            <div className="lg:hidden mt-8 bg-blue-600 rounded-2xl p-5 text-white shadow-xl shadow-blue-100 relative overflow-hidden">
               <div className="relative z-10 flex items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
-                  <p className="text-indigo-100 text-[10px] font-bold uppercase tracking-wider mb-0.5">Signed in as</p>
+                  <p className="text-blue-100 text-[10px] font-bold uppercase tracking-wider mb-0.5">Signed in as</p>
                   <p className="text-base font-bold truncate">{user?.name}</p>
-                  <p className="text-indigo-200 text-xs truncate">{user?.email}</p>
+                  <p className="text-blue-200 text-xs truncate">{user?.email}</p>
                 </div>
                 <Link 
                   to="/profile" 

@@ -122,7 +122,7 @@ const notifyWishlistUsers = async ({
 };
 
 const findProducts = async ({ cursor, limit = 12, category, minPrice, maxPrice, search, sortBy = 'createdAt', sortOrder = 'desc' }) => {
-  const baseQuery = { isActive: true, isSold: false };
+  const baseQuery = { isActive: true, isSold: false, expiresAt: { $gte: new Date() } };
 
   if (category) baseQuery.category = category;
   const hasMinPrice = minPrice !== undefined && minPrice !== null && minPrice !== '';
@@ -134,6 +134,12 @@ const findProducts = async ({ cursor, limit = 12, category, minPrice, maxPrice, 
   }
 
   const numericLimit = Number(limit);
+  
+  // Parse cursor as page (default 1). Fallback gracefully if client sends an old ObjectId cursor.
+  const isOldCursor = cursor && isValidObjectId(cursor);
+  const page = (cursor && !isOldCursor) ? Number(cursor) : 1;
+  const skipCount = (page - 1) * numericLimit;
+
   const isSearching = search && search.trim().length > 0;
   const isDefaultSort = !sortBy || sortBy === 'createdAt';
 
@@ -142,45 +148,30 @@ const findProducts = async ({ cursor, limit = 12, category, minPrice, maxPrice, 
 
   if (isSearching) {
     // ── Smart search path ──────────────────────────────────────────────
-    // Fetch a larger pool from DB using rich clause (synonyms + typo regex),
-    // then re-rank in JS using our custom scorer.
     const searchClause = buildSearchClause(search);
     const searchQuery = { ...baseQuery, ...searchClause };
 
-    // Fetch up to 4× the requested limit so re-ranking has enough candidates.
-    const poolSize = Math.min(numericLimit * 4, 200);
-
-    // Sort: if user picked a non-default sort, respect it. Otherwise, use createdAt for the pool.
     const poolSort = isDefaultSort
       ? { createdAt: -1 }
       : { [allowedSortFields.has(sortBy) ? sortBy : 'createdAt']: sortOrder === 'desc' ? -1 : 1 };
 
-    // Cursor pagination only applies when NOT re-ranking by relevance
-    if (cursor && !isDefaultSort) {
-      if (!isValidObjectId(cursor)) throw new Error('Invalid cursor');
-      searchQuery._id = { $lt: cursor };
-    }
-
+    // Fetch up to 200 items for re-ranking pool
     const pool = await Product.find(searchQuery)
       .populate('seller', 'name location')
       .sort(poolSort)
-      .limit(poolSize)
+      .limit(200)
       .lean();
 
     total = await Product.countDocuments(searchQuery);
+    if (total > 200) total = 200; // Cap total since we only paginate up to 200
 
     // Re-rank by relevance if default sort, otherwise keep DB sort
-    products = isDefaultSort ? rankByRelevance(pool, search) : pool;
+    const ranked = isDefaultSort ? rankByRelevance(pool, search) : pool;
 
-    // Trim to requested limit
-    products = products.slice(0, numericLimit);
+    // Paginate in memory
+    products = ranked.slice(skipCount, skipCount + numericLimit);
   } else {
     // ── Standard browse path (no search term) ─────────────────────────
-    if (cursor) {
-      if (!isValidObjectId(cursor)) throw new Error('Invalid cursor');
-      baseQuery._id = { $lt: cursor };
-    }
-
     const safeSortBy = allowedSortFields.has(sortBy) ? sortBy : 'createdAt';
     const sortOptions = { [safeSortBy]: sortOrder === 'desc' ? -1 : 1 };
     if (safeSortBy !== '_id') sortOptions['_id'] = sortOrder === 'desc' ? -1 : 1;
@@ -188,14 +179,13 @@ const findProducts = async ({ cursor, limit = 12, category, minPrice, maxPrice, 
     products = await Product.find(baseQuery)
       .populate('seller', 'name location')
       .sort(sortOptions)
+      .skip(skipCount)
       .limit(numericLimit);
 
     total = await Product.countDocuments(baseQuery);
   }
 
-  const nextCursor = products.length === numericLimit
-    ? (products[products.length - 1]._id || products[products.length - 1]['_id']).toString()
-    : null;
+  const nextCursor = products.length === numericLimit ? (page + 1).toString() : null;
 
   return { products, nextCursor, total };
 };
@@ -216,9 +206,9 @@ const findRelatedProducts = async (productId) => {
   })
     .populate('seller', 'name location')
     .sort({ averageRating: -1, views: -1, createdAt: -1 })
-    .limit(8);
+    .limit(15);
 
-  if (relatedProducts.length < 8) {
+  if (relatedProducts.length < 15) {
     const seenIds = relatedProducts.map((item) => item._id);
     seenIds.push(product._id);
 
@@ -230,7 +220,7 @@ const findRelatedProducts = async (productId) => {
     })
       .populate('seller', 'name location')
       .sort({ views: -1, averageRating: -1, createdAt: -1 })
-      .limit(8 - relatedProducts.length);
+      .limit(15 - relatedProducts.length);
 
     relatedProducts = [...relatedProducts, ...fallbackProducts];
   }

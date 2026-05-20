@@ -103,6 +103,7 @@ export const OrderFlowInfoModal = ({ isOpen, onClose, activeTab }) => {
   );
 };
 
+// eslint-disable-next-line no-unused-vars
 const Step = ({ icon: Icon, title, description, isLast }) => (
   <div className="relative flex items-start gap-6 group">
     <div className="flex items-center justify-center w-10 h-10 rounded-full bg-white border-2 border-primary-100 text-primary-600 shadow-sm z-10 group-hover:bg-primary-50 group-hover:scale-110 group-hover:border-primary-200 transition-all duration-300 shrink-0">

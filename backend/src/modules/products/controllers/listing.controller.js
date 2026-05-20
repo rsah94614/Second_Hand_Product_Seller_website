@@ -141,7 +141,8 @@ const updateProduct = async (req, res) => {
     let existingImages = req.body.existingImages || [];
     if (!Array.isArray(existingImages)) existingImages = existingImages ? [existingImages] : [];
 
-    const validCategory = await ensureValidCategory(req.body.category);
+    const categoryToCheck = req.body.category || product.category;
+    const validCategory = await ensureValidCategory(categoryToCheck);
     if (!validCategory) return res.status(400).json({ message: 'Please choose a valid active category' });
 
     const newCategory = req.body.category || product.category;
@@ -193,15 +194,18 @@ const updateProduct = async (req, res) => {
       let title = 'Saved listing updated';
       let message = `"${updatedProduct.title}" was updated.`;
 
-      if (updatedProduct.isSold) {
+      if (!previousIsSold && updatedProduct.isSold) {
         type = 'wishlist_item_sold'; title = 'Saved item was marked sold';
         message = `"${updatedProduct.title}" is no longer available.`;
-      } else if (!updatedProduct.isActive) {
+      } else if (previousIsActive && !updatedProduct.isActive) {
         type = 'wishlist_item_unavailable'; title = 'Saved item became unavailable';
         message = `"${updatedProduct.title}" is currently unavailable.`;
-      } else {
+      } else if (!previousIsActive && updatedProduct.isActive) {
         type = 'wishlist_item_available'; title = 'Saved item is available again';
         message = `"${updatedProduct.title}" is active again.`;
+      } else {
+        type = 'wishlist_listing_update'; title = 'Saved listing updated';
+        message = `"${updatedProduct.title}" was updated.`;
       }
 
       await notifyWishlistUsers({

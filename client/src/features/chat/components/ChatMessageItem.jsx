@@ -12,7 +12,7 @@ export default function ChatMessageItem({
   setViewerVisible
 }) {
   return (
-    <div className={`max-w-[85%] md:max-w-[70%] relative ${isMe ? 'flex flex-col items-end' : 'flex flex-col items-start'}`}>
+    <div className={`max-w-[85%] md:max-w-[70%] min-w-0 relative ${isMe ? 'flex flex-col items-end' : 'flex flex-col items-start'}`}>
       {/* Action buttons — positioned above the bubble */}
       {isMe && !message.isDeleted && !isTemp && (
         <div className="absolute -top-4 -right-2 md:opacity-0 group-hover:opacity-100 transition-opacity z-10">
@@ -40,7 +40,7 @@ export default function ChatMessageItem({
         </div>
       )}
 
-      <div className={`px-3 py-2 text-sm leading-relaxed relative flex flex-col min-w-[80px] ${message.isDeleted
+      <div className={`px-3 py-2 text-sm leading-relaxed relative flex flex-col min-w-20 w-full overflow-hidden ${message.isDeleted
         ? 'bg-gray-100 text-gray-400 italic rounded-2xl shadow-sm border border-gray-200'
         : isMe
           ? 'bg-linear-to-br from-primary-500 to-indigo-600 text-white shadow-md shadow-primary-500/20 rounded-2xl rounded-tr-sm'
@@ -52,7 +52,7 @@ export default function ChatMessageItem({
           <>
             {message.image && (
               <div
-                className="mb-2 overflow-hidden rounded-xl bg-gray-100/50 cursor-zoom-in"
+                className="mb-2 overflow-hidden rounded-xl bg-gray-100/50 cursor-zoom-in w-full"
                 onClick={() => {
                   setViewerUri(message.image);
                   setViewerVisible(true);
@@ -61,14 +61,14 @@ export default function ChatMessageItem({
                 <img
                   src={message.image}
                   alt="Chat attachment"
-                  className="max-h-[300px] max-w-full rounded-xl object-contain shadow-sm transition-transform hover:scale-[1.02]"
+                  className="w-full max-h-[300px] rounded-xl object-contain shadow-sm transition-transform hover:scale-[1.02] block"
                 />
               </div>
             )}
             {message.content && (
-              <div className="wrap-break-words mb-0.5 pr-2">{message.content}</div>
+              <div className="wrap-break-words whitespace-pre-wrap overflow-hidden min-w-0 mb-0.5">{message.content}</div>
             )}
-            <div className={`flex items-center justify-end gap-1 whitespace-nowrap text-[10px] min-w-min self-end ${isMe ? 'text-white/80' : 'text-gray-400'}`}>
+            <div className={`flex items-center justify-end flex-wrap gap-1 text-[10px] self-end mt-0.5 ${isMe ? 'text-white/80' : 'text-gray-400'}`}>
               {message.isEdited && <span>(edited)</span>}
               <span>{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
               {isMe && !isTemp && (

@@ -1,5 +1,6 @@
 import React from 'react';
-import { User, MapPin, Star, Mail } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { User, MapPin, Star, Mail, ExternalLink } from 'lucide-react';
 import { Badge } from '../../../components/ui/Badge';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Textarea } from '../../../components/ui/Textarea';
@@ -74,6 +75,18 @@ export const SellerReputationSection = ({
               </div>
               {seller.email}
             </a>
+          )}
+          {seller?._id && (
+            <Link
+              to={`/users/${seller._id}`}
+              className="flex items-center text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors group bg-primary-50 hover:bg-primary-100 p-3 rounded-2xl border border-primary-100"
+            >
+              <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center mr-3 shadow-sm">
+                <User className="w-4 h-4 text-primary-600" />
+              </div>
+              <span className="flex-1">View Seller Profile</span>
+              <ExternalLink className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 transition-opacity" />
+            </Link>
           )}
         </div>
       </div>

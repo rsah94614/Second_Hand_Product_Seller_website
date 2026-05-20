@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Props = {
   partnerName: string;
+  partnerId?: string;
   isPinned: boolean;
   onTogglePin: () => void;
   onBlock: () => void;
@@ -15,9 +16,14 @@ type Props = {
   isDark: boolean;
 };
 
-export function ChatHeader({ partnerName, isPinned, onTogglePin, onBlock, onUnblock, isBlocked, onReport, isDark }: Props) {
+export function ChatHeader({ partnerName, partnerId, isPinned, onTogglePin, onBlock, onUnblock, isBlocked, onReport, isDark }: Props) {
   const insets = useSafeAreaInsets();
   const iconColor = isDark ? "#fff" : "#1e293b";
+  const subColor = isDark ? "#94a3b8" : "#64748b";
+
+  const handleViewProfile = () => {
+    if (partnerId) router.push(`/user/${partnerId}` as never);
+  };
 
   const openActions = () => {
     Alert.alert(partnerName, "Chat actions", [
@@ -63,12 +69,22 @@ export function ChatHeader({ partnerName, isPinned, onTogglePin, onBlock, onUnbl
           <Ionicons name="arrow-back" size={24} color={iconColor} />
         </Pressable>
 
-        <Text
-          numberOfLines={1}
-          className="flex-1 px-2 text-[19px] font-outfit-sb text-slate-900 dark:text-white"
+        {/* Tappable name area → profile */}
+        <Pressable
+          onPress={handleViewProfile}
+          disabled={!partnerId}
+          className="flex-1 px-2 flex-row items-center gap-1.5 active:opacity-70"
         >
-          {partnerName}
-        </Text>
+          <Text
+            numberOfLines={1}
+            className="text-[19px] font-outfit-sb text-slate-900 dark:text-white flex-shrink"
+          >
+            {partnerName}
+          </Text>
+          {partnerId && (
+            <Ionicons name="person-circle-outline" size={16} color={subColor} />
+          )}
+        </Pressable>
 
         <Pressable
           onPress={openActions}

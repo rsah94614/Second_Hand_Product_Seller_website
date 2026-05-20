@@ -30,6 +30,48 @@ function ChatPage() {
 
   const [currentChat, setCurrentChat] = useState(null);
 
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const saved = localStorage.getItem('chat_sidebar_width');
+    return saved ? parseInt(saved, 10) : 320;
+  });
+  const isResizingRef = useRef(false);
+
+  const startResize = (e) => {
+    e.preventDefault();
+    isResizingRef.current = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isResizingRef.current) return;
+      const newWidth = Math.max(240, Math.min(480, e.clientX));
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      if (isResizingRef.current) {
+        isResizingRef.current = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        localStorage.setItem('chat_sidebar_width', sidebarWidth);
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [sidebarWidth]);
+
+  const resetResize = () => {
+    setSidebarWidth(320);
+    localStorage.setItem('chat_sidebar_width', 320);
+  };
+
   const {
     conversations, setConversations, loadingConversations,
     messages, setMessages, hasMore, setHasMore, loadingMore, setLoadingMore,
@@ -38,7 +80,7 @@ function ChatPage() {
 
   const {
     newMessage, setNewMessage, editingMessageId, setEditingMessageId,
-    showMobileChat, setShowMobileChat, messageSearch, searchResults,
+    showMobileChat, setShowMobileChat, searchResults,
     viewerVisible, setViewerVisible, viewerUri, setViewerUri,
     conversationSearch, setConversationSearch, inputRef, typingTimeoutRef,
     handleMessageSearch, cancelEdit
@@ -276,7 +318,10 @@ function ChatPage() {
       )}
 
       <div className="flex-1 w-full overflow-hidden min-h-0">
-        <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] lg:grid-cols-[320px_1fr] gap-0 h-full bg-white overflow-hidden border-t border-gray-100">
+        <div 
+          className="grid grid-cols-1 md:grid-cols-[var(--sidebar-width)_auto_1fr] gap-0 h-full bg-white overflow-hidden border-t border-gray-100"
+          style={{ '--sidebar-width': `${sidebarWidth}px` }}
+        >
           <ChatSidebar
             conversations={conversations}
             loadingConversations={loadingConversations}
@@ -286,7 +331,19 @@ function ChatPage() {
             conversationSearch={conversationSearch}
             setConversationSearch={setConversationSearch}
             handleChatSelect={handleChatSelect}
+            searchResults={searchResults}
+            handleMessageSearch={handleMessageSearch}
           />
+
+          {/* Resize handler line */}
+          <div
+            onMouseDown={startResize}
+            onDoubleClick={resetResize}
+            className="hidden md:block w-1 hover:w-1.5 cursor-col-resize active:bg-primary-500 bg-gray-100 hover:bg-primary-300 transition-all duration-150 h-full flex-none relative group z-10"
+            title="Drag to resize sidebar (double-click to reset)"
+          >
+            <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[1px] bg-gray-200 group-hover:bg-primary-400 group-active:bg-primary-600 transition-colors" />
+          </div>
 
           <div className={`flex flex-col h-full bg-white min-h-0 overflow-hidden ${showMobileChat ? 'flex' : 'hidden md:flex'}`}>
             {currentChat ? (
@@ -325,9 +382,6 @@ function ChatPage() {
                   sendMessage={sendMessage}
                   handleInputChange={handleInputChange}
                   handleImageSend={handleImageSend}
-                  handleMessageSearch={handleMessageSearch}
-                  messageSearch={messageSearch}
-                  searchResults={searchResults}
                   inputRef={inputRef}
                   messagesCount={messages.length}
                 />

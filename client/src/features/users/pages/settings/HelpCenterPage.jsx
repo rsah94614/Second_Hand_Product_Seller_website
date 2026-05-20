@@ -1,75 +1,64 @@
 import React from 'react';
-import { MessageCircle, Mail } from 'lucide-react';
+import { LifeBuoy, Mail } from 'lucide-react';
 import Header from '../../../../components/Header';
 import Footer from '../../../../components/Footer';
 
-const HelpCenterPage = () => {
-  const faqs = [
-    {
-      q: "How do I sell an item?",
-      a: "Click on the 'Sell Item' button in the header, upload photos, set a price, and describe your product. Once approved, it will be visible to everyone on campus."
-    },
-    {
-      q: "How do I get verified?",
-      a: "Go to your profile settings and upload a photo of your student ID. Our moderators will review it within 24 hours."
-    },
-    {
-      q: "Is it safe to meet buyers?",
-      a: "Always meet in public, well-lit areas on campus. We recommend the library plaza or student center during daylight hours."
-    },
-    {
-      q: "How do I report a scam?",
-      a: "If you encounter any suspicious activity, use the 'Report' button on the listing or user profile. Our team investigates all reports immediately."
-    }
-  ];
+const FAQItem = ({ question, answer }) => (
+  <div className="mb-6">
+    <h3 className="text-[16px] font-semibold text-slate-900 mb-2">{question}</h3>
+    <p className="text-[15px] text-slate-600 leading-relaxed">{answer}</p>
+  </div>
+);
 
+const HelpCenterPage = () => {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gray-50/50 py-12 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-16">
-            <h1 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">How can we help?</h1>
-            <p className="text-gray-500 font-medium text-lg">Read through the FAQ's below or contact our support team.</p>
-            
-            {/* <div className="mt-8 max-w-2xl mx-auto relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input 
-                type="text" 
-                placeholder="Search for articles..." 
-                className="w-full pl-12 pr-6 py-4 bg-white border border-gray-100 rounded-3xl shadow-xl shadow-gray-200/50 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium"
-              />
-            </div> */}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
-            {faqs.map((faq, i) => (
-              <div key={i} className="bg-white p-8 rounded-4xl border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300">
-                <h3 className="text-lg font-bold text-gray-900 mb-3">{faq.q}</h3>
-                <p className="text-gray-600 leading-relaxed font-medium text-sm">{faq.a}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="bg-indigo-600 rounded-5xl p-8 md:p-12 text-white relative overflow-hidden shadow-2xl shadow-indigo-200">
-            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-              <div>
-                <h2 className="text-3xl font-black mb-2">Still have questions?</h2>
-                <p className="text-indigo-100 font-medium">Our support team is here to help you 24/7.</p>
-              </div>
-              <div className="flex flex-wrap justify-center gap-4">
-                <button className="bg-white text-indigo-600 px-8 py-4 rounded-2xl font-bold flex items-center gap-2 hover:bg-indigo-50 transition-colors shadow-lg">
-                  <MessageCircle className="w-5 h-5" /> Live Chat
-                </button>
-                <button className="bg-indigo-500 text-white border border-indigo-400 px-8 py-4 rounded-2xl font-bold flex items-center gap-2 hover:bg-indigo-400 transition-colors">
-                  <Mail className="w-5 h-5" /> Contact Us
-                </button>
-              </div>
+      <div className="min-h-screen bg-white py-10 px-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center">
+              <LifeBuoy className="w-8 h-8 text-blue-500" />
             </div>
-            
-            {/* Decorative elements */}
-            <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-indigo-400/20 rounded-full blur-3xl" />
+          </div>
+
+          <p className="text-[13px] font-semibold text-slate-500 uppercase tracking-widest mb-6">
+            Frequently Asked Questions
+          </p>
+
+          <FAQItem
+            question="How do I become a verified seller?"
+            answer="Go to your Profile and complete the campus verification steps. You'll need to upload a valid student ID."
+          />
+          <FAQItem
+            question="Is it safe to buy items here?"
+            answer="Yes. We restrict the platform to verified campus students and staff. Always meet in public places on campus during daylight."
+          />
+          <FAQItem
+            question="What if a buyer doesn't show up?"
+            answer="You can mark the order as a 'No Show' in the Order Details page. The buyer's reputation score will be negatively impacted."
+          />
+          <FAQItem
+            question="How do I change my college?"
+            answer="Currently, you cannot change your college once registered. If you made a mistake, please contact support to reset your account."
+          />
+
+          <div className="bg-slate-50 rounded-3xl p-6 mt-4 flex flex-col items-center text-center">
+            <Mail className="w-8 h-8 text-slate-500 mb-4" />
+            <h2 className="text-[18px] font-bold text-slate-900 mb-2">Still need help?</h2>
+            <p className="text-[15px] text-slate-600 mb-6">
+              Our campus moderation team is here to help you.
+            </p>
+            <button
+              onClick={() =>
+                alert(
+                  'Coming Soon\n\nIn-app support messaging is currently under development. Please email support@campusmitra.com for assistance in the meantime.'
+                )
+              }
+              className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3 px-6 rounded-2xl transition-colors"
+            >
+              Contact Support
+            </button>
           </div>
         </div>
       </div>
