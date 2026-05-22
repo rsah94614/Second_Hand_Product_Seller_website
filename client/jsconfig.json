@@ -10,5 +10,5 @@
   },
   "include": [
     "src"
-  ]
+, "../.kiro/specs/sales-revenue-reports/Header.jsx"  ]
 }

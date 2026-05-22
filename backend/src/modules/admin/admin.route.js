@@ -9,6 +9,9 @@ const moderationController = require('./controllers/moderation.controller');
 const ruleManagementController = require('./controllers/ruleManagement.controller');
 const categoryManagementController = require('./controllers/categoryManagement.controller');
 
+// Import reports module router
+const reportsRouter = require('../reports/reports.route');
+
 const router = express.Router();
 
 router.get('/overview', adminAuth, dashboardController.getOverview);
@@ -60,5 +63,8 @@ router.post('/bulk/users/suspend', adminAuth, userManagementController.bulkSuspe
 router.post('/bulk/products/delete', adminAuth, listingManagementController.bulkDeleteProducts);
 router.post('/bulk/products/update', adminAuth, listingManagementController.bulkUpdateProducts);
 
-module.exports = router;
+// ── Reports Module (Phase 3-5) ────────────────────────────────────────────────
+// Mount reports router at /reports path
+router.use('/reports', reportsRouter);
 
+module.exports = router;

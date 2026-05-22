@@ -151,6 +151,7 @@ const AdminProfileView: React.FC<AdminProfileViewProps> = ({
 
           <Text className="text-[13px] font-outfit-sb text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-5 mb-2 ml-1">Personal Account</Text>
           <SectionCard>
+            <SettingRow href="/admin/sales-dashboard" title="Sales Dashboard" icon="bar-chart-outline" iconColor="#0891b2" iconBg="bg-cyan-50 dark:bg-cyan-950/30" />
             <SettingRow href="/orders" title="My Orders" icon="receipt-outline" iconColor="#6366f1" iconBg="bg-indigo-50 dark:bg-indigo-950/30" />
             <SettingRow href="/devices" title="Active Sessions" icon="shield-half-outline" iconColor="#7c3aed" iconBg="bg-violet-50 dark:bg-violet-950/30" />
             <SettingRow href="/notifications" title="System Alerts" icon="notifications-outline" iconColor="#6366f1" iconBg="bg-indigo-50 dark:bg-indigo-950/30" />

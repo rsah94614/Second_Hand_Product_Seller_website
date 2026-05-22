@@ -14,6 +14,8 @@ import {
   AlertCircle,
   Clock,
   ExternalLink,
+  BarChart3,
+  TrendingUp,
 } from 'lucide-react';
 import { Badge } from '../../../components/ui/Badge';
 import Header from '../../../components/Header';
@@ -79,6 +81,13 @@ const AdminDashboardPage = () => {
   ];
 
   const adminTools = [
+    {
+      label: 'Sales & Revenue Reports',
+      description: 'Access comprehensive analytics, dashboards, and business intelligence reports.',
+      to: '/admin/reports-hub',
+      icon: IndianRupee,
+      isNew: true,
+    },
     {
       label: 'Manage Users',
       description: 'Change roles, verify accounts, and deactivate abusive users.',
@@ -168,6 +177,32 @@ const AdminDashboardPage = () => {
           })}
         </section>
 
+        {/* Sales Dashboard Quick Access Banner */}
+        <section className="mb-8">
+          <Link
+            to="/admin/sales-dashboard"
+            className="group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-3xl p-8 shadow-xl shadow-blue-500/20 hover:shadow-blue-500/30 hover:-translate-y-0.5 transition-all duration-300"
+          >
+            <div className="flex items-center gap-6">
+              <div className="w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center flex-none group-hover:scale-110 transition-transform">
+                <BarChart3 className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <div className="flex items-center gap-3 mb-1">
+                  <p className="text-xs font-black text-blue-200 uppercase tracking-[0.25em]">New Feature</p>
+                  <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-black uppercase tracking-widest border border-white/30">Live</span>
+                </div>
+                <h2 className="text-2xl font-black text-white leading-tight">Sales &amp; Revenue Dashboard</h2>
+                <p className="text-blue-100 text-sm mt-1 font-medium">Revenue trends · Top products · Seller rankings · Category breakdown · PDF export</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 bg-white text-blue-700 px-6 py-3 rounded-2xl font-black text-sm shadow-lg flex-none group-hover:bg-blue-50 transition-colors">
+              <TrendingUp className="w-4 h-4" />
+              Open Dashboard
+            </div>
+          </Link>
+        </section>
+
         <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 mb-12">
           {adminTools.map((tool) => {
             const Icon = tool.icon;
@@ -184,8 +219,13 @@ const AdminDashboardPage = () => {
                     <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-red-500 to-rose-600 text-white flex items-center justify-center shadow-lg shadow-red-500/20 group-hover:rotate-6 transition-transform">
                       <Icon className="w-6 h-6" />
                     </div>
-                    <div className="p-2 rounded-xl bg-gray-50 text-gray-400 group-hover:text-red-600 group-hover:bg-red-50 transition-colors">
-                      <ExternalLink className="w-4 h-4" />
+                    <div className="flex items-center gap-2">
+                      {tool.isNew && (
+                        <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-widest border border-blue-200">New</span>
+                      )}
+                      <div className="p-2 rounded-xl bg-gray-50 text-gray-400 group-hover:text-red-600 group-hover:bg-red-50 transition-colors">
+                        <ExternalLink className="w-4 h-4" />
+                      </div>
                     </div>
                   </div>
                   <h2 className="text-xl font-black text-gray-900">{tool.label}</h2>
