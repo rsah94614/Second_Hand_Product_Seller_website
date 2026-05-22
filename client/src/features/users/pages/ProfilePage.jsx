@@ -22,6 +22,11 @@ import {
 } from '../../../components/ui/Dialog';
 import { getUserProfile, getMyReputation, getMySellerVerification, requestSellerVerification, uploadUserAvatar, getProfileCompletion } from '../api/userApi';
 import { parseApiError, formatErrorForDisplay } from '../../../lib/errorHandler';
+import {
+  validateProfileForm,
+  formDataFromProfile,
+  campusFromProfile,
+} from '../../../lib/profileForm';
 import { Button } from '@/components/ui/Button';
 
 // Modular Profile Views
@@ -127,11 +132,12 @@ const ProfilePage = () => {
   };
 
   const [isEditing, setIsEditing] = useState(false);
+  const [editError, setEditError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     location: '',
-    profileRole: '',
+    profileRole: 'student',
     avatar: '',
   });
   const [campusForm, setCampusForm] = useState({
@@ -143,27 +149,26 @@ const ProfilePage = () => {
     residentType: '',
   });
 
+  const resetFormFromProfile = (source) => {
+    if (!source) return;
+    setFormData(formDataFromProfile(source));
+    setCampusForm(campusFromProfile(source));
+    setEditError('');
+  };
+
   useEffect(() => {
-    if (profile) {
-      setFormData({
-        name: profile.name || '',
-        email: profile.email || '',
-        location: profile.location || '',
-        profileRole: profile.profileRole || '',
-        avatar: profile.avatar || '',
-      });
-      setCampusForm({
-        department: profile.campus?.department || '',
-        course: profile.campus?.course || '',
-        year: profile.campus?.year || '',
-        semester: profile.campus?.semester || '',
-        hostel: profile.campus?.hostel || '',
-        residentType: profile.campus?.residentType || '',
-      });
+    if (profile && !isEditing) {
+      resetFormFromProfile(profile);
     }
-  }, [profile]);
+  }, [profile, isEditing]);
+
+  const handleEnterEdit = () => {
+    resetFormFromProfile(profile);
+    setIsEditing(true);
+  };
 
   const handleChange = (e) => {
+    if (editError) setEditError('');
     setFormData((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
@@ -171,17 +176,36 @@ const ProfilePage = () => {
   };
 
   const handleCampusFormChange = (e) => {
+    if (editError) setEditError('');
     setCampusForm((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
     }));
   };
 
-
+  const handleProfileRoleChange = (roleId) => {
+    if (editError) setEditError('');
+    setFormData((prev) => ({ ...prev, profileRole: roleId }));
+    if (roleId === 'staff' || roleId === 'alumni') {
+      setCampusForm((prev) => ({ ...prev, year: '' }));
+    }
+  };
 
   const handleSave = async () => {
+    const validationError = validateProfileForm(formData.name, formData.profileRole, campusForm);
+    if (validationError) {
+      setEditError(validationError);
+      return;
+    }
+
+    setEditError('');
     try {
-      await updateProfile({ ...formData, campus: campusForm });
+      const { email: _email, ...payload } = formData;
+      await updateProfile({
+        ...payload,
+        profileRole: formData.profileRole || 'student',
+        campus: campusForm,
+      });
       toast.success('Profile updated successfully!');
       setIsEditing(false);
       refetch();
@@ -189,28 +213,12 @@ const ProfilePage = () => {
       queryClient.invalidateQueries({ queryKey: ['profile-completion'] });
     } catch (err) {
       const parsedError = parseApiError(err, 'Failed to update profile.');
-      toast.error(formatErrorForDisplay(parsedError));
+      setEditError(formatErrorForDisplay(parsedError));
     }
   };
 
   const handleCancel = () => {
-    if (profile) {
-      setFormData({
-        name: profile.name || '',
-        email: profile.email || '',
-        location: profile.location || '',
-        profileRole: profile.profileRole || '',
-        avatar: profile.avatar || '',
-      });
-      setCampusForm({
-        department: profile.campus?.department || '',
-        course: profile.campus?.course || '',
-        year: profile.campus?.year || '',
-        semester: profile.campus?.semester || '',
-        hostel: profile.campus?.hostel || '',
-        residentType: profile.campus?.residentType || '',
-      });
-    }
+    resetFormFromProfile(profile);
     setIsEditing(false);
   };
 
@@ -236,9 +244,9 @@ const ProfilePage = () => {
 
   const commonProps = {
     profile,
-
     isEditing,
-    setIsEditing,
+    editError,
+    onEnterEdit: handleEnterEdit,
     formData,
     handleChange,
     handleSave,
@@ -247,7 +255,6 @@ const ProfilePage = () => {
     avatarUploading,
     avatarInputRef,
     setIsLogoutDialogOpen,
-
   };
 
   return (
@@ -271,6 +278,7 @@ const ProfilePage = () => {
             verificationMutation={verificationMutation}
             campusForm={campusForm}
             handleCampusFormChange={handleCampusFormChange}
+            handleProfileRoleChange={handleProfileRoleChange}
           />
         )}
       </div>

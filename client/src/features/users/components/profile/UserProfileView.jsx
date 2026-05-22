@@ -9,6 +9,29 @@ import { Button } from '../../../../components/ui/Button';
 import { Card, CardContent } from '../../../../components/ui/Card';
 import { Input } from '../../../../components/ui/Input';
 import { Avatar } from '../../../../components/ui/Avatar';
+import {
+  YEAR_OPTIONS,
+  PROFILE_ROLES,
+  RESIDENT_TYPE_OPTIONS,
+  PROFILE_FIELD_LABELS,
+  PROFILE_COMPLETION_CHECKLIST,
+  formatProfileRole,
+  formatResidentType,
+  formatYearDisplay,
+  showYearFieldForRole,
+} from '../../../../lib/profileForm';
+
+function ErrorBanner({ message }) {
+  if (!message) return null;
+  return (
+    <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+      <p className="text-sm font-medium text-red-600 whitespace-pre-line">{message}</p>
+    </div>
+  );
+}
+
+const selectClassName =
+  'w-full h-11 rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500/20';
 
 const getTrustLabelColor = (colorStr) => {
   const map = {
@@ -29,12 +52,13 @@ const UserProfileView = ({
   reputationData,
   verificationData,
   isEditing,
-
-  setIsEditing,
+  editError,
+  onEnterEdit,
   formData,
   campusForm,
   handleChange,
   handleCampusFormChange,
+  handleProfileRoleChange,
   handleSave,
   handleCancel,
   handleAvatarChange,
@@ -134,17 +158,7 @@ const UserProfileView = ({
                 <p className="text-[11px] font-bold text-indigo-900 uppercase tracking-wider mb-1">Trading unlocks at 60% completion</p>
                 <p className="text-[10px] text-indigo-700/70 leading-tight mb-3">Complete the fields below to increase your score and unlock trading features.</p>
                 <div className="space-y-1.5">
-                  {[
-                    { label: 'Email Verified', key: 'Email verification' },
-                    { label: 'Full Name', key: 'Full name' },
-                    { label: 'Profile Photo', key: 'Profile photo' },
-                    { label: 'Department', key: 'Department' },
-                    { label: 'Course', key: 'Course' },
-                    { label: 'Campus Role', key: 'Campus role' },
-                    { label: 'Year / Study Level', key: 'Year / study level' },
-                    { label: 'Resident Type', key: 'Resident type' },
-                    { label: 'Campus Meetup Location', key: 'Preferred campus meetup area' },
-                  ].map((field, idx) => {
+                  {PROFILE_COMPLETION_CHECKLIST.map((field, idx) => {
                     const isDone = !completionData.missing?.includes(field.key);
                     return (
                       <div key={idx} className={`flex items-center justify-between text-xs px-3 py-2 rounded-xl ${isDone ? 'bg-emerald-50/60' : 'bg-rose-50/60'}`}>
@@ -169,7 +183,7 @@ const UserProfileView = ({
               <p className="text-gray-500 text-sm">Manage your personal information</p>
             </div>
             {!isEditing ? (
-              <Button onClick={() => setIsEditing(true)} variant="outline" className="rounded-full gap-2"><Edit className="w-4 h-4" /> Edit Profile</Button>
+              <Button onClick={onEnterEdit} variant="outline" className="rounded-full gap-2"><Edit className="w-4 h-4" /> Edit Profile</Button>
             ) : (
               <div className="flex gap-2">
                 <Button onClick={handleSave} className="rounded-full gap-2"><Save className="w-4 h-4" /> Save</Button>
@@ -177,27 +191,96 @@ const UserProfileView = ({
               </div>
             )}
           </div>
+
+          {isEditing && <ErrorBanner message={editError} />}
+
           <div className="space-y-5">
+            {!isEditing && (
+              <div className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50/60 border border-gray-100">
+                <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center shrink-0 mt-0.5">
+                  <Mail className="w-4.5 h-4.5 text-primary-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
+                    {PROFILE_FIELD_LABELS.email.label}
+                  </label>
+                  <p className="text-gray-900 font-semibold">{profile.email}</p>
+                  <p className="text-[11px] text-gray-500 mt-1">{PROFILE_FIELD_LABELS.email.hint}</p>
+                </div>
+              </div>
+            )}
+
             {[
-              { icon: User, label: 'Full Name', name: 'name', value: formData.name, display: profile.name, type: 'text' },
-              { icon: Mail, label: 'Email Address', name: 'email', value: formData.email, display: profile.email, type: 'email' },
-              { icon: MapPin, label: 'Location', name: 'location', value: formData.location, display: profile.location || 'Not provided', type: 'text' },
-              { icon: User, label: 'Campus Role', name: 'profileRole', value: formData.profileRole, display: profile.profileRole || 'Not provided', type: 'select', options: [{ value: '', label: 'Select Role' }, { value: 'student', label: 'Student' }, { value: 'staff', label: 'Staff' }, { value: 'alumni', label: 'Alumni' }] },
+              {
+                icon: User,
+                name: 'name',
+                label: PROFILE_FIELD_LABELS.name.label,
+                value: formData.name,
+                display: profile.name,
+                placeholder: PROFILE_FIELD_LABELS.name.placeholder,
+              },
+              {
+                icon: MapPin,
+                name: 'location',
+                label: PROFILE_FIELD_LABELS.location.label,
+                value: formData.location,
+                display: profile.location || 'Not provided',
+                placeholder: PROFILE_FIELD_LABELS.location.placeholder,
+              },
             ].map((item) => (
               <div key={item.name} className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50/60 border border-gray-100">
-                <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center shrink-0 mt-0.5"><item.icon className="w-4.5 h-4.5 text-primary-600" /></div>
+                <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center shrink-0 mt-0.5">
+                  <item.icon className="w-4.5 h-4.5 text-primary-600" />
+                </div>
                 <div className="flex-1 min-w-0">
                   <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">{item.label}</label>
                   {isEditing ? (
-                    item.type === 'select' ? (
-                      <select name={item.name} value={item.value} onChange={handleChange} className="w-full h-10 rounded-xl border border-black bg-white px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary-500/20">
-                        {item.options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                      </select>
-                    ) : <Input type={item.type} name={item.name} value={item.value} onChange={handleChange} className="h-10" />
-                  ) : <p className="text-gray-900 font-semibold">{item.display}</p>}
+                    <Input
+                      name={item.name}
+                      value={item.value}
+                      onChange={handleChange}
+                      placeholder={item.placeholder}
+                      className="h-10"
+                    />
+                  ) : (
+                    <p className="text-gray-900 font-semibold">{item.display}</p>
+                  )}
                 </div>
               </div>
             ))}
+
+            <div className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50/60 border border-gray-100">
+              <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center shrink-0 mt-0.5">
+                <User className="w-4.5 h-4.5 text-primary-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+                  {PROFILE_FIELD_LABELS.profileRole.label}
+                </label>
+                {isEditing ? (
+                  <div className="flex flex-wrap gap-2">
+                    {PROFILE_ROLES.map((role) => (
+                      <button
+                        key={role.id}
+                        type="button"
+                        onClick={() => handleProfileRoleChange(role.id)}
+                        className={`px-4 py-2 rounded-full text-xs font-bold transition-all border ${
+                          formData.profileRole === role.id
+                            ? 'bg-primary-600 border-primary-600 text-white shadow-md shadow-primary-600/20'
+                            : 'bg-white border-gray-300 text-gray-600 hover:border-primary-400'
+                        }`}
+                      >
+                        {role.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-900 font-semibold">
+                    {formatProfileRole(profile.profileRole) || 'Not provided'}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
           <div className="pt-6 mt-6 border-t border-gray-100">
             <Button onClick={() => setIsLogoutDialogOpen(true)} variant="outline" className="gap-2 text-red-600 border-red-200 hover:bg-red-50 rounded-full"><LogOut className="w-4 h-4" /> Sign Out</Button>
@@ -217,20 +300,88 @@ const UserProfileView = ({
           </div>
           {isEditing ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Department</label><Input name="department" value={campusForm.department} onChange={handleCampusFormChange} /></div>
-              <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Course</label><Input name="course" value={campusForm.course} onChange={handleCampusFormChange} /></div>
-              <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Semester</label><Input name="semester" value={campusForm.semester} onChange={handleCampusFormChange} /></div>
-              <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Year</label><select name="year" value={campusForm.year} onChange={handleCampusFormChange} className="w-full h-11 rounded-xl border border-black bg-white px-4 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary-500/20"><option value="">Select Year</option><option value="1st">1st Year</option><option value="2nd">2nd Year</option><option value="3rd">3rd Year</option><option value="4th">4th Year</option><option value="5th">5th Year</option><option value="Alumni">Alumni</option><option value="Faculty">Faculty</option></select></div>
-              <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Resident Type</label><select name="residentType" value={campusForm.residentType} onChange={handleCampusFormChange} className="w-full h-11 rounded-xl border border-black bg-white px-4 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary-500/20"><option value="">Select Type</option><option value="hosteler">Hosteler</option><option value="day_scholar">Day Scholar</option><option value="faculty">Faculty Quarter</option></select></div>
-              <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Hostel Name</label><Input name="hostel" value={campusForm.hostel} onChange={handleCampusFormChange} /></div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
+                  {PROFILE_FIELD_LABELS.department.label}
+                </label>
+                <Input
+                  name="department"
+                  value={campusForm.department}
+                  onChange={handleCampusFormChange}
+                  placeholder={PROFILE_FIELD_LABELS.department.placeholder}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
+                  {PROFILE_FIELD_LABELS.course.label}
+                </label>
+                <Input
+                  name="course"
+                  value={campusForm.course}
+                  onChange={handleCampusFormChange}
+                  placeholder={PROFILE_FIELD_LABELS.course.placeholder}
+                />
+              </div>
+              {showYearFieldForRole(formData.profileRole) && (
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
+                    {PROFILE_FIELD_LABELS.year.label}
+                  </label>
+                  <select name="year" value={campusForm.year} onChange={handleCampusFormChange} className={selectClassName}>
+                    <option value="">Select Year</option>
+                    {YEAR_OPTIONS.map((y) => (
+                      <option key={y} value={y}>
+                        {y === 'Alumni' || y === 'Faculty' ? y : `${y} Year`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
+                  {PROFILE_FIELD_LABELS.semester.label}
+                </label>
+                <Input
+                  name="semester"
+                  value={campusForm.semester}
+                  onChange={handleCampusFormChange}
+                  placeholder={PROFILE_FIELD_LABELS.semester.placeholder}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
+                  {PROFILE_FIELD_LABELS.residentType.label}
+                </label>
+                <select name="residentType" value={campusForm.residentType} onChange={handleCampusFormChange} className={selectClassName}>
+                  <option value="">Select Type</option>
+                  {RESIDENT_TYPE_OPTIONS.map((opt) => (
+                    <option key={opt.id} value={opt.id}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
+                  {PROFILE_FIELD_LABELS.hostel.label}
+                </label>
+                <Input
+                  name="hostel"
+                  value={campusForm.hostel}
+                  onChange={handleCampusFormChange}
+                  placeholder={PROFILE_FIELD_LABELS.hostel.placeholder}
+                />
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
                 { label: 'Department', value: profile.campus?.department, icon: GraduationCap },
                 { label: 'Course', value: profile.campus?.course, icon: GraduationCap },
-                { label: 'Year & Sem', value: [profile.campus?.year, profile.campus?.semester].filter(Boolean).join(' - '), icon: BadgeCheck },
-                { label: 'Resident Type', value: profile.campus?.residentType?.replace('_', ' '), icon: Building2 },
+                {
+                  label: 'Year & Sem',
+                  value: [formatYearDisplay(profile.campus?.year), profile.campus?.semester].filter(Boolean).join(' · '),
+                  icon: BadgeCheck,
+                },
+                { label: 'Resident Type', value: formatResidentType(profile.campus?.residentType), icon: Building2 },
                 { label: 'Hostel', value: profile.campus?.hostel, icon: MapPin },
               ].map((field) => (
                 <div key={field.label} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50/60 border border-gray-100">

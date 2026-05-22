@@ -9,12 +9,13 @@ import { Button } from '../../../../components/ui/Button';
 import { Card, CardContent } from '../../../../components/ui/Card';
 import { Input } from '../../../../components/ui/Input';
 import { Avatar } from '../../../../components/ui/Avatar';
+import { PROFILE_FIELD_LABELS } from '../../../../lib/profileForm';
 
 const AdminProfileView = ({
   profile,
   isEditing,
-
-  setIsEditing,
+  editError,
+  onEnterEdit,
   formData,
   handleChange,
   handleSave,
@@ -84,7 +85,7 @@ const AdminProfileView = ({
                 <h3 className="font-bold text-gray-900">Account Settings</h3>
               </div>
               {!isEditing ? (
-                <Button onClick={() => setIsEditing(true)} variant="ghost" size="sm" className="text-primary-600 hover:text-primary-700 font-bold gap-1">
+                <Button onClick={onEnterEdit} variant="ghost" size="sm" className="text-primary-600 hover:text-primary-700 font-bold gap-1">
                   <Edit className="w-3.5 h-3.5" />
                   Edit
                 </Button>
@@ -96,21 +97,39 @@ const AdminProfileView = ({
               )}
             </div>
             <CardContent className="p-6">
+              {isEditing && editError && (
+                <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+                  <p className="text-sm font-medium text-red-600 whitespace-pre-line">{editError}</p>
+                </div>
+              )}
               <div className="space-y-4">
+                {!isEditing && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
+                      {PROFILE_FIELD_LABELS.email.label}
+                    </label>
+                    <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-gray-50/50 border border-transparent">
+                      <Mail className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm font-semibold text-gray-700">{profile.email}</span>
+                    </div>
+                    <p className="text-[11px] text-gray-500 ml-1">{PROFILE_FIELD_LABELS.email.hint}</p>
+                  </div>
+                )}
+
                 {[
-                  { icon: User, label: 'Display Name', name: 'name', value: formData.name, display: profile.name },
-                  { icon: Mail, label: 'Primary Email', name: 'email', value: formData.email, display: profile.email },
-                  { icon: MapPin, label: 'Work Location', name: 'location', value: formData.location, display: profile.location || 'Remote/Campus' },
+                  { icon: User, label: 'Display Name', name: 'name', value: formData.name, display: profile.name, placeholder: PROFILE_FIELD_LABELS.name.placeholder },
+                  { icon: MapPin, label: PROFILE_FIELD_LABELS.location.label, name: 'location', value: formData.location, display: profile.location || 'Not set', placeholder: PROFILE_FIELD_LABELS.location.placeholder },
                 ].map((item) => (
                   <div key={item.name} className="flex flex-col gap-1.5">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
                       {item.label}
                     </label>
                     {isEditing ? (
-                      <Input 
-                        name={item.name} 
-                        value={item.value} 
-                        onChange={handleChange} 
+                      <Input
+                        name={item.name}
+                        value={item.value}
+                        onChange={handleChange}
+                        placeholder={item.placeholder}
                         className="rounded-2xl bg-gray-50/50 border-gray-100 focus:bg-white transition-all"
                       />
                     ) : (

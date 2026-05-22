@@ -6,6 +6,7 @@ const { v2: cloudinary } = require('cloudinary');
 const fs = require('fs');
 const { buildTrustLabels } = require('../user.service');
 const { canTradeOnCampus } = require('../../../shared/utils/profileCompletion.utils');
+const { validateProfilePayload } = require('../../../shared/constants/profileForm.constants');
 
 const getUserProfile = async (req, res) => {
   try {
@@ -62,9 +63,19 @@ const updateUserProfile = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to update this profile' });
     }
 
+    const validationError = validateProfilePayload(req.body);
+    if (validationError) {
+      return res.status(400).json({ message: validationError, errors: [validationError] });
+    }
+
     const allowedUpdates = {};
-    const fields = ['name', 'email', 'location', 'avatar', 'profileRole'];
+    // Email is set at registration (OTP-verified) and must not be changed via profile update
+    const fields = ['name', 'location', 'avatar', 'profileRole'];
     fields.forEach((f) => { if (req.body[f] !== undefined) allowedUpdates[f] = req.body[f]; });
+
+    if (allowedUpdates.profileRole === '') {
+      allowedUpdates.profileRole = 'student';
+    }
 
     if (req.body.campus) {
       const c = req.body.campus;
