@@ -1,8 +1,6 @@
 const assert = require('node:assert/strict');
 const ReportGeneratorService = require('../src/services/ReportGeneratorService');
 const Order = require('../models/Order');
-const Product = require('../models/Product');
-const User = require('../models/User');
 const { clearDatabase } = require('./helpers/testApp');
 
 /**

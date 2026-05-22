@@ -33,7 +33,7 @@ export default function SellerRankingsPage() {
     return endDate;
   });
   const [sortBy, setSortBy] = useState('revenue');
-  const [limit, setLimit] = useState(50);
+  const [limit] = useState(50);
 
   const dateParams = {
     startDate: startDate.toISOString().split('T')[0],

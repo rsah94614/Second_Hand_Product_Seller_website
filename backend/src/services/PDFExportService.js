@@ -923,7 +923,7 @@ class PDFExportService {
     if (!metrics || typeof metrics !== 'object') return [];
 
     return Object.entries(metrics)
-      .filter(([key, value]) => {
+      .filter(([, value]) => {
         if (Array.isArray(value)) return false;
         if (value && typeof value === 'object') {
           return this._extractMetricValue(value) !== undefined;

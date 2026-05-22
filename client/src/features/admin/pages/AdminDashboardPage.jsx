@@ -181,7 +181,7 @@ const AdminDashboardPage = () => {
         <section className="mb-8">
           <Link
             to="/admin/sales-dashboard"
-            className="group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-3xl p-8 shadow-xl shadow-blue-500/20 hover:shadow-blue-500/30 hover:-translate-y-0.5 transition-all duration-300"
+            className="group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 bg-linear-to-r from-blue-600 to-indigo-700 rounded-3xl p-8 shadow-xl shadow-blue-500/20 hover:shadow-blue-500/30 hover:-translate-y-0.5 transition-all duration-300"
           >
             <div className="flex items-center gap-6">
               <div className="w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center flex-none group-hover:scale-110 transition-transform">

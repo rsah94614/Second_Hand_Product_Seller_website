@@ -32,7 +32,7 @@ export default function TopProductsPage() {
     return endDate;
   });
   const [sortBy, setSortBy] = useState('quantity');
-  const [limit, setLimit] = useState(50);
+  const [limit] = useState(50);
 
   const dateParams = {
     startDate: startDate.toISOString().split('T')[0],
@@ -145,7 +145,7 @@ export default function TopProductsPage() {
           <Card className="mb-8 border-red-200 bg-red-50">
             <CardContent className="p-6">
               <div className="flex items-start gap-4">
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                 <div>
                   <h3 className="font-semibold text-red-900">Failed to load data</h3>
                   <p className="text-sm text-red-700 mt-1">

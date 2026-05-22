@@ -48,12 +48,12 @@ export function TopItemsWidget({
         <div className="space-y-0 divide-y divide-gray-100">
           {items.map((item) => (
             <div key={item.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 flex-shrink-0">
+              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 shrink-0">
                 <span className="text-xs font-semibold text-blue-600">{item.rank}</span>
               </div>
 
               {item.icon && (
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 flex-shrink-0">
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 shrink-0">
                   <item.icon className="w-4 h-4 text-gray-600" />
                 </div>
               )}
@@ -65,7 +65,7 @@ export function TopItemsWidget({
                 )}
               </div>
 
-              <div className="text-right flex-shrink-0">
+              <div className="text-right shrink-0">
                 <p className="text-sm font-semibold text-gray-900">
                   {valueFormatter(item.value)}
                 </p>

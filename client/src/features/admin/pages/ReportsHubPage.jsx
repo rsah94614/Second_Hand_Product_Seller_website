@@ -143,7 +143,7 @@ export default function ReportsHubPage() {
                 <div className="relative p-6">
                   {/* Icon */}
                   <div
-                    className={`w-12 h-12 rounded-xl bg-gradient-to-br ${report.color} text-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}
+                    className={`w-12 h-12 rounded-xl bg-linear-to-br ${report.color} text-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}
                   >
                     <Icon className="w-6 h-6" />
                   </div>
@@ -211,7 +211,7 @@ export default function ReportsHubPage() {
         </section>
 
         {/* Getting Started */}
-        <section className="mt-12 bg-gradient-to-r from-blue-600 to-blue-700 rounded-3xl p-8 text-white">
+        <section className="mt-12 bg-linear-to-r from-blue-600 to-blue-700 rounded-3xl p-8 text-white">
           <div className="max-w-2xl">
             <h2 className="text-2xl font-bold mb-4">Getting Started</h2>
             <p className="text-blue-100 mb-6">
