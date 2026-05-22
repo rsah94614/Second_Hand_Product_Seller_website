@@ -145,3 +145,116 @@ export const bulkUpdateProducts = async (payload) =>
 // ── Phase 3: Category Analytics ───────────────────────────────────────────────
 export const getCategoryAnalytics = async () =>
   axios.get(`${API_BASE_URL}/api/categories/analytics`).then((r) => r.data);
+
+// ── Phase 6: Sales & Revenue Reports ──────────────────────────────────────────
+export const getDashboardMetrics = async (params = {}) => {
+  const response = await axios.get(`${API_BASE_URL}/api/admin/reports/dashboard`, { params });
+  return response.data?.data || {};
+};
+
+export const getTopProducts = async (params = {}) => {
+  const response = await axios.get(`${API_BASE_URL}/api/admin/reports/top-products`, { params });
+  return { products: response.data?.data || [] };
+};
+
+export const getCategoryBreakdown = async (params = {}) => {
+  const response = await axios.get(`${API_BASE_URL}/api/admin/reports/categories`, { params });
+  return { categories: response.data?.data || [] };
+};
+
+export const getSalesTrends = async (params = {}) => {
+  const response = await axios.get(`${API_BASE_URL}/api/admin/reports/trends`, { params });
+  return { trends: response.data?.data || [] };
+};
+
+export const getSellerRankings = async (params = {}) => {
+  const response = await axios.get(`${API_BASE_URL}/api/admin/reports/sellers`, { params });
+  return { sellers: response.data?.data || [] };
+};
+
+export const getPaymentMetrics = async (params = {}) => {
+  const response = await axios.get(`${API_BASE_URL}/api/admin/reports/payments`, { params });
+  return response.data?.data || {};
+};
+
+export const getTransactionMetrics = async (params = {}) => {
+  const response = await axios.get(`${API_BASE_URL}/api/admin/reports/transactions`, { params });
+  return response.data?.data || {};
+};
+
+export const comparePeriods = async (params = {}) => {
+  const response = await axios.get(`${API_BASE_URL}/api/admin/reports/compare`, { params });
+  return response.data?.data || {};
+};
+
+export const exportReportPDF = async (payload) => {
+  // Transform payload to match backend expectations
+  const transformedPayload = {
+    reportType: payload.reportType,
+    dateRange: {
+      startDate: payload.startDate,
+      endDate: payload.endDate,
+    },
+  };
+  
+  console.log('Sending PDF export request:', JSON.stringify(transformedPayload, null, 2));
+  
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/api/admin/reports/export-pdf`,
+      transformedPayload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    
+    console.log('PDF export response:', response.data);
+    
+    // Construct the download URL
+    if (response.data.data && response.data.data.fileName) {
+      response.data.data.downloadUrl = `${API_BASE_URL}/api/admin/reports/download/${response.data.data.fileName}`;
+    }
+    
+    return response.data.data;
+  } catch (error) {
+    console.error('PDF export error details:', {
+      status: error.response?.status,
+      message: error.response?.data?.message,
+      data: error.response?.data,
+      requestData: transformedPayload,
+    });
+    throw error;
+  }
+};
+
+export const downloadProtectedFile = async (downloadUrl, fileName) => {
+  const response = await axios.get(downloadUrl, {
+    responseType: 'blob',
+  });
+
+  const objectUrl = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(objectUrl);
+};
+
+export const getEmailPreferences = async () => {
+  const response = await axios.get(`${API_BASE_URL}/api/admin/reports/email-preferences`);
+  return response.data;
+};
+
+export const updateEmailPreferences = async (payload) => {
+  const response = await axios.put(`${API_BASE_URL}/api/admin/reports/email-preferences`, payload);
+  return response.data;
+};
+
+export const getReportAuditLog = async (params = {}) => {
+  const response = await axios.get(`${API_BASE_URL}/api/admin/reports/audit-log`, { params });
+  return response.data;
+};

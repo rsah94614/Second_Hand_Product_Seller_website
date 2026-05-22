@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Alert, Platform, Text, View } from "react-native";
 import { useColorScheme } from "nativewind";
@@ -17,14 +17,19 @@ import { Skeleton } from "../../components/ui/Skeleton";
 // Modular Views
 import UserProfileView from "../../components/profile/UserProfileView";
 import AdminProfileView from "../../components/profile/AdminProfileView";
+import { validateProfileForm, type CampusFormShape } from "../../lib/constants/profileForm";
 
-interface CampusInfo {
-  department: string;
-  course: string;
-  year: string;
-  semester: string;
-  hostel: string;
-  residentType: string;
+type CampusInfo = CampusFormShape;
+
+function campusFromUser(u: { campus?: Partial<CampusInfo> } | null | undefined): CampusInfo {
+  return {
+    department: u?.campus?.department || "",
+    course: u?.campus?.course || "",
+    year: u?.campus?.year || "",
+    semester: u?.campus?.semester || "",
+    hostel: u?.campus?.hostel || "",
+    residentType: u?.campus?.residentType || "",
+  };
 }
 
 export default function ProfileScreen() {
@@ -38,9 +43,10 @@ export default function ProfileScreen() {
   const { showToast } = useToast();
   const { colorScheme, toggleColorScheme } = useColorScheme();
   const [editMode, setEditMode] = useState(false);
+  const [editError, setEditError] = useState("");
   const [editName, setEditName] = useState(user?.name || "");
   const [editLocation, setEditLocation] = useState(user?.location || "");
-  const [editProfileRole, setEditProfileRole] = useState(user?.profileRole || "");
+  const [editProfileRole, setEditProfileRole] = useState(user?.profileRole || "student");
 
   const handleToggleTheme = async () => {
     const next = colorScheme === "dark" ? "light" : "dark";
@@ -48,14 +54,26 @@ export default function ProfileScreen() {
     await saveThemePreference(next);
   };
 
-  const [editCampus, setEditCampus] = useState<CampusInfo>({
-    department: user?.campus?.department || "",
-    course: user?.campus?.course || "",
-    year: user?.campus?.year || "",
-    semester: user?.campus?.semester || "",
-    hostel: user?.campus?.hostel || "",
-    residentType: user?.campus?.residentType || "",
-  });
+  const [editCampus, setEditCampus] = useState<CampusInfo>(campusFromUser(user));
+
+  const resetEditForm = useCallback(() => {
+    if (!user) return;
+    setEditName(user.name || "");
+    setEditLocation(user.location || "");
+    setEditProfileRole(user.profileRole || "student");
+    setEditCampus(campusFromUser(user));
+    setEditError("");
+  }, [user]);
+
+  const handleEnterEdit = () => {
+    resetEditForm();
+    setEditMode(true);
+  };
+
+  const handleCancelEdit = () => {
+    resetEditForm();
+    setEditMode(false);
+  };
   const [saving, setSaving] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [showTradingInfo, setShowTradingInfo] = useState(false);
@@ -105,25 +123,29 @@ export default function ProfileScreen() {
   });
 
   const saveProfile = async () => {
-    if (!editName.trim()) {
-      Alert.alert("Name required", "Please enter your name.");
+    const validationError = validateProfileForm(editName, editProfileRole, editCampus);
+    if (validationError) {
+      setEditError(validationError);
       return;
     }
+
+    setEditError("");
     setSaving(true);
     try {
       await updateProfile({
         name: editName.trim(),
         location: editLocation.trim(),
-        profileRole: editProfileRole.trim(),
+        profileRole: editProfileRole.trim() || "student",
         campus: { ...editCampus },
       });
       setEditMode(false);
+      setEditError("");
       await refetchTrust();
-      if (user?.role !== 'admin') await refetchCompletion();
+      if (user?.role !== "admin") await refetchCompletion();
       showToast("Profile updated successfully.");
     } catch (e: any) {
       const parsedError = parseApiError(e, "Could not update profile. Please try again.");
-      Alert.alert("Error", formatErrorForDisplay(parsedError));
+      setEditError(formatErrorForDisplay(parsedError));
     } finally {
       setSaving(false);
     }
@@ -250,7 +272,10 @@ export default function ProfileScreen() {
   const commonProps = {
     user,
     editMode,
-    setEditMode,
+    editError,
+    setEditError,
+    onEnterEdit: handleEnterEdit,
+    onCancelEdit: handleCancelEdit,
     editName,
     setEditName,
     editLocation,

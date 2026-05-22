@@ -41,6 +41,15 @@ import AdminReportsPage from '../features/admin/pages/AdminReportsPage';
 import AdminAuditLogsPage from '../features/admin/pages/AdminAuditLogsPage';
 import AdminModerationQueuePage from '../features/admin/pages/AdminModerationQueuePage';
 import AdminSellerVerificationsPage from '../features/admin/pages/AdminSellerVerificationsPage';
+import ReportsHubPage from '../features/admin/pages/ReportsHubPage';
+import SalesDashboardPage from '../features/admin/pages/SalesDashboardPage';
+import TopProductsPage from '../features/admin/pages/TopProductsPage';
+import CategoryBreakdownPage from '../features/admin/pages/CategoryBreakdownPage';
+import SalesTrendsPage from '../features/admin/pages/SalesTrendsPage';
+import SellerRankingsPage from '../features/admin/pages/SellerRankingsPage';
+import PaymentMetricsPage from '../features/admin/pages/PaymentMetricsPage';
+import TransactionMetricsPage from '../features/admin/pages/TransactionMetricsPage';
+import PeriodComparisonPage from '../features/admin/pages/PeriodComparisonPage';
 
 const AppRouter = () => (
   <Routes>
@@ -68,6 +77,15 @@ const AppRouter = () => (
     <Route path="/admin/audit-logs" element={<ProtectedRoute allowedRoles={['admin']}><AdminAuditLogsPage /></ProtectedRoute>} />
     <Route path="/admin/moderation-queue" element={<ProtectedRoute allowedRoles={['admin']}><AdminModerationQueuePage /></ProtectedRoute>} />
     <Route path="/admin/seller-verifications" element={<ProtectedRoute allowedRoles={['admin']}><AdminSellerVerificationsPage /></ProtectedRoute>} />
+    <Route path="/admin/reports-hub" element={<ProtectedRoute allowedRoles={['admin']}><ReportsHubPage /></ProtectedRoute>} />
+    <Route path="/admin/sales-dashboard" element={<ProtectedRoute allowedRoles={['admin']}><SalesDashboardPage /></ProtectedRoute>} />
+    <Route path="/admin/reports/top-products" element={<ProtectedRoute allowedRoles={['admin']}><TopProductsPage /></ProtectedRoute>} />
+    <Route path="/admin/reports/categories" element={<ProtectedRoute allowedRoles={['admin']}><CategoryBreakdownPage /></ProtectedRoute>} />
+    <Route path="/admin/reports/trends" element={<ProtectedRoute allowedRoles={['admin']}><SalesTrendsPage /></ProtectedRoute>} />
+    <Route path="/admin/reports/sellers" element={<ProtectedRoute allowedRoles={['admin']}><SellerRankingsPage /></ProtectedRoute>} />
+    <Route path="/admin/reports/payments" element={<ProtectedRoute allowedRoles={['admin']}><PaymentMetricsPage /></ProtectedRoute>} />
+    <Route path="/admin/reports/transactions" element={<ProtectedRoute allowedRoles={['admin']}><TransactionMetricsPage /></ProtectedRoute>} />
+    <Route path="/admin/reports/comparison" element={<ProtectedRoute allowedRoles={['admin']}><PeriodComparisonPage /></ProtectedRoute>} />
     <Route path="/create-product" element={<ProtectedRoute allowedRoles={['user']}><CreateProductPage /></ProtectedRoute>} />
     <Route path="/edit-product/:id" element={<ProtectedRoute allowedRoles={['user']}><EditProductPage /></ProtectedRoute>} />
     <Route path="/my-products" element={<ProtectedRoute allowedRoles={['user']}><MyProductsPage /></ProtectedRoute>} />

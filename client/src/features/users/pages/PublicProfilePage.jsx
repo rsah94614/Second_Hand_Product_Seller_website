@@ -185,7 +185,7 @@ export default function PublicProfilePage() {
               {(profile.campus?.department || profile.campus?.course || profile.profileRole) && (
                 <div className="mt-5 pt-5 border-t border-gray-100 flex flex-wrap gap-4 text-sm text-gray-600">
                   {profile.profileRole && (
-                    <span className="font-semibold text-gray-800">{profile.profileRole}</span>
+                    <span className="font-semibold text-gray-800 capitalize">{profile.profileRole.replace(/_/g, ' ')}</span>
                   )}
                   {profile.campus?.department && (
                     <span className="text-gray-500">{profile.campus.department}</span>

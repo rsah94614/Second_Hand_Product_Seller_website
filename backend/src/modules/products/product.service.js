@@ -15,6 +15,25 @@ const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value)
 
 const allowedSortFields = new Set(['createdAt', 'price', 'title', 'views', 'averageRating', 'reviewCount']);
 
+/**
+ * Query for listings visible on the public browse/search feed.
+ * Includes legacy rows with no expiresAt (created before expiry was enforced).
+ * Excludes sold, inactive, flagged, and past-expiry listings.
+ */
+const buildPublicListingFilter = () => {
+  const now = new Date();
+  return {
+    isActive: true,
+    isSold: false,
+    flagged: { $ne: true },
+    $or: [
+      { expiresAt: { $gte: now } },
+      { expiresAt: { $exists: false } },
+      { expiresAt: null },
+    ],
+  };
+};
+
 const normalizeText = (value = '') => value.toString().trim().toLowerCase();
 
 const scoreSearchMatch = (product, search) => {
@@ -122,7 +141,7 @@ const notifyWishlistUsers = async ({
 };
 
 const findProducts = async ({ cursor, limit = 12, category, minPrice, maxPrice, search, sortBy = 'createdAt', sortOrder = 'desc' }) => {
-  const baseQuery = { isActive: true, isSold: false, expiresAt: { $gte: new Date() } };
+  const baseQuery = buildPublicListingFilter();
 
   if (category) baseQuery.category = category;
   const hasMinPrice = minPrice !== undefined && minPrice !== null && minPrice !== '';
@@ -198,9 +217,8 @@ const findRelatedProducts = async (productId) => {
   const maxPrice = Number(product.price || 0) * 1.4 || Number(product.price || 0) + 1000;
 
   let relatedProducts = await Product.find({
+    ...buildPublicListingFilter(),
     _id: { $ne: product._id },
-    isActive: true,
-    isSold: false,
     category: product.category,
     price: { $gte: minPrice, $lte: maxPrice },
   })
@@ -213,9 +231,8 @@ const findRelatedProducts = async (productId) => {
     seenIds.push(product._id);
 
     const fallbackProducts = await Product.find({
+      ...buildPublicListingFilter(),
       _id: { $nin: seenIds },
-      isActive: true,
-      isSold: false,
       category: product.category,
     })
       .populate('seller', 'name location')
@@ -236,6 +253,7 @@ const getBearerToken = (headerValue) => {
 };
 
 module.exports = {
+  buildPublicListingFilter,
   scoreSearchMatch,
   recalculateReviewStats,
   parseContactInfo,

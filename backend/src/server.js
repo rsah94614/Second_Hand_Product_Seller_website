@@ -6,6 +6,7 @@ const { validateEnvironment } = require('./config/env');
 const { verifyTransporter } = require('./shared/utils/emailService');
 const { ensureDefaultCategories } = require('../utils/categoryDefaults');
 const { startReminderService } = require('./services/reminder.service');
+const emailSchedulerService = require('./services/EmailSchedulerService');
 
 const path = require('path');
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -38,6 +39,9 @@ const startServer = async () => {
 
     // Start reminder service (Task 2.3.1)
     startReminderService();
+
+    // Start email scheduler service (Phase 3.3)
+    emailSchedulerService.start();
 
     const PORT = process.env.PORT || 5000;
     server.listen(PORT, () => {

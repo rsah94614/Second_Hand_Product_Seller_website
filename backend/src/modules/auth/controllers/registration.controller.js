@@ -9,6 +9,7 @@ const {
   otpDebugPayload,
   issueSession,
 } = require('../auth.service');
+const { validateProfilePayload } = require('../../../shared/constants/profileForm.constants');
 
 const OTP_TTL_MS = 10 * 60 * 1000;
 const OTP_COOLDOWN_MS = 60 * 1000;
@@ -54,6 +55,11 @@ const register = async (req, res) => {
 
     if (!otp) {
       return res.status(400).json({ message: 'Email verification is required to complete registration' });
+    }
+
+    const profileValidationError = validateProfilePayload({ name, profileRole, campus });
+    if (profileValidationError) {
+      return res.status(400).json({ message: profileValidationError, errors: [profileValidationError] });
     }
 
     const regOtp = await RegistrationOtp.findOne({ email: normalizedEmail });

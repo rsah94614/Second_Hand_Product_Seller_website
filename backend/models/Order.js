@@ -130,9 +130,22 @@ const orderSchema = new mongoose.Schema(
   }
 );
 
-// Index for seller-side order queries
+// Indexes for seller-side order queries
 orderSchema.index({ seller: 1, status: 1 });
 orderSchema.index({ user: 1, status: 1 });
+
+// Compound indexes for report queries
+// Index for dashboard metrics: status and createdAt
+orderSchema.index({ status: 1, createdAt: -1 });
+
+// Index for seller revenue reports: seller, status, and createdAt
+orderSchema.index({ seller: 1, status: 1, createdAt: -1 });
+
+// Index for category breakdown: status and createdAt (used with product lookup)
+orderSchema.index({ status: 1, 'items.product': 1, createdAt: -1 });
+
+// Index for payment metrics: status and createdAt
+orderSchema.index({ status: 1, total: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Order', orderSchema);
 module.exports.ORDER_STATUSES = ORDER_STATUSES;

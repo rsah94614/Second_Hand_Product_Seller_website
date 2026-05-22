@@ -5,11 +5,14 @@ import { Image } from "expo-image";
 import { Button } from "../ui/Button";
 import { SectionCard } from "../ui/SectionCard";
 import { SettingRow } from "../ui/SettingRow";
+import { PROFILE_FIELD_LABELS } from "../../lib/constants/profileForm";
 
 interface AdminProfileViewProps {
   user: any;
   editMode: boolean;
-  setEditMode: (val: boolean) => void;
+  editError?: string;
+  onEnterEdit: () => void;
+  onCancelEdit: () => void;
   editName: string;
   setEditName: (val: string) => void;
   editLocation: string;
@@ -26,10 +29,21 @@ interface AdminProfileViewProps {
   router: any;
 }
 
+function ErrorBanner({ message }: { message: string }) {
+  if (!message) return null;
+  return (
+    <View className="mb-4 rounded-2xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-950/20 px-4 py-3">
+      <Text className="text-[13px] font-outfit-m text-red-600 dark:text-red-400">{message}</Text>
+    </View>
+  );
+}
+
 const AdminProfileView: React.FC<AdminProfileViewProps> = ({
   user,
   editMode,
-  setEditMode,
+  editError = "",
+  onEnterEdit,
+  onCancelEdit,
   editName,
   setEditName,
   editLocation,
@@ -93,7 +107,7 @@ const AdminProfileView: React.FC<AdminProfileViewProps> = ({
               </Pressable>
               
               <Pressable 
-                onPress={() => setEditMode(true)}
+                onPress={onEnterEdit}
                 className="flex-1 bg-slate-50 dark:bg-slate-800 py-3 rounded-xl items-center justify-center flex-row gap-2 border border-slate-200 dark:border-slate-700 active:opacity-90"
               >
                 <Ionicons name="settings-outline" size={16} color={colorScheme === 'dark' ? '#cbd5e1' : '#475569'} />
@@ -108,25 +122,39 @@ const AdminProfileView: React.FC<AdminProfileViewProps> = ({
       {editMode ? (
         <View className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-100 dark:border-slate-800 shadow-sm">
            <Text className="text-lg font-outfit-bl text-slate-900 dark:text-white mb-4">Edit Account</Text>
+
+           <ErrorBanner message={editError} />
            
            <View className="mb-4">
-              <Text className="text-[11px] font-outfit-sb text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Display Name</Text>
+              <Text className="text-[11px] font-outfit-sb text-slate-400 uppercase tracking-widest mb-1.5 ml-1">{PROFILE_FIELD_LABELS.name.label}</Text>
               <View className="flex-row items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-2xl px-4 py-3 border border-slate-100 dark:border-slate-700">
                 <Ionicons name="person-outline" size={18} color="#94a3b8" />
-                <TextInput value={editName} onChangeText={setEditName} className="flex-1 text-[15px] font-outfit text-slate-800 dark:text-white" />
+                <TextInput
+                  value={editName}
+                  onChangeText={setEditName}
+                  className="flex-1 text-[15px] font-outfit text-slate-800 dark:text-white"
+                  placeholder={PROFILE_FIELD_LABELS.name.placeholder}
+                  placeholderTextColor="#94a3b8"
+                />
               </View>
            </View>
 
            <View className="mb-6">
-              <Text className="text-[11px] font-outfit-sb text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Work Location</Text>
+              <Text className="text-[11px] font-outfit-sb text-slate-400 uppercase tracking-widest mb-1.5 ml-1">{PROFILE_FIELD_LABELS.location.label}</Text>
               <View className="flex-row items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-2xl px-4 py-3 border border-slate-100 dark:border-slate-700">
                 <Ionicons name="map-outline" size={18} color="#94a3b8" />
-                <TextInput value={editLocation} onChangeText={setEditLocation} className="flex-1 text-[15px] font-outfit text-slate-800 dark:text-white" placeholder="e.g. Remote, Office A" placeholderTextColor="#94a3b8" />
+                <TextInput
+                  value={editLocation}
+                  onChangeText={setEditLocation}
+                  className="flex-1 text-[15px] font-outfit text-slate-800 dark:text-white"
+                  placeholder={PROFILE_FIELD_LABELS.location.placeholder}
+                  placeholderTextColor="#94a3b8"
+                />
               </View>
            </View>
 
            <View className="flex-row gap-3">
-              <Pressable onPress={() => setEditMode(false)} className="flex-1 py-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800 items-center"><Text className="font-outfit-sb text-slate-600 dark:text-slate-300">Cancel</Text></Pressable>
+              <Pressable onPress={onCancelEdit} className="flex-1 py-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800 items-center"><Text className="font-outfit-sb text-slate-600 dark:text-slate-300">Cancel</Text></Pressable>
               <Pressable onPress={saveProfile} className="flex-1 py-3.5 rounded-2xl bg-rose-600 items-center shadow-lg shadow-rose-200"><Text className="font-outfit-sb text-white">Save Changes</Text></Pressable>
            </View>
         </View>
@@ -151,6 +179,7 @@ const AdminProfileView: React.FC<AdminProfileViewProps> = ({
 
           <Text className="text-[13px] font-outfit-sb text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-5 mb-2 ml-1">Personal Account</Text>
           <SectionCard>
+            <SettingRow href="/admin/sales-dashboard" title="Sales Dashboard" icon="bar-chart-outline" iconColor="#0891b2" iconBg="bg-cyan-50 dark:bg-cyan-950/30" />
             <SettingRow href="/orders" title="My Orders" icon="receipt-outline" iconColor="#6366f1" iconBg="bg-indigo-50 dark:bg-indigo-950/30" />
             <SettingRow href="/devices" title="Active Sessions" icon="shield-half-outline" iconColor="#7c3aed" iconBg="bg-violet-50 dark:bg-violet-950/30" />
             <SettingRow href="/notifications" title="System Alerts" icon="notifications-outline" iconColor="#6366f1" iconBg="bg-indigo-50 dark:bg-indigo-950/30" />

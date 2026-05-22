@@ -11,6 +11,8 @@
  */
 const pendingDeliveries = new Map();
 
+const normalizeMessageId = (messageId) => messageId?.toString();
+
 /**
  * Cleanup interval for stale delivery records (30 minutes)
  */
@@ -35,7 +37,8 @@ const startDeliveryCleanup = () => {
  * Called when message is saved to database
  */
 const registerPendingDelivery = (messageId, senderId, receiverId) => {
-  pendingDeliveries.set(messageId, {
+  const normalizedMessageId = normalizeMessageId(messageId);
+  pendingDeliveries.set(normalizedMessageId, {
     senderId: senderId.toString(),
     receiverId: receiverId.toString(),
     timestamp: Date.now(),
@@ -49,7 +52,7 @@ const registerPendingDelivery = (messageId, senderId, receiverId) => {
  * Called when receiver's socket receives the message
  */
 const markMessageDelivered = (messageId) => {
-  const delivery = pendingDeliveries.get(messageId);
+  const delivery = pendingDeliveries.get(normalizeMessageId(messageId));
   if (delivery) {
     delivery.delivered = true;
   }
@@ -60,7 +63,7 @@ const markMessageDelivered = (messageId) => {
  * ONLY called after delivery is confirmed
  */
 const markMessageRead = (messageId) => {
-  const delivery = pendingDeliveries.get(messageId);
+  const delivery = pendingDeliveries.get(normalizeMessageId(messageId));
   if (delivery && delivery.delivered) {
     delivery.readAt = Date.now();
     return true; // Safe to mark as read
@@ -72,7 +75,7 @@ const markMessageRead = (messageId) => {
  * Check if message delivery is confirmed
  */
 const isMessageDelivered = (messageId) => {
-  const delivery = pendingDeliveries.get(messageId);
+  const delivery = pendingDeliveries.get(normalizeMessageId(messageId));
   return delivery ? delivery.delivered : false;
 };
 
@@ -80,7 +83,7 @@ const isMessageDelivered = (messageId) => {
  * Get delivery status for a message
  */
 const getDeliveryStatus = (messageId) => {
-  const delivery = pendingDeliveries.get(messageId);
+  const delivery = pendingDeliveries.get(normalizeMessageId(messageId));
   if (!delivery) {
     return { status: 'unknown', delivered: false, read: false };
   }
@@ -98,7 +101,7 @@ const getDeliveryStatus = (messageId) => {
  * Clear delivery record (after confirmed read or timeout)
  */
 const clearDeliveryRecord = (messageId) => {
-  pendingDeliveries.delete(messageId);
+  pendingDeliveries.delete(normalizeMessageId(messageId));
 };
 
 /**
@@ -126,7 +129,8 @@ const getPendingDeliveriesForUser = (userId) => {
  * Receiver emits this when they receive the message
  */
 const handleDeliveryAck = (messageId, receiverId) => {
-  const delivery = pendingDeliveries.get(messageId);
+  const normalizedMessageId = normalizeMessageId(messageId);
+  const delivery = pendingDeliveries.get(normalizedMessageId);
 
   if (!delivery) {
     return { success: false, error: 'Delivery record not found' };
@@ -136,7 +140,7 @@ const handleDeliveryAck = (messageId, receiverId) => {
     return { success: false, error: 'Unauthorized' };
   }
 
-  markMessageDelivered(messageId);
+  markMessageDelivered(normalizedMessageId);
   return { success: true, status: 'delivered' };
 };
 
@@ -145,7 +149,8 @@ const handleDeliveryAck = (messageId, receiverId) => {
  * Receiver emits this when they read the message
  */
 const handleReadAck = (messageId, receiverId) => {
-  const delivery = pendingDeliveries.get(messageId);
+  const normalizedMessageId = normalizeMessageId(messageId);
+  const delivery = pendingDeliveries.get(normalizedMessageId);
 
   if (!delivery) {
     return { success: false, error: 'Delivery record not found' };
@@ -159,7 +164,7 @@ const handleReadAck = (messageId, receiverId) => {
     return { success: false, error: 'Message not yet delivered' };
   }
 
-  const marked = markMessageRead(messageId);
+  const marked = markMessageRead(normalizedMessageId);
   if (!marked) {
     return { success: false, error: 'Cannot mark as read before delivery' };
   }

@@ -11,6 +11,12 @@ const { runChatTests } = require('./chat.test');
 const { runSocketDeliveryTests } = require('./socket-delivery.test');
 const { runUserFeatureTests } = require('./users.test');
 const { runVerifyTask6Simple } = require('./verify-task6-simple');
+const { runReportGeneratorTests } = require('./ReportGeneratorService.test');
+const { runCacheManagerTests } = require('./CacheManager.test');
+const { runSalesTrendsPBTTests } = require('./ReportGeneratorService.SalesTrends.pbt');
+const { runSellerPerformanceTests } = require('./ReportGeneratorService.SellerPerformance.pbt');
+const { runTransactionStatisticsTests } = require('./ReportGeneratorService.TransactionStatistics.pbt');
+const { runPDFExportServiceTests } = require('./PDFExportService.test');
 
 const tests = [
   ['Auth API', runAuthTests],
@@ -25,6 +31,12 @@ const tests = [
   ['Admin API', runAdminTests],
   ['Categories API', runCategoryTests],
   ['Notifications API', runNotificationTests],
+  ['Report Generator Service', runReportGeneratorTests],
+  ['PDF Export Service', runPDFExportServiceTests],
+  ['Cache Manager', runCacheManagerTests],
+  ['Property-Based Tests: Sales Trends Aggregation (Property 7)', runSalesTrendsPBTTests],
+  ['Property-Based Tests: Seller Performance Metrics (Properties 8-9)', runSellerPerformanceTests],
+  ['Property-Based Tests: Transaction Statistics (Properties 11-12)', runTransactionStatisticsTests],
 ];
 
 const run = async () => {

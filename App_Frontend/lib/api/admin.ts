@@ -112,3 +112,40 @@ export const getAdminActivityTimeline = (queryString = "") =>
 // ── Phase 3: Category Analytics ───────────────────────────────────────────────
 export const getCategoryAnalytics = () =>
   api.get(`/api/categories/analytics`).then((r) => r.data);
+
+// ── Phase 6: Sales & Revenue Reports ──────────────────────────────────────────
+export const getDashboardMetrics = (params?: Record<string, string>) =>
+  api.get(`/api/admin/reports/dashboard`, { params }).then((r) => r.data?.data || {});
+
+export const getTopProducts = (params?: Record<string, string>) =>
+  api.get(`/api/admin/reports/top-products`, { params }).then((r) => ({ products: r.data?.data || [] }));
+
+export const getCategoryBreakdown = (params?: Record<string, string>) =>
+  api.get(`/api/admin/reports/categories`, { params }).then((r) => ({ categories: r.data?.data || [] }));
+
+export const getSalesTrends = (params?: Record<string, string>) =>
+  api.get(`/api/admin/reports/trends`, { params }).then((r) => ({ trends: r.data?.data || [] }));
+
+export const getSellerRankings = (params?: Record<string, string>) =>
+  api.get(`/api/admin/reports/sellers`, { params }).then((r) => ({ sellers: r.data?.data || [] }));
+
+export const getPaymentMetrics = (params?: Record<string, string>) =>
+  api.get(`/api/admin/reports/payments`, { params }).then((r) => r.data?.data || {});
+
+export const getTransactionMetrics = (params?: Record<string, string>) =>
+  api.get(`/api/admin/reports/transactions`, { params }).then((r) => r.data?.data || {});
+
+export const comparePeriods = (params?: Record<string, string>) =>
+  api.get(`/api/admin/reports/compare`, { params }).then((r) => r.data?.data || {});
+
+export const exportReportPDF = (payload: Record<string, unknown>) =>
+  api.post(`/api/admin/reports/export-pdf`, payload).then((r) => r.data);
+
+export const getEmailPreferences = () =>
+  api.get(`/api/admin/reports/email-preferences`).then((r) => r.data);
+
+export const updateEmailPreferences = (payload: Record<string, unknown>) =>
+  api.put(`/api/admin/reports/email-preferences`, payload).then((r) => r.data);
+
+export const getReportAuditLog = (params?: Record<string, string>) =>
+  api.get(`/api/admin/reports/audit-log`, { params }).then((r) => r.data);

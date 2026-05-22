@@ -1,3 +1,5 @@
+const { COMPLETION_MISSING_LOCATION } = require('../constants/profileForm.constants');
+
 const MIN_PROFILE_SCORE_FOR_TRADING = 60;
 
 const computeProfileScore = (user) => {
@@ -27,7 +29,7 @@ const getProfileMissingFields = (user) => {
   if (!user.profileRole) missing.push('Campus role');
   if (!user.campus?.year || user.campus.year === '') missing.push('Year / study level');
   if (!user.campus?.residentType || user.campus.residentType === '') missing.push('Resident type');
-  if (!user.location?.trim()) missing.push('Preferred campus meetup area');
+  if (!user.location?.trim()) missing.push(COMPLETION_MISSING_LOCATION);
 
   return missing;
 };

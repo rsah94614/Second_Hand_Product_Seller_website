@@ -7,13 +7,7 @@ import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../components/ui/AppToast";
-
-const YEAR_OPTIONS = ["1st", "2nd", "3rd", "4th", "5th", "Alumni", "Faculty"] as const;
-const PROFILE_ROLES = [
-  { id: "student", label: "Student" },
-  { id: "faculty", label: "Faculty" },
-  { id: "staff", label: "Staff" },
-] as const;
+import { YEAR_OPTIONS, PROFILE_ROLES, PROFILE_FIELD_LABELS } from "../../lib/constants/profileForm";
 
 // ─── Inline error banner (dark-mode aware, no Alert) ─────────────────────────
 function ErrorBanner({ message }: { message: string }) {
@@ -238,8 +232,8 @@ export default function RegisterScreen() {
 
         {/* Location (optional) */}
         <Input
-          label="Location (Optional)"
-          placeholder="Hostel or area"
+          label={PROFILE_FIELD_LABELS.location.label}
+          placeholder={PROFILE_FIELD_LABELS.location.placeholder}
           value={form.location}
           onChangeText={(t) => set("location", t)}
         />
@@ -248,7 +242,7 @@ export default function RegisterScreen() {
         <View className="mb-5">
           <Text className="mb-2 text-sm font-outfit-m text-slate-700 dark:text-slate-300">I am a…</Text>
           <View className="flex-row gap-2">
-            {PROFILE_ROLES.map((r) => (
+            {PROFILE_ROLES.filter((r) => r.id !== "alumni").map((r) => (
               <Pressable
                 key={r.id}
                 onPress={() => set("profileRole", r.id)}

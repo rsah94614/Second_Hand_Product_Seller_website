@@ -6,6 +6,26 @@ import { Button } from "../ui/Button";
 import { SectionCard } from "../ui/SectionCard";
 import { SettingRow } from "../ui/SettingRow";
 import { parseApiError, formatErrorForDisplay } from "../../lib/utils/errorHandler";
+import {
+  YEAR_OPTIONS,
+  PROFILE_ROLES,
+  RESIDENT_TYPE_OPTIONS,
+  PROFILE_FIELD_LABELS,
+  PROFILE_COMPLETION_CHECKLIST,
+  formatProfileRole,
+  formatResidentType,
+  formatYearDisplay,
+  type CampusFormShape,
+} from "../../lib/constants/profileForm";
+
+function ErrorBanner({ message }: { message: string }) {
+  if (!message) return null;
+  return (
+    <View className="mb-3 rounded-2xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-950/20 px-4 py-3">
+      <Text className="text-[13px] font-outfit-m text-red-600 dark:text-red-400">{message}</Text>
+    </View>
+  );
+}
 
 // ── Small reusable info row ────────────────────────────────────────────────────
 const InfoRow = ({ icon, label, value }: { icon: any; label: string; value: string }) => (
@@ -39,14 +59,7 @@ interface TrustLabel {
   color: string;
 }
 
-interface CampusInfo {
-  department: string;
-  course: string;
-  year: string;
-  semester: string;
-  hostel: string;
-  residentType: string;
-}
+type CampusInfo = CampusFormShape;
 
 interface UserProfileViewProps {
   user: any;
@@ -59,7 +72,10 @@ interface UserProfileViewProps {
   reputationData: any;
   verificationData: any;
   editMode: boolean;
-  setEditMode: (val: boolean) => void;
+  editError: string;
+  setEditError: (val: string) => void;
+  onEnterEdit: () => void;
+  onCancelEdit: () => void;
   editName: string;
   setEditName: (val: string) => void;
   editLocation: string;
@@ -97,7 +113,10 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
   reputationData,
   verificationData,
   editMode,
-  setEditMode,
+  editError,
+  setEditError,
+  onEnterEdit,
+  onCancelEdit,
   editName,
   setEditName,
   editLocation,
@@ -128,6 +147,13 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
 }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [isViewerOpen, setIsViewerOpen] = React.useState(false);
+
+  const clearError = () => {
+    if (editError) setEditError("");
+  };
+
+  const showYearField =
+    editProfileRole === "student" || editProfileRole === "faculty" || editProfileRole === "alumni";
 
   const handleAvatarPress = () => {
     if (avatarUploading) return;
@@ -197,7 +223,7 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
 
             {!editMode && (
               <Pressable
-                onPress={() => setEditMode(true)}
+                onPress={onEnterEdit}
                 className="flex-row items-center gap-1.5 px-4 py-2 rounded-xl bg-primary-50 dark:bg-primary-950/40 border border-primary-100 dark:border-primary-900 active:bg-primary-100"
               >
                 <Ionicons name="create-outline" size={14} color="#6366f1" />
@@ -209,46 +235,188 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
           {editMode ? (
             /* ── Edit Form ── */
             <View>
-              {[
-                { label: "Full Name", key: "name", icon: "person-outline" as const, value: editName, onChange: setEditName, placeholder: "Your name" },
-                { label: "Location", key: "location", icon: "location-outline" as const, value: editLocation, onChange: setEditLocation, placeholder: "City, State" },
-                { label: "Profile Role", key: "role", icon: "briefcase-outline" as const, value: editProfileRole, onChange: setEditProfileRole, placeholder: "e.g. Student, Faculty" },
-              ].map((f) => (
-                <View key={f.key} className="mb-3">
-                  <Text className="text-[11px] font-outfit-sb text-slate-400 uppercase tracking-widest mb-1">{f.label}</Text>
-                  <View className="flex-row items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-xl px-3 py-2.5">
-                    <Ionicons name={f.icon} size={15} color="#94a3b8" />
-                    <TextInput value={f.value} onChangeText={f.onChange} className="flex-1 text-[15px] font-outfit text-slate-800 dark:text-white" placeholder={f.placeholder} placeholderTextColor="#94a3b8" />
-                  </View>
-                </View>
-              ))}
+              <ErrorBanner message={editError} />
 
-              <Text className="text-[11px] font-outfit-sb text-primary-500 uppercase tracking-widest mb-2 mt-1">🎓 Campus Info</Text>
-              {[
-                { label: "Department", key: "department", icon: "library-outline" as const, placeholder: "e.g. Computer Science" },
-                { label: "Course", key: "course", icon: "book-outline" as const, placeholder: "e.g. B.Tech" },
-                { label: "Year", key: "year", icon: "calendar-outline" as const, placeholder: "e.g. 2nd Year" },
-                { label: "Semester", key: "semester", icon: "layers-outline" as const, placeholder: "e.g. 4th Sem" },
-                { label: "Hostel", key: "hostel", icon: "home-outline" as const, placeholder: "Hostel name" },
-                { label: "Resident Type", key: "residentType", icon: "people-outline" as const, placeholder: "e.g. Day Scholar" },
-              ].map((f) => (
-                <View key={f.key} className="mb-3">
-                  <Text className="text-[11px] font-outfit-sb text-slate-400 uppercase tracking-widest mb-1">{f.label}</Text>
-                  <View className="flex-row items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-xl px-3 py-2.5">
-                    <Ionicons name={f.icon} size={15} color="#94a3b8" />
-                    <TextInput
-                      value={editCampus[f.key as keyof CampusInfo]}
-                      onChangeText={(t) => setEditCampus((p: CampusInfo) => ({ ...p, [f.key]: t }))}
-                      className="flex-1 text-[15px] font-outfit text-slate-800 dark:text-white"
-                      placeholder={f.placeholder}
-                      placeholderTextColor="#94a3b8"
-                    />
+              <View className="mb-3">
+                <Text className="text-[11px] font-outfit-sb text-slate-400 uppercase tracking-widest mb-1">{PROFILE_FIELD_LABELS.name.label}</Text>
+                <View className="flex-row items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-xl px-3 py-2.5">
+                  <Ionicons name="person-outline" size={15} color="#94a3b8" />
+                  <TextInput
+                    value={editName}
+                    onChangeText={(t) => { clearError(); setEditName(t); }}
+                    className="flex-1 text-[15px] font-outfit text-slate-800 dark:text-white"
+                    placeholder={PROFILE_FIELD_LABELS.name.placeholder}
+                    placeholderTextColor="#94a3b8"
+                  />
+                </View>
+              </View>
+
+              <View className="mb-3">
+                <Text className="text-[11px] font-outfit-sb text-slate-400 uppercase tracking-widest mb-1">{PROFILE_FIELD_LABELS.location.label}</Text>
+                <View className="flex-row items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-xl px-3 py-2.5">
+                  <Ionicons name="location-outline" size={15} color="#94a3b8" />
+                  <TextInput
+                    value={editLocation}
+                    onChangeText={(t) => { clearError(); setEditLocation(t); }}
+                    className="flex-1 text-[15px] font-outfit text-slate-800 dark:text-white"
+                    placeholder={PROFILE_FIELD_LABELS.location.placeholder}
+                    placeholderTextColor="#94a3b8"
+                  />
+                </View>
+              </View>
+
+              <View className="mb-4">
+                <Text className="text-[11px] font-outfit-sb text-slate-400 uppercase tracking-widest mb-2">{PROFILE_FIELD_LABELS.profileRole.label}</Text>
+                <View className="flex-row flex-wrap gap-2">
+                  {PROFILE_ROLES.map((r) => (
+                    <Pressable
+                      key={r.id}
+                      onPress={() => {
+                        clearError();
+                        setEditProfileRole(r.id);
+                        if (r.id === "staff" || r.id === "alumni") {
+                          setEditCampus((p) => ({ ...p, year: "" }));
+                        }
+                      }}
+                      className={`min-w-[30%] flex-1 py-2.5 rounded-xl border items-center ${
+                        editProfileRole === r.id
+                          ? "bg-primary-600 dark:bg-primary-500 border-primary-600 dark:border-primary-500"
+                          : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                      }`}
+                    >
+                      <Text
+                        className={`text-[12px] font-outfit-sb ${
+                          editProfileRole === r.id ? "text-white" : "text-slate-700 dark:text-slate-300"
+                        }`}
+                      >
+                        {r.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              <Text className="text-[11px] font-outfit-sb text-primary-500 uppercase tracking-widest mb-2 mt-1">{PROFILE_FIELD_LABELS.campusSection.label}</Text>
+
+              <View className="mb-3">
+                <Text className="text-[11px] font-outfit-sb text-slate-400 uppercase tracking-widest mb-1">{PROFILE_FIELD_LABELS.department.label}</Text>
+                <View className="flex-row items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-xl px-3 py-2.5">
+                  <Ionicons name="library-outline" size={15} color="#94a3b8" />
+                  <TextInput
+                    value={editCampus.department}
+                    onChangeText={(t) => { clearError(); setEditCampus((p) => ({ ...p, department: t })); }}
+                    className="flex-1 text-[15px] font-outfit text-slate-800 dark:text-white"
+                    placeholder={PROFILE_FIELD_LABELS.department.placeholder}
+                    placeholderTextColor="#94a3b8"
+                  />
+                </View>
+              </View>
+
+              <View className="mb-3">
+                <Text className="text-[11px] font-outfit-sb text-slate-400 uppercase tracking-widest mb-1">{PROFILE_FIELD_LABELS.course.label}</Text>
+                <View className="flex-row items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-xl px-3 py-2.5">
+                  <Ionicons name="book-outline" size={15} color="#94a3b8" />
+                  <TextInput
+                    value={editCampus.course}
+                    onChangeText={(t) => { clearError(); setEditCampus((p) => ({ ...p, course: t })); }}
+                    className="flex-1 text-[15px] font-outfit text-slate-800 dark:text-white"
+                    placeholder={PROFILE_FIELD_LABELS.course.placeholder}
+                    placeholderTextColor="#94a3b8"
+                  />
+                </View>
+              </View>
+
+              {showYearField && (
+                <View className="mb-3">
+                  <Text className="text-[11px] font-outfit-sb text-slate-400 uppercase tracking-widest mb-2">{PROFILE_FIELD_LABELS.year.label}</Text>
+                  <View className="flex-row flex-wrap gap-2">
+                    {YEAR_OPTIONS.map((year) => (
+                      <Pressable
+                        key={year}
+                        onPress={() => {
+                          clearError();
+                          setEditCampus((p) => ({ ...p, year: p.year === year ? "" : year }));
+                        }}
+                        className={`px-3 py-2 rounded-xl border ${
+                          editCampus.year === year
+                            ? "bg-primary-600 dark:bg-primary-500 border-primary-600 dark:border-primary-500"
+                            : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                        }`}
+                      >
+                        <Text
+                          className={`text-[12px] font-outfit-sb ${
+                            editCampus.year === year ? "text-white" : "text-slate-700 dark:text-slate-300"
+                          }`}
+                        >
+                          {year}
+                        </Text>
+                      </Pressable>
+                    ))}
                   </View>
                 </View>
-              ))}
+              )}
+
+              <View className="mb-3">
+                <Text className="text-[11px] font-outfit-sb text-slate-400 uppercase tracking-widest mb-1">{PROFILE_FIELD_LABELS.semester.label}</Text>
+                <View className="flex-row items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-xl px-3 py-2.5">
+                  <Ionicons name="layers-outline" size={15} color="#94a3b8" />
+                  <TextInput
+                    value={editCampus.semester}
+                    onChangeText={(t) => { clearError(); setEditCampus((p) => ({ ...p, semester: t })); }}
+                    className="flex-1 text-[15px] font-outfit text-slate-800 dark:text-white"
+                    placeholder={PROFILE_FIELD_LABELS.semester.placeholder}
+                    placeholderTextColor="#94a3b8"
+                  />
+                </View>
+              </View>
+
+              <View className="mb-3">
+                <Text className="text-[11px] font-outfit-sb text-slate-400 uppercase tracking-widest mb-2">{PROFILE_FIELD_LABELS.residentType.label}</Text>
+                <View className="flex-row flex-wrap gap-2">
+                  {RESIDENT_TYPE_OPTIONS.map((opt) => (
+                    <Pressable
+                      key={opt.id}
+                      onPress={() => {
+                        clearError();
+                        setEditCampus((p) => ({
+                          ...p,
+                          residentType: p.residentType === opt.id ? "" : opt.id,
+                        }));
+                      }}
+                      className={`px-3 py-2 rounded-xl border ${
+                        editCampus.residentType === opt.id
+                          ? "bg-primary-600 dark:bg-primary-500 border-primary-600 dark:border-primary-500"
+                          : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                      }`}
+                    >
+                      <Text
+                        className={`text-[12px] font-outfit-sb ${
+                          editCampus.residentType === opt.id ? "text-white" : "text-slate-700 dark:text-slate-300"
+                        }`}
+                      >
+                        {opt.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              <View className="mb-3">
+                <Text className="text-[11px] font-outfit-sb text-slate-400 uppercase tracking-widest mb-1">{PROFILE_FIELD_LABELS.hostel.label}</Text>
+                <View className="flex-row items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-xl px-3 py-2.5">
+                  <Ionicons name="home-outline" size={15} color="#94a3b8" />
+                  <TextInput
+                    value={editCampus.hostel}
+                    onChangeText={(t) => { clearError(); setEditCampus((p) => ({ ...p, hostel: t })); }}
+                    className="flex-1 text-[15px] font-outfit text-slate-800 dark:text-white"
+                    placeholder={PROFILE_FIELD_LABELS.hostel.placeholder}
+                    placeholderTextColor="#94a3b8"
+                  />
+                </View>
+              </View>
 
               <View className="flex-row gap-3 mt-2">
-                <View className="flex-1"><Button title="Cancel" variant="outline" onPress={() => setEditMode(false)} /></View>
+                <View className="flex-1"><Button title="Cancel" variant="outline" onPress={onCancelEdit} /></View>
                 <View className="flex-1"><Button title="Save" onPress={saveProfile} loading={saving} /></View>
               </View>
             </View>
@@ -259,7 +427,9 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
               <View className="flex-row items-center gap-2 flex-wrap mb-1">
                 <Text className="text-[22px] font-outfit-bl text-slate-900 dark:text-white leading-tight">{user.name}</Text>
                 <View className="px-2.5 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/50 border border-primary-100 dark:border-primary-900">
-                  <Text className="text-[10px] font-outfit-sb text-primary-600 dark:text-primary-400 uppercase tracking-widest">{user.profileRole || user.role}</Text>
+                  <Text className="text-[10px] font-outfit-sb text-primary-600 dark:text-primary-400 uppercase tracking-widest">
+                    {formatProfileRole(user.profileRole) || user.role}
+                  </Text>
                 </View>
               </View>
 
@@ -295,10 +465,10 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
           <Text className="text-[11px] font-outfit-sb text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Campus Info</Text>
           {user.campus.department && <InfoRow icon="library-outline" label="Department" value={user.campus.department} />}
           {user.campus.course && <InfoRow icon="book-outline" label="Course" value={user.campus.course} />}
-          {user.campus.year && <InfoRow icon="calendar-outline" label="Year" value={`${user.campus.year} Year`} />}
+          {user.campus.year && <InfoRow icon="calendar-outline" label="Year" value={formatYearDisplay(user.campus.year)} />}
           {user.campus.semester && <InfoRow icon="layers-outline" label="Semester" value={user.campus.semester} />}
           {user.campus.hostel && <InfoRow icon="home-outline" label="Hostel" value={user.campus.hostel} />}
-          {user.campus.residentType && <InfoRow icon="people-outline" label="Resident Type" value={user.campus.residentType} />}
+          {user.campus.residentType && <InfoRow icon="people-outline" label="Resident Type" value={formatResidentType(user.campus.residentType)} />}
         </View>
       )}
 
@@ -333,17 +503,7 @@ const UserProfileView: React.FC<UserProfileViewProps> = ({
             <View className="mt-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
               <Text className="text-[11px] font-outfit-sb text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-2">Required Fields</Text>
               <View className="gap-1.5 mb-3">
-                {[
-                  { label: 'Email Verified', key: 'Email verification' },
-                  { label: 'Full Name', key: 'Full name' },
-                  { label: 'Profile Photo', key: 'Profile photo' },
-                  { label: 'Department', key: 'Department' },
-                  { label: 'Course', key: 'Course' },
-                  { label: 'Campus Role', key: 'Campus role' },
-                  { label: 'Year / Level', key: 'Year / study level' },
-                  { label: 'Resident Type', key: 'Resident type' },
-                  { label: 'Meetup Location', key: 'Preferred campus meetup area' },
-                ].map((field, idx) => {
+                {PROFILE_COMPLETION_CHECKLIST.map((field, idx) => {
                   const isDone = !completionData?.missing?.includes(field.key);
                   return (
                     <View key={idx} className={`flex-row items-center justify-between px-3 py-2 rounded-xl ${isDone ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-rose-50 dark:bg-rose-900/20'}`}>

@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
+import { YEAR_OPTIONS, PROFILE_ROLES, PROFILE_FIELD_LABELS } from '../../../lib/profileForm';
 
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
@@ -288,7 +289,7 @@ const SignUpPage = () => {
 
               <div>
                 <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
-                  Location (Optional)
+                  {PROFILE_FIELD_LABELS.location.label}
                 </label>
                 <div className="relative">
                   <Input
@@ -298,7 +299,7 @@ const SignUpPage = () => {
                     value={formData.location}
                     onChange={handleChange}
                     className="pl-10 pr-10 bg-white placeholder:text-gray-600"
-                    placeholder="Enter your address (if day scholar) or hostel"
+                    placeholder={PROFILE_FIELD_LABELS.location.placeholder}
                   />
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 w-5 h-5" />
                 </div>
@@ -308,24 +309,24 @@ const SignUpPage = () => {
               <div className="pt-2">
                 <label className="block text-sm font-medium text-gray-800 mb-3">I am a...</label>
                 <div className="flex flex-wrap gap-2">
-                  {[
-                    { id: 'student', label: 'Student', icon: GraduationCap },
-                    { id: 'faculty', label: 'Faculty', icon: User },
-                    { id: 'staff', label: 'Staff Member', icon: Building2 },
-                  ].map((role) => (
-                    <button
-                      key={role.id}
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, profileRole: role.id }))}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all border ${formData.profileRole === role.id
-                          ? 'bg-primary-600 border-primary-600 text-white shadow-md shadow-primary-600/20'
-                          : 'bg-white border-gray-600 text-gray-600 hover:border-primary-400 hover:text-primary-600'
+                  {PROFILE_ROLES.filter((r) => r.id !== 'alumni').map((role) => {
+                    const Icon = role.id === 'student' ? GraduationCap : role.id === 'faculty' ? User : Building2;
+                    return (
+                      <button
+                        key={role.id}
+                        type="button"
+                        onClick={() => setFormData((prev) => ({ ...prev, profileRole: role.id }))}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all border ${
+                          formData.profileRole === role.id
+                            ? 'bg-primary-600 border-primary-600 text-white shadow-md shadow-primary-600/20'
+                            : 'bg-white border-gray-600 text-gray-600 hover:border-primary-400 hover:text-primary-600'
                         }`}
-                    >
-                      <role.icon className="w-3 h-3" />
-                      {role.label}
-                    </button>
-                  ))}
+                      >
+                        <Icon className="w-3 h-3" />
+                        {role.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -364,12 +365,11 @@ const SignUpPage = () => {
                         className="w-full h-11 rounded-xl border border-gray-800 bg-white px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
                       >
                         <option value="">Select Year</option>
-                        <option value="1st">1st Year</option>
-                        <option value="2nd">2nd Year</option>
-                        <option value="3rd">3rd Year</option>
-                        <option value="4th">4th Year</option>
-                        <option value="5th">5th Year</option>
-                        <option value="Alumni">Alumni</option>
+                        {YEAR_OPTIONS.filter((y) => y !== 'Faculty').map((y) => (
+                          <option key={y} value={y}>
+                            {y === 'Alumni' ? y : `${y} Year`}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   )}
