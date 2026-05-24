@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { globalSearch, getSearchSuggestions } from '../features/search/api/searchApi';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
-import { Search, Plus, User, LogOut, Menu, Briefcase, ShoppingCart, History, MessageCircle, LayoutDashboard, ShieldCheck, Users, FolderTree, Package, Heart, Flag, Bell, CheckCheck, Clock, TrendingUp, Settings } from 'lucide-react';
+import { Search, Plus, User, LogOut, Menu, Briefcase, ShoppingCart, History, MessageCircle, LayoutDashboard, ShieldCheck, Users, FolderTree, Package, Heart, Flag, Bell, CheckCheck, Clock, TrendingUp, Settings, AlertTriangle } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Badge } from './ui/Badge';
@@ -281,6 +281,7 @@ const Header = () => {
     { to: '/admin/products', label: 'Products', icon: Package },
     { to: '/admin/categories', label: 'Categories', icon: FolderTree },
     { to: '/admin/orders', label: 'Orders', icon: History },
+    { to: '/admin/disputes', label: 'Disputes', icon: AlertTriangle },
     { to: '/admin/reports', label: 'Reports', icon: Flag },
     { to: '/admin/moderation-queue', label: 'Mod Queue', icon: ShieldCheck },
     { to: '/admin/seller-verifications', label: 'Verifications', icon: ShieldCheck },

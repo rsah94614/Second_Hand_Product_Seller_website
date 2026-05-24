@@ -242,9 +242,9 @@ export default function OrdersScreen() {
         visible={!!disputeOrderId}
         onClose={() => setDisputeOrderId(null)}
         loading={disputeM.isPending}
-        onSubmit={(reason) => {
+        onSubmit={(payload) => {
           if (disputeOrderId) {
-            disputeM.mutate({ orderId: disputeOrderId, reason });
+            disputeM.mutate({ orderId: disputeOrderId, ...payload });
             setDisputeOrderId(null);
           }
         }}

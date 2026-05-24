@@ -143,7 +143,7 @@ export const OrderActionButtons = ({
       )}
 
       {/* Dispute button */}
-      {['completed', 'no_show', 'meetup_scheduled'].includes(order.status) && (
+      {['completed', 'no_show'].includes(order.status) && (
         <Button
           variant="outline"
           size="sm"

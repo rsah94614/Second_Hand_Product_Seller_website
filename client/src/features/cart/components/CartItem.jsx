@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trash2, Minus, Plus } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
 import { getCampusPickupLabel } from '../../../lib/campus';
 
@@ -10,7 +10,7 @@ const formatPrice = (price = 0) =>
     maximumFractionDigits: 0,
   }).format(price);
 
-export const CartItem = ({ item, onRemove, onUpdateQuantity }) => {
+export const CartItem = ({ item, onRemove }) => {
   const isItemUnavailable = !item.product || item.product.isSold || item.product.isActive === false;
 
   return (
@@ -53,40 +53,7 @@ export const CartItem = ({ item, onRemove, onUpdateQuantity }) => {
           </p>
         </div>
 
-        <div className="flex items-center justify-between mt-4">
-          <div className="flex items-center gap-3">
-            {!isItemUnavailable && (
-              <div className="flex items-center rounded-lg border border-gray-200 bg-gray-50 p-1">
-                <button
-                  type="button"
-                  onClick={() => onUpdateQuantity({ productId: item.product?._id, quantity: Math.max(1, item.quantity - 1) })}
-                  disabled={item.quantity <= 1}
-                  className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-white hover:shadow-sm text-gray-500 disabled:opacity-30 transition-all"
-                >
-                  <Minus className="h-4 w-4" />
-                </button>
-                <span className="w-10 text-center font-bold text-gray-800">{item.quantity}</span>
-                <button
-                  type="button"
-                  onClick={() => onUpdateQuantity({ productId: item.product?._id, quantity: item.quantity + 1 })}
-                  disabled={item.quantity >= (item.product?.stock || 1)}
-                  className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-white hover:shadow-sm text-gray-500 disabled:opacity-30 transition-all"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-              </div>
-            )}
-            {!isItemUnavailable && item.product?.stock <= 5 && (
-              <span className="text-[10px] font-bold text-orange-600 ml-1">
-                Only {item.product.stock} left
-              </span>
-            )}
-            {!isItemUnavailable && (
-              <span className="text-xs text-gray-400 font-medium font-serif italic">
-                {formatPrice(item.product?.price || 0)} / unit
-              </span>
-            )}
-          </div>
+        <div className="flex items-center justify-end mt-4">
           <div className="text-right">
             <p className={`text-xl font-bold ${isItemUnavailable ? 'text-gray-500 line-through' : 'text-black'}`}>
               {formatPrice(item.subtotal)}

@@ -90,6 +90,7 @@ const attachResponseInterceptor = (instance) => {
         url.includes('/api/auth/login') ||
         url.includes('/api/auth/register') ||
         url.includes('/api/auth/refresh') ||
+        url.includes('/api/auth/logout') ||
         url.includes('/api/auth/forgot-password') ||
         url.includes('/api/auth/reset-password')
       ) {

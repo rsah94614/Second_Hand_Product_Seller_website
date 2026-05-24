@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "ignoreDeprecations": "6.0",
+    "ignoreDeprecations": "5.0",
     "baseUrl": ".",
     "paths": {
       "@/*": [
@@ -9,6 +9,7 @@
     }
   },
   "include": [
-    "src"
-, "../.kiro/specs/sales-revenue-reports/Header.jsx"  ]
+    "src",
+    "../.kiro/specs/sales-revenue-reports/Header.jsx"
+  ]
 }

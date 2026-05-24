@@ -1,4 +1,4 @@
-import { View, Text, FlatList, Pressable } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { formatCurrency } from "../../lib/utils/formatting";
 
@@ -65,12 +65,9 @@ export function TopItemsWidget({
           </Text>
         </View>
       ) : (
-        <FlatList
-          data={items}
-          keyExtractor={(item) => item.id}
-          scrollEnabled={false}
-          renderItem={({ item }) => (
-            <View className="flex-row items-center gap-3 py-3 border-b border-slate-100 dark:border-slate-800 last:border-b-0">
+        <View>
+          {items.map((item) => (
+            <View key={item.id} className="flex-row items-center gap-3 py-3 border-b border-slate-100 dark:border-slate-800 last:border-b-0">
               <View className="w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900/30 items-center justify-center">
                 <Text className="text-[11px] font-outfit-sb text-primary-600">
                   {item.rank}
@@ -105,8 +102,8 @@ export function TopItemsWidget({
                 )}
               </View>
             </View>
-          )}
-        />
+          ))}
+        </View>
       )}
     </View>
   );

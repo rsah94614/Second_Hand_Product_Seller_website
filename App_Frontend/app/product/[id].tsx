@@ -60,8 +60,6 @@ function ProductDetailContent() {
     isOwner,
     isWishlisted,
     isInCart,
-    quantity,
-    setQuantity,
     reviewForm,
     setReviewForm,
     completionData,
@@ -213,8 +211,6 @@ function ProductDetailContent() {
         <BottomActions
           productId={String(id)}
           stock={product.stock || 1}
-          quantity={quantity}
-          setQuantity={setQuantity}
           isInCart={isInCart}
           onAddToCart={() => addCartM.mutate()}
           isAddingToCart={addCartM.isPending}

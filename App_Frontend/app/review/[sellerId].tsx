@@ -80,7 +80,7 @@ function ReviewSellerContent() {
         orderId: String(orderId || ""),
         rating,
         comment: comment.trim(),
-    }),
+      }),
     onSuccess: () => {
       showToast("Review submitted. Thank you! 🎉");
       router.back();
@@ -126,12 +126,6 @@ function ReviewSellerContent() {
         >
           {/* Header */}
           <View className="flex-row items-center gap-3 mb-6 pt-2">
-            <Pressable
-              onPress={() => router.back()}
-              className="h-10 w-10 rounded-full bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 items-center justify-center active:bg-slate-50"
-            >
-              <Ionicons name="arrow-back" size={20} color="#64748b" />
-            </Pressable>
             <View className="flex-1">
               <Text className="text-[24px] font-outfit-bl text-slate-900 dark:text-white leading-tight">Rate Seller</Text>
             </View>
@@ -170,11 +164,10 @@ function ReviewSellerContent() {
                         setComment((prev) => prev ? `${prev}, ${tag}` : tag);
                       }
                     }}
-                    className={`px-3 py-1.5 rounded-full border text-[12px] ${
-                      selected
-                        ? "bg-primary-600 border-primary-600 dark:bg-primary-500 dark:border-primary-500"
-                        : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
-                    }`}
+                    className={`px-3 py-1.5 rounded-full border text-[12px] ${selected
+                      ? "bg-primary-600 border-primary-600 dark:bg-primary-500 dark:border-primary-500"
+                      : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                      }`}
                   >
                     <Text className={`text-[12px] font-outfit-m ${selected ? "text-white" : "text-slate-600 dark:text-slate-300"}`}>
                       {tag}
@@ -211,7 +204,11 @@ function ReviewSellerContent() {
             onPress={() => mutation.mutate()}
             loading={mutation.isPending}
           />
-          <View className="h-10" />
+          <View className="h-20" />
+          <View className="h-20" />
+          <View className="h-20" />
+          <View className="h-20" />
+          <View className="h-20" />
         </ScrollView>
       </KeyboardShiftView>
     </Screen>

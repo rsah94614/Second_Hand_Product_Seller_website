@@ -49,16 +49,7 @@ export const useCartLogic = () => {
     },
   });
 
-  const updateQuantity = useMutation({
-    mutationFn: ({ productId, quantity }) =>
-      axios.put(`${API_BASE_URL}/api/cart/${productId}`, { quantity }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || 'Failed to update quantity');
-    },
-  });
+
 
   const checkout = useMutation({
     mutationFn: (details) =>
@@ -119,7 +110,6 @@ export const useCartLogic = () => {
     setIsAddressModalOpen,
     setShippingDetails,
     removeItem: removeItem.mutate,
-    updateQuantity: updateQuantity.mutate,
     handleCheckout,
     refetch,
   };

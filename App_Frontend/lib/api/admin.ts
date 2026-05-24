@@ -105,10 +105,6 @@ export const bulkDeleteProducts = (payload: { productIds: string[] }) =>
 export const bulkUpdateProducts = (payload: Record<string, unknown>) =>
   api.post(`/api/admin/bulk/products/update`, payload).then((r) => r.data);
 
-// ── Phase 3: Activity Timeline ────────────────────────────────────────────────
-export const getAdminActivityTimeline = (queryString = "") =>
-  api.get(`/api/admin/activity${queryString ? `?${queryString}` : ""}`).then((r) => r.data);
-
 // ── Phase 3: Category Analytics ───────────────────────────────────────────────
 export const getCategoryAnalytics = () =>
   api.get(`/api/categories/analytics`).then((r) => r.data);
@@ -149,3 +145,16 @@ export const updateEmailPreferences = (payload: Record<string, unknown>) =>
 
 export const getReportAuditLog = (params?: Record<string, string>) =>
   api.get(`/api/admin/reports/audit-log`, { params }).then((r) => r.data);
+
+// ── Disputes ──────────────────────────────────────────────────────────────────
+export const getAdminDisputes = () =>
+  api.get(`/api/orders/disputes/all`).then((r) => r.data);
+
+export const getAdminDisputeById = (id: string) =>
+  api.get(`/api/orders/disputes/${id}`).then((r) => r.data);
+
+export const resolveAdminDispute = (id: string, payload: { resolution: string, adminNotes: string }) =>
+  api.patch(`/api/orders/disputes/${id}/resolve`, payload).then((r) => r.data);
+
+export const rejectAdminDispute = (id: string, payload: { reason: string, adminNotes: string }) =>
+  api.patch(`/api/orders/disputes/${id}/reject`, payload).then((r) => r.data);

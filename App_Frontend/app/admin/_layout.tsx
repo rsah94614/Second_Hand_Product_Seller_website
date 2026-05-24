@@ -58,9 +58,9 @@ export default function AdminLayout() {
       <Stack.Screen name="audit" options={{ title: "Audit Logs" }} />
       <Stack.Screen name="moderation-queue" options={{ title: "Moderation Queue" }} />
       <Stack.Screen name="seller-verifications" options={{ title: "Seller Verifications" }} />
-      <Stack.Screen name="bulk-actions" options={{ title: "Bulk Actions" }} />
-      <Stack.Screen name="activity" options={{ title: "Activity Timeline" }} />
       <Stack.Screen name="sales-dashboard" options={{ title: "Sales Dashboard" }} />
+      <Stack.Screen name="disputes" options={{ title: "Disputes" }} />
+      <Stack.Screen name="dispute/[id]" options={{ title: "Review Dispute" }} />
     </Stack>
   );
 }

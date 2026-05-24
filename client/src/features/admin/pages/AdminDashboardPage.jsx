@@ -16,6 +16,9 @@ import {
   ExternalLink,
   BarChart3,
   TrendingUp,
+  Gavel,
+  ListChecks,
+  BadgeCheck,
 } from 'lucide-react';
 import { Badge } from '../../../components/ui/Badge';
 import Header from '../../../components/Header';
@@ -123,6 +126,24 @@ const AdminDashboardPage = () => {
       description: 'Monitor server health status and track immutable administrative audit logs.',
       to: '/admin/audit-logs',
       icon: ShieldCheck,
+    },
+    {
+      label: 'Manage Disputes',
+      description: 'Review and resolve order conflicts between buyers and sellers.',
+      to: '/admin/disputes',
+      icon: Gavel,
+    },
+    {
+      label: 'Moderation Queue',
+      description: 'Review flagged content and pending items in the moderation queue.',
+      to: '/admin/moderation-queue',
+      icon: ListChecks,
+    },
+    {
+      label: 'Seller Verifications',
+      description: 'Review identity documents and approve or reject seller applications.',
+      to: '/admin/seller-verifications',
+      icon: BadgeCheck,
     },
   ];
 

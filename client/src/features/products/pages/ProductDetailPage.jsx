@@ -21,8 +21,6 @@ const ProductDetailPage = () => {
     sellerProfile,
     currentImageIndex,
     setCurrentImageIndex,
-    quantity,
-    setQuantity,
     reviewForm,
     setReviewForm,
     reportForm,
@@ -144,8 +142,6 @@ const ProductDetailPage = () => {
               <div className="animate-fade-up-delayed">
                 <ActionSidebar 
                   product={product}
-                  quantity={quantity}
-                  setQuantity={setQuantity}
                   isAvailable={isAvailable}
                   isInCart={isInCart}
                   isWishlisted={isWishlisted}

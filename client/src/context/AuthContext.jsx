@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   getCurrentUser,
   loginUser,
@@ -27,11 +28,13 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     setUnauthorizedCallback(async () => {
       await storage.clearTokens();
       setUser(null);
+      queryClient.clear();
     });
 
     (async () => {
@@ -58,7 +61,7 @@ export const AuthProvider = ({ children }) => {
 
       setLoading(false);
     })();
-  }, []);
+  }, [queryClient]);
 
   const fetchUser = async () => {
     try {
@@ -116,6 +119,7 @@ export const AuthProvider = ({ children }) => {
     }
     await storage.clearTokens();
     setUser(null);
+    queryClient.clear();
   };
 
   const forgotPassword = async (email) => {

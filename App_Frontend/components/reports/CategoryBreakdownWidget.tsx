@@ -1,4 +1,4 @@
-import { View, Text, FlatList } from "react-native";
+import { View, Text } from "react-native";
 import { formatCurrency, formatPercentage, formatNumberWithSeparators } from "../../lib/utils/formatting";
 
 interface CategoryItem {
@@ -50,12 +50,9 @@ export function CategoryBreakdownWidget({
           </Text>
         </View>
       ) : (
-        <FlatList
-          data={categories}
-          keyExtractor={(item) => item.id}
-          scrollEnabled={false}
-          renderItem={({ item }) => (
-            <View className="py-3 border-b border-slate-100 dark:border-slate-800 last:border-b-0">
+        <View>
+          {categories.map((item) => (
+            <View key={item.id} className="py-3 border-b border-slate-100 dark:border-slate-800 last:border-b-0">
               <View className="flex-row items-center justify-between mb-2">
                 <Text className="text-[13px] font-outfit-m text-slate-900 dark:text-white flex-1">
                   {item.name}
@@ -91,8 +88,8 @@ export function CategoryBreakdownWidget({
                 </View>
               </View>
             </View>
-          )}
-        />
+          ))}
+        </View>
       )}
     </View>
   );

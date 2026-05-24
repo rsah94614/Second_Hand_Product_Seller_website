@@ -64,15 +64,17 @@ export function RevenueChart({ data, title = "30-Day Revenue Trend", loading = f
       </Text>
       <LineChart
         data={chartData}
-        width={chartWidth - 8}
+        width={chartWidth}
         height={256}
         chartConfig={{
-          backgroundColor: "#ffffff",
-          backgroundGradientFrom: "#ffffff",
-          backgroundGradientTo: "#ffffff",
+          backgroundColor: "transparent",
+          backgroundGradientFrom: "#000000",
+          backgroundGradientFromOpacity: 0,
+          backgroundGradientTo: "#000000",
+          backgroundGradientToOpacity: 0,
           decimalPlaces: 0,
-          color: () => "#e2e8f0",
-          labelColor: () => "#94a3b8",
+          color: (opacity = 1) => `rgba(148, 163, 184, ${opacity * 0.4})`,
+          labelColor: (opacity = 1) => `rgba(148, 163, 184, ${opacity})`,
           style: {
             borderRadius: 8,
           },
@@ -82,13 +84,14 @@ export function RevenueChart({ data, title = "30-Day Revenue Trend", loading = f
             stroke: "#3b82f6",
           },
           propsForBackgroundLines: {
-            strokeDasharray: "0",
-            stroke: "#e2e8f0",
+            strokeDasharray: "4",
+            stroke: "rgba(148, 163, 184, 0.2)",
           },
         }}
         bezier
         style={{
           borderRadius: 8,
+          paddingRight: 24,
         }}
       />
     </View>

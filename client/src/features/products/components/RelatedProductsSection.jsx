@@ -1,27 +1,17 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from '../../../components/ui/Button';
 import ProductCard from '../../../components/ProductCard';
 
-export const RelatedProductsSection = ({ products, category }) => {
+export const RelatedProductsSection = ({ products }) => {
   if (products.length === 0) return null;
 
   return (
-    <section className="mt-16">
-      <div className="mb-6 flex items-end justify-between gap-4">
-        <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Similar Items</h2>
-          <p className="mt-2 text-gray-600">
-            Similar listings based on category, price range, popularity, and rating.
-          </p>
-        </div>
-        <Link to={`/products?category=${encodeURIComponent(category)}`}>
-          <Button variant="outline">Explore More</Button>
-        </Link>
-      </div>
-      <div className="grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4 animate-fade-in">
-        {products.slice(0, 4).map((relatedProduct) => (
-          <ProductCard key={relatedProduct._id} product={relatedProduct} />
+    <section className="mt-12 mb-8">
+      <h2 className="mb-6 text-xl font-bold text-gray-900 tracking-wide">You Might Also Like</h2>
+      <div className="flex overflow-x-auto gap-4 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0" style={{ scrollbarWidth: 'none' }}>
+        {products.map((relatedProduct) => (
+          <div key={relatedProduct._id} className="min-w-[240px] w-[240px] sm:min-w-[260px] sm:w-[260px] shrink-0">
+            <ProductCard product={relatedProduct} />
+          </div>
         ))}
       </div>
     </section>
