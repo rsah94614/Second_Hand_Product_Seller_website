@@ -104,6 +104,7 @@ const AppRouter = () => (
     <Route path="/terms" element={<LegalPage />} />
     <Route path="/privacy" element={<LegalPage />} />
     <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+    <Route path="/chat/:userId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
   </Routes>
 );
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { MessageSquare, WifiOff, X } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
@@ -27,6 +27,7 @@ function ChatPage() {
   const socket = useSocket();
   const isConnected = useSocketStatus();
   const location = useLocation();
+  const { userId: routeUserId } = useParams();
 
   const [currentChat, setCurrentChat] = useState(null);
 
@@ -198,6 +199,24 @@ function ChatPage() {
       setCurrentChat(existing || { _id: location.state.sellerId, name: location.state.sellerName });
     }
   }, [location.state, conversations, currentChat?._id]);
+
+  useEffect(() => {
+    if (!routeUserId) return;
+    if (currentChat?._id === routeUserId) return;
+
+    const existing = conversations.find((c) => c._id === routeUserId);
+    if (existing) {
+      setCurrentChat(existing);
+      setShowMobileChat(true);
+      return;
+    }
+
+    setCurrentChat((prev) => {
+      if (prev?._id === routeUserId) return prev;
+      return { _id: routeUserId, name: location.state?.sellerName || 'Conversation' };
+    });
+    setShowMobileChat(true);
+  }, [routeUserId, conversations, currentChat?._id, location.state?.sellerName, setShowMobileChat]);
 
   // ───── handlers ─────
   const handleBlock = () => {

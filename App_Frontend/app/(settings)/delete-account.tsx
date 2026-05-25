@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, KeyboardAvoidingView, Platform, ScrollView, Alert } from "react-native";
+import { View, Text, TextInput, Platform, ScrollView, Alert } from "react-native";
 import { useMutation } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -8,6 +8,7 @@ import { Button } from "../../components/ui/Button";
 import { deleteAccount } from "../../lib/api/users";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../components/ui/AppToast";
+import { KeyboardShiftView } from "../../components/ui/KeyboardShiftView";
 
 export default function DeleteAccountScreen() {
   const [confirmation, setConfirmation] = useState("");
@@ -29,16 +30,16 @@ export default function DeleteAccountScreen() {
 
   const handleDelete = () => {
     if (confirmation !== "DELETE") return;
-    
+
     Alert.alert(
       "Final Confirmation",
       "Are you absolutely sure you want to delete your account? This action cannot be undone.",
       [
         { text: "Cancel", style: "cancel" },
-        { 
-          text: "Delete My Account", 
-          style: "destructive", 
-          onPress: () => deleteMutation.mutate() 
+        {
+          text: "Delete My Account",
+          style: "destructive",
+          onPress: () => deleteMutation.mutate()
         }
       ]
     );
@@ -46,19 +47,16 @@ export default function DeleteAccountScreen() {
 
   return (
     <Screen className="bg-white dark:bg-slate-950">
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
-      >
-        <ScrollView contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
+      <KeyboardShiftView>
+        <ScrollView contentContainerStyle={{ padding: 24, flexGrow: 1 }} keyboardShouldPersistTaps="handled">
           <View className="w-16 h-16 bg-red-50 dark:bg-red-900/30 rounded-full items-center justify-center mb-6">
             <Ionicons name="warning" size={32} color="#ef4444" />
           </View>
-          
+
           <Text className="text-2xl font-outfit-b text-slate-900 dark:text-white mb-4">
             Delete Account
           </Text>
-          
+
           <Text className="text-[16px] font-outfit text-slate-600 dark:text-slate-400 leading-relaxed mb-6">
             We&apos;re sorry to see you go. Deleting your account will immediately remove your access to Campus Mitra.
           </Text>
@@ -82,17 +80,17 @@ export default function DeleteAccountScreen() {
           <Text className="text-[15px] font-outfit-m text-slate-900 dark:text-white mb-2">
             To verify, type <Text className="font-outfit-b text-red-500">DELETE</Text> below:
           </Text>
-          
+
           <TextInput
             value={confirmation}
             onChangeText={setConfirmation}
             placeholder="Type DELETE"
             placeholderTextColor="#94a3b8"
             autoCapitalize="characters"
-            className="h-14 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 font-outfit text-[16px] text-slate-900 dark:text-white mb-8 focus:border-red-500 focus:bg-white"
+            className="h-14 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 font-outfit text-[16px] text-slate-900 dark:text-white mb-8 focus:border-red-500"
           />
 
-          <View className="flex-1 justify-end">
+          <View style={{ marginTop: "auto", paddingTop: 24 }}>
             <Button
               title="I understand, delete my account"
               variant="danger"
@@ -108,8 +106,13 @@ export default function DeleteAccountScreen() {
               disabled={deleteMutation.isPending}
             />
           </View>
+          <View className="h-20" />
+          <View className="h-20" />
+          <View className="h-20" />
+          <View className="h-20" />
+          <View className="h-10" />
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardShiftView>
     </Screen>
   );
 }

@@ -53,8 +53,15 @@ const OrderHistoryPage = () => {
   const handleMessage = (order) => {
     const buyerId = order.user?._id || order.user;
     const sellerId = order.seller?._id || order.seller;
+    const sellerName = order.seller?.name;
+    const buyerName = order.user?.name;
     const otherUserId = buyerId === user?.id ? sellerId : buyerId;
-    navigate(`/chat/${otherUserId}`);
+    const otherUserName = buyerId === user?.id ? sellerName : buyerName;
+    navigate(`/chat/${otherUserId}`, {
+      state: otherUserName
+        ? { sellerId: otherUserId, sellerName: otherUserName }
+        : undefined,
+    });
   };
 
   if (!user) {
