@@ -22,6 +22,14 @@ const cancelOrder = async (req, res) => {
     order.cancellationReason = reason.trim();
     await order.save();
 
+    // Restore stock
+    const stockUpdatePromises = order.items.map((item) =>
+      require('../../../../models/Product').findByIdAndUpdate(item.product, {
+        $inc: { stock: item.quantity },
+      })
+    );
+    await Promise.all(stockUpdatePromises);
+
     const notifyUserId = isBuyer ? order.seller : order.user;
     if (notifyUserId) {
       await createNotification({
@@ -61,6 +69,14 @@ const markNoShow = async (req, res) => {
     order.noShowBy = noShowBy;
     order.cancellationReason = reason.trim();
     await order.save();
+
+    // Restore stock
+    const stockUpdatePromises = order.items.map((item) =>
+      require('../../../../models/Product').findByIdAndUpdate(item.product, {
+        $inc: { stock: item.quantity },
+      })
+    );
+    await Promise.all(stockUpdatePromises);
 
     const notifyUserId = isBuyer ? order.seller : order.user;
     await createNotification({

@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
-  User, Mail, MapPin, Edit, Save, X, ShieldCheck, LogOut, 
-  Smartphone, Trash2, Camera, Loader2, LayoutDashboard, Settings
+  User, Mail, MapPin, Edit, ShieldCheck, LogOut,
+  Camera, Loader2, LayoutDashboard, Settings
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Badge } from '../../../../components/ui/Badge';
@@ -49,6 +49,9 @@ const AdminProfileView = ({
               {avatarUploading ? <Loader2 className="w-6 h-6 text-white animate-spin" /> : <Camera className="w-6 h-6 text-white" />}
             </button>
             <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+            <div className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-white flex items-center justify-center shadow-md border border-gray-100">
+              <Camera className="w-3.5 h-3.5 text-rose-600" />
+            </div>
           </div>
           <div className="flex-1">
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-2">

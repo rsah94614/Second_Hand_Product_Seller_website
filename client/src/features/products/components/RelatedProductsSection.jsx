@@ -7,9 +7,9 @@ export const RelatedProductsSection = ({ products }) => {
   return (
     <section className="mt-12 mb-8">
       <h2 className="mb-6 text-xl font-bold text-gray-900 tracking-wide">You Might Also Like</h2>
-      <div className="flex overflow-x-auto gap-4 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0" style={{ scrollbarWidth: 'none' }}>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
         {products.map((relatedProduct) => (
-          <div key={relatedProduct._id} className="min-w-[240px] w-[240px] sm:min-w-[260px] sm:w-[260px] shrink-0">
+          <div key={relatedProduct._id} className="min-w-0">
             <ProductCard product={relatedProduct} />
           </div>
         ))}

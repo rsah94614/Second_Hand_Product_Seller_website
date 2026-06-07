@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Platform, ScrollView, Alert } from "react-native";
+import { View, Text, TextInput, ScrollView, Alert } from "react-native";
 import { useMutation } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -48,7 +48,7 @@ export default function DeleteAccountScreen() {
   return (
     <Screen className="bg-white dark:bg-slate-950">
       <KeyboardShiftView>
-        <ScrollView contentContainerStyle={{ padding: 24, flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+        <ScrollView className="flex-1" contentContainerStyle={{ padding: 24, flexGrow: 1, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
           <View className="w-16 h-16 bg-red-50 dark:bg-red-900/30 rounded-full items-center justify-center mb-6">
             <Ionicons name="warning" size={32} color="#ef4444" />
           </View>
@@ -106,11 +106,6 @@ export default function DeleteAccountScreen() {
               disabled={deleteMutation.isPending}
             />
           </View>
-          <View className="h-20" />
-          <View className="h-20" />
-          <View className="h-20" />
-          <View className="h-20" />
-          <View className="h-10" />
         </ScrollView>
       </KeyboardShiftView>
     </Screen>

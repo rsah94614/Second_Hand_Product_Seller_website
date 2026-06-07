@@ -361,7 +361,7 @@ function ChatPage() {
             className="hidden md:block w-1 hover:w-1.5 cursor-col-resize active:bg-primary-500 bg-gray-100 hover:bg-primary-300 transition-all duration-150 h-full flex-none relative group z-10"
             title="Drag to resize sidebar (double-click to reset)"
           >
-            <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[1px] bg-gray-200 group-hover:bg-primary-400 group-active:bg-primary-600 transition-colors" />
+            <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-gray-200 group-hover:bg-primary-400 group-active:bg-primary-600 transition-colors" />
           </div>
 
           <div className={`flex flex-col h-full bg-white min-h-0 overflow-hidden ${showMobileChat ? 'flex' : 'hidden md:flex'}`}>

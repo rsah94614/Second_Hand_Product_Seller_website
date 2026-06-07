@@ -20,12 +20,7 @@ const openEditProduct = (productId: string) => {
   }, 80);
 };
 
-const STAT_CONFIGS = [
-  { label: "Total Listings", key: "total", icon: "layers" as const, iconColor: "#4f46e5", bg: "bg-indigo-50 dark:bg-indigo-950/40", text: "text-indigo-600 dark:text-indigo-400" },
-  { label: "Active", key: "active", icon: "checkmark-circle" as const, iconColor: "#059669", bg: "bg-emerald-50 dark:bg-emerald-950/40", text: "text-emerald-600 dark:text-emerald-400" },
-  { label: "Sold Items", key: "sold", icon: "pricetag" as const, iconColor: "#e11d48", bg: "bg-rose-50 dark:bg-rose-950/40", text: "text-rose-600 dark:text-rose-400" },
-  { label: "Total Views", key: "views", icon: "eye" as const, iconColor: "#d97706", bg: "bg-amber-50 dark:bg-amber-950/40", text: "text-amber-600 dark:text-amber-400" },
-];
+
 
 export default function SellerDashboardScreen() {
   const [ready, setReady] = useState(false);
@@ -105,20 +100,7 @@ function SellerDashboardContent() {
           <Text className="text-[15px] font-outfit text-slate-500 dark:text-slate-400 mt-1">Manage your campus listings</Text>
         </View>
 
-        {/* Stats Grid — 2×2 */}
-        <View className="mb-6 flex-row flex-wrap gap-[10px]">
-          {STAT_CONFIGS.map((cfg) => (
-            <Stat
-              key={cfg.key}
-              label={cfg.label}
-              value={(metrics as Record<string, number>)[cfg.key] ?? 0}
-              icon={cfg.icon}
-              iconColor={cfg.iconColor}
-              bg={cfg.bg}
-              textClass={cfg.text}
-            />
-          ))}
-        </View>
+
 
 
         <Link href="/create-product" asChild>
