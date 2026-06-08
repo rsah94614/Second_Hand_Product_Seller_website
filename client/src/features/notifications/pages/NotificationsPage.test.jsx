@@ -8,6 +8,10 @@ import NotificationsPage from './NotificationsPage';
 const mockNavigate = vi.fn();
 const mockMarkOne = vi.fn();
 const mockMarkAll = vi.fn();
+const mockSetActiveTab = vi.fn();
+const mockSetActiveCategory = vi.fn();
+const mockHandleOpenNotification = vi.fn();
+const mockHandleSnooze = vi.fn();
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -29,6 +33,9 @@ vi.mock('@tanstack/react-query', async () => {
 
 vi.mock('../../../components/Header', () => ({ default: () => <div>Header</div> }));
 vi.mock('../../../components/Footer', () => ({ default: () => <div>Footer</div> }));
+vi.mock('../hooks/useNotificationsLogic', () => ({
+  useNotificationsLogic: vi.fn(),
+}));
 
 vi.mock('../api/notificationApi', () => ({
   getNotifications: vi.fn(),
@@ -58,6 +65,7 @@ vi.mock('../utils/notificationMeta', () => ({
 }));
 
 const { useMutation, useQuery, useQueryClient } = await import('@tanstack/react-query');
+const { useNotificationsLogic } = await import('../hooks/useNotificationsLogic');
 
 const renderPage = () => {
   const queryClient = new QueryClient();
@@ -96,31 +104,44 @@ describe('NotificationsPage', () => {
   });
 
   it('renders the notification inbox with grouped items', () => {
-    useQuery.mockReturnValue({
-      data: {
-        unreadCount: 2,
-        notifications: [
-          {
-            _id: 'n1',
-            type: 'new_message',
-            title: 'New message',
-            message: 'Someone messaged you.',
-            isRead: false,
-            createdAt: '2026-04-04T09:00:00.000Z',
-            link: '/chat',
-          },
-          {
-            _id: 'n2',
-            type: 'order_status_updated',
-            title: 'Order update',
-            message: 'Your order shipped.',
-            isRead: true,
-            createdAt: '2026-04-04T08:00:00.000Z',
-            link: '/orders',
-          },
-        ],
-      },
+    useNotificationsLogic.mockReturnValue({
+      activeTab: 'all',
+      setActiveTab: mockSetActiveTab,
+      activeCategory: 'all',
+      setActiveCategory: mockSetActiveCategory,
       isLoading: false,
+      unreadCount: 2,
+      totalCount: 2,
+      categoryCounts: { all: 2, messages: 1, orders: 1, activity: 0 },
+      groupedEntries: [
+        {
+          label: 'Today',
+          items: [
+            {
+              _id: 'n1',
+              type: 'new_message',
+              title: 'New message',
+              message: 'Someone messaged you.',
+              isRead: false,
+              createdAt: '2026-04-04T09:00:00.000Z',
+              link: '/chat',
+            },
+            {
+              _id: 'n2',
+              type: 'order_status_updated',
+              title: 'Order update',
+              message: 'Your order shipped.',
+              isRead: true,
+              createdAt: '2026-04-04T08:00:00.000Z',
+              link: '/orders',
+            },
+          ],
+        },
+      ],
+      handleOpenNotification: mockHandleOpenNotification,
+      handleSnooze: mockHandleSnooze,
+      markAllRead: mockMarkAll,
+      isMarkAllPending: false,
     });
 
     renderPage();
@@ -133,12 +154,20 @@ describe('NotificationsPage', () => {
   });
 
   it('shows the empty state when no notifications are available', () => {
-    useQuery.mockReturnValue({
-      data: {
-        unreadCount: 0,
-        notifications: [],
-      },
+    useNotificationsLogic.mockReturnValue({
+      activeTab: 'all',
+      setActiveTab: mockSetActiveTab,
+      activeCategory: 'all',
+      setActiveCategory: mockSetActiveCategory,
       isLoading: false,
+      unreadCount: 0,
+      totalCount: 0,
+      categoryCounts: { all: 0, messages: 0, orders: 0, activity: 0 },
+      groupedEntries: [],
+      handleOpenNotification: mockHandleOpenNotification,
+      handleSnooze: mockHandleSnooze,
+      markAllRead: mockMarkAll,
+      isMarkAllPending: false,
     });
 
     renderPage();
@@ -147,36 +176,41 @@ describe('NotificationsPage', () => {
   });
 
   it('filters the visible notifications by category', () => {
-    useQuery.mockReturnValue({
-      data: {
-        unreadCount: 1,
-        notifications: [
-          {
-            _id: 'n1',
-            type: 'new_message',
-            title: 'Message alert',
-            message: 'A new message arrived.',
-            isRead: false,
-            createdAt: '2026-04-04T09:00:00.000Z',
-            link: '/chat',
-          },
-          {
-            _id: 'n2',
-            type: 'order_status_updated',
-            title: 'Order alert',
-            message: 'Your order shipped.',
-            isRead: true,
-            createdAt: '2026-04-04T08:00:00.000Z',
-            link: '/orders',
-          },
-        ],
-      },
+    useNotificationsLogic.mockReturnValue({
+      activeTab: 'all',
+      setActiveTab: mockSetActiveTab,
+      activeCategory: 'messages',
+      setActiveCategory: mockSetActiveCategory,
       isLoading: false,
+      unreadCount: 1,
+      totalCount: 1,
+      categoryCounts: { all: 2, messages: 1, orders: 1, activity: 0 },
+      groupedEntries: [
+        {
+          label: 'Today',
+          items: [
+            {
+              _id: 'n1',
+              type: 'new_message',
+              title: 'Message alert',
+              message: 'A new message arrived.',
+              isRead: false,
+              createdAt: '2026-04-04T09:00:00.000Z',
+              link: '/chat',
+            },
+          ],
+        },
+      ],
+      handleOpenNotification: mockHandleOpenNotification,
+      handleSnooze: mockHandleSnooze,
+      markAllRead: mockMarkAll,
+      isMarkAllPending: false,
     });
 
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: /messages/i }));
 
+    expect(mockSetActiveCategory).toHaveBeenCalledWith('messages');
     expect(screen.getByText('Message alert')).toBeInTheDocument();
     expect(screen.queryByText('Order alert')).not.toBeInTheDocument();
   });

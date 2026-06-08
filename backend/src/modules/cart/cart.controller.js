@@ -178,7 +178,7 @@ const checkout = async (req, res) => {
     );
 
     const stockUnavailableProduct = cart.items.find(
-      (item) => item.quantity > (item.product.stock || 0)
+      (item) => item.quantity > (item.product?.stock || 0)
     );
 
     if (unavailableProduct || stockUnavailableProduct) {
@@ -236,6 +236,14 @@ const checkout = async (req, res) => {
         },
       });
       orders.push(order);
+
+      // Decrement stock for each product in the order immediately
+      const stockUpdatePromises = orderItems.map((item) =>
+        Product.findByIdAndUpdate(item.product, {
+          $inc: { stock: -item.quantity },
+        })
+      );
+      await Promise.all(stockUpdatePromises);
 
       // Notification to Buyer for this order
       notificationPromises.push(

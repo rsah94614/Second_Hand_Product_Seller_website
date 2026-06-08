@@ -6,9 +6,6 @@ export default function PrivacyPolicyScreen() {
   return (
     <Screen className="bg-white dark:bg-slate-950">
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 60 }}>
-        <Text className="text-2xl font-outfit-b text-slate-900 dark:text-white mb-6">
-          Privacy Policy
-        </Text>
         <Text className="text-[14px] font-outfit-sb text-slate-500 mb-6">
           Last updated: August 2026
         </Text>

@@ -7,12 +7,14 @@ import {
   markNotificationRead,
   snoozeNotification,
 } from '../api/notificationApi';
+import { useAuth } from '../../../context/AuthContext';
 import {
   getNotificationDateBucket,
   getNotificationCategory,
 } from '../utils/notificationMeta';
 
 export const useNotificationsLogic = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('all');
   const [activeCategory, setActiveCategory] = useState('all');
   const navigate = useNavigate();
@@ -30,7 +32,8 @@ export const useNotificationsLogic = () => {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['notifications-list', queryArgs],
     queryFn: () => getNotifications(queryArgs),
-    refetchInterval: 15000,
+    enabled: Boolean(user),
+    refetchInterval: user ? 15000 : false,
   });
 
   const markOneMutation = useMutation({

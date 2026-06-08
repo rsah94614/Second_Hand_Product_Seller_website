@@ -1,6 +1,6 @@
 import React from 'react';
-import { Info, ShoppingBag, CheckCircle, MapPin, PackageCheck, Star, X, Tag } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../../components/ui/Dialog';
+import { ShoppingBag, CheckCircle, MapPin, PackageCheck, Star, X, Tag } from 'lucide-react';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../../../components/ui/Dialog';
 
 export const OrderFlowInfoModal = ({ isOpen, onClose, activeTab }) => {
   const isBuying = activeTab === 'buying';
@@ -20,8 +20,8 @@ export const OrderFlowInfoModal = ({ isOpen, onClose, activeTab }) => {
             {isBuying ? 'Buying Workflow' : 'Selling Workflow'}
           </DialogTitle>
           <DialogDescription className="text-lg text-gray-600 leading-relaxed font-medium">
-            {isBuying 
-              ? 'Follow these steps to safely purchase items from other students on campus.' 
+            {isBuying
+              ? 'Follow these steps to safely purchase items from other students on campus.'
               : 'Follow these steps to successfully sell your items and get paid.'}
           </DialogDescription>
         </div>
@@ -31,29 +31,29 @@ export const OrderFlowInfoModal = ({ isOpen, onClose, activeTab }) => {
             {isBuying ? (
               // Buying Flow
               <>
-                <Step 
-                  icon={ShoppingBag} 
-                  title="1. Request Item" 
+                <Step
+                  icon={ShoppingBag}
+                  title="1. Request Item"
                   description="Find an item you like and click 'Buy Now' or 'Request Deal'. The seller will be notified of your request."
                 />
-                <Step 
-                  icon={CheckCircle} 
-                  title="2. Seller Accepts" 
+                <Step
+                  icon={CheckCircle}
+                  title="2. Seller Accepts"
                   description="The seller reviews your request and accepts it. The status changes to 'Accepted'."
                 />
-                <Step 
-                  icon={MapPin} 
-                  title="3. Schedule Meetup" 
+                <Step
+                  icon={MapPin}
+                  title="3. Schedule Meetup"
                   description="Once accepted, you or the seller can propose a campus location and time to meet up (e.g. 'Library at 5PM')."
                 />
-                <Step 
-                  icon={PackageCheck} 
-                  title="4. Meet & Receive" 
+                <Step
+                  icon={PackageCheck}
+                  title="4. Meet & Receive"
                   description="Meet the seller, inspect the item, and pay them directly via cash or UPI. The seller marks the item as 'Delivered'."
                 />
-                <Step 
-                  icon={Star} 
-                  title="5. Confirm & Review" 
+                <Step
+                  icon={Star}
+                  title="5. Confirm & Review"
                   description="You confirm that you received the item. The deal is complete! Don't forget to leave a review."
                   isLast
                 />
@@ -61,29 +61,29 @@ export const OrderFlowInfoModal = ({ isOpen, onClose, activeTab }) => {
             ) : (
               // Selling Flow
               <>
-                <Step 
-                  icon={Tag} 
-                  title="1. Receive Request" 
+                <Step
+                  icon={Tag}
+                  title="1. Receive Request"
                   description="A buyer requests to purchase your listed item. You will get a notification."
                 />
-                <Step 
-                  icon={CheckCircle} 
-                  title="2. Accept Request" 
+                <Step
+                  icon={CheckCircle}
+                  title="2. Accept Request"
                   description="Review the buyer's profile and click 'Accept Order' if you agree to sell it to them."
                 />
-                <Step 
-                  icon={MapPin} 
-                  title="3. Schedule Meetup" 
+                <Step
+                  icon={MapPin}
+                  title="3. Schedule Meetup"
                   description="You or the buyer can suggest a safe campus location and time to meet up and complete the transaction."
                 />
-                <Step 
-                  icon={PackageCheck} 
-                  title="4. Meet & Deliver" 
+                <Step
+                  icon={PackageCheck}
+                  title="4. Meet & Deliver"
                   description="Meet the buyer, receive the payment (cash or UPI), and hand over the item. Then, click 'Mark Delivered'."
                 />
-                <Step 
-                  icon={Star} 
-                  title="5. Buyer Confirms" 
+                <Step
+                  icon={Star}
+                  title="5. Buyer Confirms"
                   description="The buyer confirms receipt on their end. The transaction is complete! Both parties can leave a review."
                   isLast
                 />
@@ -92,11 +92,11 @@ export const OrderFlowInfoModal = ({ isOpen, onClose, activeTab }) => {
           </div>
         </div>
 
-        <button 
-          onClick={onClose} 
+        <button
+          onClick={onClose}
           className="absolute top-6 right-6 p-2 rounded-full bg-white/50 text-gray-500 hover:bg-white hover:text-gray-900 transition-colors backdrop-blur-sm"
         >
-          <X className="w-5 h-5" />
+          {/* <X className="w-5 h-5" /> */}
         </button>
       </DialogContent>
     </Dialog>

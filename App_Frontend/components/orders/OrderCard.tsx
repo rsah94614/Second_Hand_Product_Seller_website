@@ -93,7 +93,7 @@ export const OrderCard = memo(({
   const canDeliver = ["accepted", "meetup_scheduled"].includes(status) && isSeller;
   const canComplete = ["meetup_scheduled", "accepted", "delivered"].includes(status) && isBuyer;
   const canNoShow = status === "meetup_scheduled" && (isBuyer || isSeller);
-  const canDispute = ["meetup_scheduled", "delivered", "completed", "no_show"].includes(status) && (isBuyer || isSeller);
+  const canDispute = ["completed", "no_show"].includes(status) && (isBuyer || isSeller);
   const canConfirmPhoto = status === "completed" && (isBuyer || isSeller);
   const canReview = order.reviewUnlocked === true && isBuyer;
 

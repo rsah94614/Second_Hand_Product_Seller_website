@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert } from "react-native";
 import { useAuth } from "../../context/AuthContext";
+import type { DisputeReason } from "../../components/orders/DisputeModal";
 import {
   acceptOrder,
   cancelOrder,
@@ -110,9 +111,10 @@ export function useOrders() {
   });
 
   const disputeM = useMutation({
-    mutationFn: (payload: { orderId: string; reason: string }) => {
+    mutationFn: (payload: { orderId: string; reason: DisputeReason; description: string }) => {
       const formData = new FormData();
       formData.append("reason", payload.reason);
+      formData.append("description", payload.description);
       return createDispute(payload.orderId, formData);
     },
     onSuccess: () => {

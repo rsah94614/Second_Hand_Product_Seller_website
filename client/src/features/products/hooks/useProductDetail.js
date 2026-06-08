@@ -15,7 +15,7 @@ export const useProductDetail = () => {
   const queryClient = useQueryClient();
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [quantity, setQuantity] = useState(1);
+
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
   const [reportForm, setReportForm] = useState({ targetType: 'product', reason: '', details: '' });
 
@@ -150,8 +150,6 @@ export const useProductDetail = () => {
     sellerProfile,
     currentImageIndex,
     setCurrentImageIndex,
-    quantity,
-    setQuantity,
     reviewForm,
     setReviewForm,
     reportForm,
@@ -166,7 +164,7 @@ export const useProductDetail = () => {
     handleShare,
     handleReviewSubmit,
     handleReportSubmit,
-    addToCart: (q) => addToCart.mutate({ productId: id, quantity: q }),
+    addToCart: () => addToCart.mutate({ productId: id, quantity: 1 }),
     toggleWishlist: () => wishlistMutation.mutate(),
     refetch,
     isReviewPending: reviewMutation.isPending,

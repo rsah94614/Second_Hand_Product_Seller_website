@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useGlobalSearchParams, router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, ScrollView, Text, TextInput, View, Pressable, InteractionManager, ActivityIndicator } from "react-native";
+import { Alert, ScrollView, Text, TextInput, View, InteractionManager, ActivityIndicator } from "react-native";
 import { Image } from "expo-image";
 import { Screen } from "../../components/ui/Screen";
 import { Button } from "../../components/ui/Button";
@@ -47,7 +47,7 @@ function PlaceOrderContent() {
   const { user } = useAuth();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
-  const [qty, setQty] = useState("1");
+
   const [form, setForm] = useState({
     fullName: "",
     email: "",
@@ -76,8 +76,8 @@ function PlaceOrderContent() {
     mutationFn: () =>
       placeOrder({
         productId: String(id),
-        quantity: Math.max(1, parseInt(qty, 10) || 1),
-        shippingDetails: { 
+        quantity: 1,
+        shippingDetails: {
           ...form
         },
       }),
@@ -118,8 +118,7 @@ function PlaceOrderContent() {
   }
 
   const uri = getImageUri(product.images?.[0]);
-  const q = Math.max(1, parseInt(qty, 10) || 1);
-  const total = (product.price || 0) * q;
+  const total = product.price || 0;
 
   return (
     <Screen>
@@ -130,36 +129,15 @@ function PlaceOrderContent() {
             <Text className="font-bold text-slate-900 dark:text-white" numberOfLines={2}>
               {product.title}
             </Text>
-            <Text className="mt-1 text-indigo-700 dark:text-indigo-400">{formatInr(product.price)} each</Text>
-            <Text className="mt-2 font-semibold text-slate-900 dark:text-white">Total {formatInr(total)}</Text>
+            <Text className="mt-1 text-xl font-semibold text-indigo-700 dark:text-indigo-400">{formatInr(total)}</Text>
           </View>
-        </View>
-        <Text className="text-sm text-slate-600 dark:text-slate-400 mb-2">Quantity</Text>
-        <View className="mb-6 flex-row items-center self-start rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-          <Pressable
-            onPress={() => setQty(String(Math.max(1, parseInt(qty, 10) - 1)))}
-            disabled={parseInt(qty, 10) <= 1}
-            className={`h-10 w-10 items-center justify-center ${parseInt(qty, 10) <= 1 ? 'opacity-30' : 'active:bg-slate-50 dark:active:bg-slate-700'} rounded-l-xl`}
-          >
-            <Text className="text-xl text-slate-600 dark:text-slate-400 font-outfit-sb">-</Text>
-          </Pressable>
-          <View className="w-12 items-center justify-center border-l border-r border-slate-100 dark:border-slate-700 h-10">
-            <Text className="text-[16px] font-outfit-sb text-slate-900 dark:text-white">{q}</Text>
-          </View>
-          <Pressable
-            onPress={() => setQty(String(parseInt(qty, 10) + 1))}
-            disabled={parseInt(qty, 10) >= (product.stock || 1)}
-            className={`h-10 w-10 items-center justify-center ${parseInt(qty, 10) >= (product.stock || 1) ? 'opacity-30' : 'active:bg-slate-50 dark:active:bg-slate-700'} rounded-r-xl`}
-          >
-            <Text className="text-xl text-slate-600 dark:text-slate-400 font-outfit-sb">+</Text>
-          </Pressable>
         </View>
         <Field label="Full Name*" value={form.fullName} onChange={(t) => setF("fullName", t)} />
         <Field label="Email" value={form.email} onChange={(t) => setF("email", t)} />
         <Field label="Hostel / Department / Meetup Spot*" value={form.addressLine1} onChange={(t) => setF("addressLine1", t)} />
         <Field label="Additional Note" value={form.addressLine2} onChange={(t) => setF("addressLine2", t)} />
         <Field label="Nearby Landmark" value={form.landmark} onChange={(t) => setF("landmark", t)} />
-        
+
         <View className="mb-4 rounded-xl border border-blue-100 dark:border-blue-900/50 bg-blue-50 dark:bg-blue-900/20 px-4 py-3">
           <Text className="text-[13px] font-outfit leading-relaxed text-blue-800 dark:text-blue-300">
             Orders on CampusMitra are handled as on-campus meetups. Location will be saved under Gauhati University, Guwahati, Assam.
@@ -178,6 +156,11 @@ function PlaceOrderContent() {
             }}
           />
         </View>
+        <View className="h-20" />
+        <View className="h-20" />
+        <View className="h-20" />
+        <View className="h-20" />
+        <View className="h-10" />
       </ScrollView>
     </Screen>
   );

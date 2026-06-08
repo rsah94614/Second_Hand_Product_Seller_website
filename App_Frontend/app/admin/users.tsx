@@ -1,15 +1,17 @@
 import { useInfiniteQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View, Alert } from "react-native";
 import { Screen } from "../../components/ui/Screen";
 import { Loading } from "../../components/Loading";
-import { getAdminUsers, updateAdminUser } from "../../lib/api/admin";
+import { getAdminUsers, updateAdminUser, bulkSuspendUsers } from "../../lib/api/admin";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function AdminUsersScreen() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Debounce search to prevent keyboard dismissal and excessive API calls
   useEffect(() => {
@@ -54,13 +56,37 @@ export default function AdminUsersScreen() {
     },
   });
 
+  const suspendMutation = useMutation({
+    mutationFn: (payload: { userIds: string[]; suspended: boolean }) =>
+      bulkSuspendUsers(payload),
+    onSuccess: (res: { message?: string; affectedCount?: number }) => {
+      Alert.alert("Done", res.message || `${res.affectedCount} user(s) suspended.`);
+      setIsSelectionMode(false);
+      setSelectedIds(new Set());
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (e: unknown) => {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      Alert.alert("Error", msg || "Bulk suspend failed.");
+    },
+  });
+
+  const toggleSelection = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const isInitialLoading = status === "pending" && !isPlaceholderData;
   const isSearching = isFetching && !isFetchingNextPage;
 
   return (
     <Screen className="bg-slate-50 dark:bg-slate-950" safeAreaTop={false}>
-      <View className="px-4 pt-3 pb-2">
-        <View className="relative">
+      <View className="px-4 pt-3 pb-2 flex-row gap-2">
+        <View className="relative flex-1">
           <View className="absolute left-3.5 top-0 bottom-0 justify-center z-10">
             {isSearching ? (
               <ActivityIndicator size="small" color="#6366f1" />
@@ -76,6 +102,17 @@ export default function AdminUsersScreen() {
             className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 pl-10 pr-4 py-3 text-[15px] font-outfit text-slate-900 dark:text-white"
           />
         </View>
+        <Pressable 
+          onPress={() => {
+            setIsSelectionMode(!isSelectionMode);
+            if (isSelectionMode) setSelectedIds(new Set());
+          }}
+          className={`px-4 justify-center items-center rounded-2xl ${isSelectionMode ? "bg-primary-600" : "bg-slate-200 dark:bg-slate-800"}`}
+        >
+          <Text className={`font-outfit-sb text-[14px] ${isSelectionMode ? "text-white" : "text-slate-700 dark:text-slate-300"}`}>
+            {isSelectionMode ? "Done" : "Select"}
+          </Text>
+        </Pressable>
       </View>
 
       {status === "error" ? (
@@ -109,9 +146,24 @@ export default function AdminUsersScreen() {
             const active = u.isActive !== false;
             const verified = Boolean(u.isVerified);
             const initials = String(u.name || "U").split(" ").map((n: string) => n[0]).join("").substring(0, 2).toUpperCase();
+            const isSelected = selectedIds.has(id);
+            
             return (
-              <View className="mb-3 rounded-3xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm shadow-slate-200/50 dark:shadow-none">
-                <View className="flex-row items-center gap-3 mb-3">
+              <Pressable 
+                onPress={() => isSelectionMode ? toggleSelection(id) : null}
+                className={`mb-3 rounded-3xl border bg-white dark:bg-slate-900 p-4 shadow-sm shadow-slate-200/50 dark:shadow-none flex-row items-start ${
+                  isSelected ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20" : "border-slate-100 dark:border-slate-800"
+                }`}
+              >
+                {isSelectionMode && (
+                  <View className="mr-3 mt-1.5">
+                    <View className={`w-6 h-6 rounded-full border items-center justify-center ${isSelected ? "bg-primary-600 border-primary-600" : "border-slate-300 dark:border-slate-600 bg-transparent"}`}>
+                      {isSelected && <Ionicons name="checkmark" size={16} color="white" />}
+                    </View>
+                  </View>
+                )}
+                <View className="flex-1">
+                  <View className="flex-row items-center gap-3 mb-3">
                   <View className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900/60 items-center justify-center">
                     <Text className="text-[14px] font-outfit-b text-primary-700 dark:text-primary-300">{initials}</Text>
                   </View>
@@ -147,11 +199,42 @@ export default function AdminUsersScreen() {
                   >
                     <Text className="text-[12px] font-outfit-b text-slate-700 dark:text-slate-300">{verified ? "Unverify" : "Verify"}</Text>
                   </Pressable>
+                  </View>
                 </View>
-              </View>
+              </Pressable>
             );
           }}
         />
+      )}
+
+      {isSelectionMode && selectedIds.size > 0 && (
+        <View className="absolute bottom-6 left-4 right-4 rounded-3xl bg-slate-900 dark:bg-white p-4 shadow-xl flex-row items-center justify-between">
+          <Text className="text-white dark:text-slate-900 font-outfit-m pl-2">
+            {selectedIds.size} user(s) selected
+          </Text>
+          <Pressable
+            onPress={() => {
+              Alert.alert(
+                "Confirm Suspend",
+                `Are you sure you want to suspend ${selectedIds.size} user(s)?`,
+                [
+                  { text: "Cancel", style: "cancel" },
+                  { 
+                    text: "Suspend", 
+                    style: "destructive",
+                    onPress: () => suspendMutation.mutate({ userIds: Array.from(selectedIds), suspended: true })
+                  }
+                ]
+              );
+            }}
+            disabled={suspendMutation.isPending}
+            className="bg-red-600 px-6 py-2.5 rounded-xl"
+          >
+            <Text className="text-white font-outfit-sb">
+              {suspendMutation.isPending ? "Wait..." : "Suspend"}
+            </Text>
+          </Pressable>
+        </View>
       )}
     </Screen>
   );

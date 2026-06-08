@@ -4,6 +4,8 @@ const Order = require('../../../../models/Order');
 const Report = require('../../../../models/Report');
 const AuditLog = require('../../../../models/AuditLog');
 const AdminActivity = require('../../../../models/AdminActivity');
+const Dispute = require('../../../../models/Dispute');
+const ModerationQueue = require('../../../../models/ModerationQueue');
 const { ensureDefaultCategories } = require('../../../../utils/categoryDefaults');
 const mongoose = require('mongoose');
 
@@ -32,6 +34,9 @@ const getOverview = async (req, res) => {
       categoryBreakdown,
       suspendedUsers,
       flaggedListings,
+      openDisputes,
+      pendingModeration,
+      pendingVerifications,
     ] = await Promise.all([
       User.countDocuments(),
       User.countDocuments({ role: 'user' }),
@@ -81,7 +86,10 @@ const getOverview = async (req, res) => {
         },
       ]),
       User.countDocuments({ isSuspended: true }),
-      Product.countDocuments({ flagged: true })
+      Product.countDocuments({ flagged: true }),
+      Dispute.countDocuments({ status: { $in: ['open', 'under_review'] } }),
+      ModerationQueue.countDocuments({ status: 'pending' }),
+      User.countDocuments({ sellerVerificationStatus: 'pending' })
     ]);
 
     const metrics = {
@@ -98,6 +106,9 @@ const getOverview = async (req, res) => {
       openReports,
       suspendedUsers,
       flaggedListings,
+      openDisputes,
+      pendingModeration,
+      pendingVerifications,
       totalRevenue: (totalRevenueResult[0] && totalRevenueResult[0].total) || 0,
     };
 

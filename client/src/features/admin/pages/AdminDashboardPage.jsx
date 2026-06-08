@@ -16,6 +16,9 @@ import {
   ExternalLink,
   BarChart3,
   TrendingUp,
+  Gavel,
+  ListChecks,
+  BadgeCheck,
 } from 'lucide-react';
 import { Badge } from '../../../components/ui/Badge';
 import Header from '../../../components/Header';
@@ -78,6 +81,34 @@ const AdminDashboardPage = () => {
       tone: 'from-slate-700 to-slate-900 text-white',
       bgTone: 'bg-slate-500/10 text-slate-600',
     },
+    {
+      label: 'Open Disputes',
+      value: metrics.openDisputes || 0,
+      icon: Gavel,
+      tone: 'from-fuchsia-500 to-pink-700 text-white',
+      bgTone: 'bg-fuchsia-500/10 text-fuchsia-600',
+    },
+    {
+      label: 'Mod Queue',
+      value: metrics.pendingModeration || 0,
+      icon: ListChecks,
+      tone: 'from-pink-500 to-rose-600 text-white',
+      bgTone: 'bg-pink-500/10 text-pink-600',
+    },
+    {
+      label: 'Pending Verifications',
+      value: metrics.pendingVerifications || 0,
+      icon: BadgeCheck,
+      tone: 'from-cyan-500 to-blue-600 text-white',
+      bgTone: 'bg-cyan-500/10 text-cyan-600',
+    },
+    {
+      label: 'Open Reports',
+      value: metrics.openReports || 0,
+      icon: Flag,
+      tone: 'from-orange-500 to-red-600 text-white',
+      bgTone: 'bg-orange-500/10 text-orange-600',
+    },
   ];
 
   const adminTools = [
@@ -124,6 +155,24 @@ const AdminDashboardPage = () => {
       to: '/admin/audit-logs',
       icon: ShieldCheck,
     },
+    {
+      label: 'Manage Disputes',
+      description: 'Review and resolve order conflicts between buyers and sellers.',
+      to: '/admin/disputes',
+      icon: Gavel,
+    },
+    {
+      label: 'Moderation Queue',
+      description: 'Review flagged content and pending items in the moderation queue.',
+      to: '/admin/moderation-queue',
+      icon: ListChecks,
+    },
+    {
+      label: 'Seller Verifications',
+      description: 'Review identity documents and approve or reject seller applications.',
+      to: '/admin/seller-verifications',
+      icon: BadgeCheck,
+    },
   ];
 
   const formatDate = (value) =>
@@ -158,7 +207,7 @@ const AdminDashboardPage = () => {
           </div>
         </section>
 
-        <section className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-10">
+        <section className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-10">
           {cards.map((card) => {
             const Icon = card.icon;
 
@@ -353,8 +402,8 @@ const AdminDashboardPage = () => {
                         {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(order.total)}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-[10px] text-gray-400 font-medium">{formatDate(order.createdAt)}</p>
+                    <div className="text-right shrink-0 ml-4">
+                      <p className="text-[10px] text-gray-400 font-medium whitespace-nowrap">{formatDate(order.createdAt)}</p>
                     </div>
                   </div>
                 ))}

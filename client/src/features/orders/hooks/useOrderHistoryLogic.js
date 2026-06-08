@@ -105,11 +105,52 @@ export const useOrderHistoryLogic = () => {
   };
 
   const handleDispute = (orderId) => {
-    const reason = window.prompt('Reason for dispute (e.g. item not as described, no-show, scam):');
-    if (!reason?.trim()) return;
-    const details = window.prompt('Additional details (optional):') || '';
+    const reasonMap = {
+      '1': 'damaged',
+      '2': 'not_received',
+      '3': 'not_as_described',
+      '4': 'other',
+    };
+    const reasonChoice = window.prompt(
+      'Choose dispute reason (Please enter the number 1, 2, 3, or 4):\n\n' +
+      '1. Item damaged\n' +
+      '2. Item not received\n' +
+      '3. Not as described\n' +
+      '4. Other'
+    );
+    
+    if (reasonChoice === null) return; // User cancelled the prompt
+
+    const cleanChoice = reasonChoice.trim();
+    let resolvedChoice = null;
+    
+    // Match starting digit if user typed e.g. "1" or "1. Item damaged"
+    const digitMatch = cleanChoice.match(/^[1-4]/);
+    if (digitMatch) {
+      resolvedChoice = digitMatch[0];
+    } else {
+      // Fallback: match by keyword if user typed the text instead of the number
+      const lowercase = cleanChoice.toLowerCase();
+      if (lowercase.includes('damage')) resolvedChoice = '1';
+      else if (lowercase.includes('receive') || lowercase.includes('not_received') || lowercase.includes('no receipt')) resolvedChoice = '2';
+      else if (lowercase.includes('describe') || lowercase.includes('description')) resolvedChoice = '3';
+      else if (lowercase.includes('other')) resolvedChoice = '4';
+    }
+
+    const reason = reasonMap[resolvedChoice];
+    if (!reason) {
+      toast.error('Please choose a valid dispute reason (enter 1, 2, 3, or 4).');
+      return;
+    }
+    const details = window.prompt('Describe what happened. This is required for review.');
+    if (details === null) return; // User cancelled the prompt
+    
+    if (!details.trim()) {
+      toast.error('Please provide dispute details.');
+      return;
+    }
     const formData = new FormData();
-    formData.append('reason', reason.trim());
+    formData.append('reason', reason);
     formData.append('description', details.trim());
     disputeMutation.mutate({ orderId, formData });
   };

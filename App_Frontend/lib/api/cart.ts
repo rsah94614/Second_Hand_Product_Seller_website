@@ -11,6 +11,8 @@ export const removeFromCart = (productId: string) =>
 export const updateCartItem = (productId: string, quantity: number) =>
   api.put(`/api/cart/${productId}`, { quantity }).then((r) => r.data);
 
+
+
 export type ShippingDetails = {
   fullName: string;
   addressLine1: string;

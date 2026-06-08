@@ -254,6 +254,7 @@ const ProfilePage = () => {
     handleAvatarChange,
     avatarUploading,
     avatarInputRef,
+    onPhotoClick: () => setIsPhotoDialogOpen(true),
     setIsLogoutDialogOpen,
   };
 
@@ -270,10 +271,6 @@ const ProfilePage = () => {
             reputationData={reputationData}
             verificationData={verificationData}
             handleCancel={handleCancel}
-            handleAvatarChange={handleAvatarChange}
-            avatarUploading={avatarUploading}
-            avatarInputRef={avatarInputRef}
-            onPhotoClick={() => setIsPhotoDialogOpen(true)}
             showTradingInfo={showTradingInfo}
             verificationMutation={verificationMutation}
             campusForm={campusForm}

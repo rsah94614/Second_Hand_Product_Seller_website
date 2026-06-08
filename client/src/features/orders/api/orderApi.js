@@ -33,6 +33,12 @@ export const createDispute = (orderId, formData) =>
 export const getDisputes = () =>
   axios.get(`${API_BASE_URL}/api/orders/disputes/all`).then((res) => res.data);
 
+export const resolveDispute = (disputeId, payload) =>
+  axios.patch(`${API_BASE_URL}/api/orders/disputes/${disputeId}/resolve`, payload).then((res) => res.data);
+
+export const rejectDispute = (disputeId, payload) =>
+  axios.patch(`${API_BASE_URL}/api/orders/disputes/${disputeId}/reject`, payload).then((res) => res.data);
+
 // ── Two-Party Confirmation ─────────────────────────────────────────────────────
 export const markOrderDelivered = (orderId) =>
   axios.patch(`${API_BASE_URL}/api/orders/${orderId}/deliver`).then((res) => res.data);

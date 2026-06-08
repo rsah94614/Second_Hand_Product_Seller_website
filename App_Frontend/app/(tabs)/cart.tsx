@@ -18,7 +18,7 @@ import { Input } from "../../components/ui/Input";
 import { Loading } from "../../components/Loading";
 import { EmptyState } from "../../components/EmptyState";
 import { useAuth } from "../../context/AuthContext";
-import { checkoutCart, getCart, removeFromCart, updateCartItem, type ShippingDetails } from "../../lib/api/cart";
+import { checkoutCart, getCart, removeFromCart, type ShippingDetails } from "../../lib/api/cart";
 import { formatInr } from "../../lib/format";
 import { getImageUri } from "../../lib/product-image";
 import type { ProductImage } from "../../lib/types";
@@ -77,16 +77,7 @@ export default function CartScreen() {
     },
   });
 
-  const updateQuantityM = useMutation({
-    mutationFn: ({ productId, quantity }: { productId: string; quantity: number }) => updateCartItem(productId, quantity),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cart"] });
-    },
-    onError: (e: any) => {
-      const parsed = parseApiError(e, "Failed to update quantity.");
-      Alert.alert("Error", formatErrorForDisplay(parsed));
-    },
-  });
+
 
   const checkoutM = useMutation({
     mutationFn: checkoutCart,
@@ -202,35 +193,7 @@ export default function CartScreen() {
                       {formatInr(row.product?.price || 0)}
                     </Text>
                   </View>
-                  <View className="flex-row justify-between items-center mt-2">
-                    {!isItemUnavailable ? (
-                      <View className="flex-row items-center gap-3">
-                        <View className="flex-row items-center bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-                          <Pressable
-                            onPress={() => updateQuantityM.mutate({ productId: row.product._id, quantity: Math.max(1, row.quantity - 1) })}
-                            disabled={updateQuantityM.isPending || row.quantity <= 1}
-                            className={`p-1.5 px-2 active:bg-slate-200 dark:active:bg-slate-700 rounded-l-lg ${(updateQuantityM.isPending || row.quantity <= 1) ? 'opacity-30' : 'opacity-100'}`}
-                          >
-                            <Ionicons name="remove" size={18} color="#64748b" />
-                          </Pressable>
-                          <Text className="text-[14px] font-outfit-sb text-slate-800 dark:text-slate-200 min-w-[20px] text-center">{row.quantity}</Text>
-                          <Pressable
-                            onPress={() => updateQuantityM.mutate({ productId: row.product._id, quantity: row.quantity + 1 })}
-                            disabled={updateQuantityM.isPending || row.quantity >= (row.product?.stock || 1)}
-                            className={`p-1.5 px-2 active:bg-slate-200 dark:active:bg-slate-700 rounded-r-lg ${(updateQuantityM.isPending || row.quantity >= (row.product?.stock || 1)) ? 'opacity-30' : 'opacity-100'}`}
-                          >
-                            <Ionicons name="add" size={18} color="#64748b" />
-                          </Pressable>
-                        </View>
-                        {(row.product?.stock ?? 1) <= 5 && (row.product?.stock ?? 1) > 0 && (
-                          <Text className="text-[10px] font-outfit-sb text-amber-600 dark:text-amber-500">Only {row.product.stock} left</Text>
-                        )}
-                      </View>
-                    ) : (
-                      <View className="flex-row items-center bg-slate-100 dark:bg-slate-800 rounded-lg px-2 py-1">
-                        <Text className="text-[13px] font-outfit-m text-slate-500 dark:text-slate-400">Qty: {row.quantity}</Text>
-                      </View>
-                    )}
+                  <View className="flex-row justify-end items-center mt-2">
                     <Pressable
                       onPress={() => removeM.mutate(row.product?._id)}
                       className="p-1 px-2 rounded-lg bg-red-50 dark:bg-red-950/30"
@@ -251,9 +214,9 @@ export default function CartScreen() {
           </View>
 
           <View className="mb-10">
-            <Button 
-              title="Proceed to Checkout" 
-              onPress={() => setModalOpen(true)} 
+            <Button
+              title="Proceed to Checkout"
+              onPress={() => setModalOpen(true)}
               disabled={hasUnavailableItems}
             />
             {hasUnavailableItems && (
@@ -276,29 +239,29 @@ export default function CartScreen() {
             </View>
 
             <ScrollView className="flex-1" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-              <Input 
-                label="Full Name" 
-                value={shipping.fullName} 
-                onChangeText={(t) => setShip("fullName", t)} 
-                placeholder="Broken" 
+              <Input
+                label="Full Name"
+                value={shipping.fullName}
+                onChangeText={(t) => setShip("fullName", t)}
+                placeholder="Broken"
               />
-              <Input 
-                label="Hostel / Department / Meetup Spot" 
-                value={shipping.addressLine1} 
-                onChangeText={(t) => setShip("addressLine1", t)} 
-                placeholder="Girls Hostel, Admin Block, Library gate..." 
+              <Input
+                label="Hostel / Department / Meetup Spot"
+                value={shipping.addressLine1}
+                onChangeText={(t) => setShip("addressLine1", t)}
+                placeholder="Girls Hostel, Admin Block, Library gate..."
               />
-              <Input 
-                label="Additional Note" 
-                value={shipping.addressLine2 || ""} 
-                onChangeText={(t) => setShip("addressLine2", t)} 
-                placeholder="Preferred time, block, floor, or extra directions" 
+              <Input
+                label="Additional Note"
+                value={shipping.addressLine2 || ""}
+                onChangeText={(t) => setShip("addressLine2", t)}
+                placeholder="Preferred time, block, floor, or extra directions"
               />
-              <Input 
-                label="Nearby Landmark" 
-                value={shipping.landmark} 
-                onChangeText={(t) => setShip("landmark", t)} 
-                placeholder="Near canteen, hostel gate, admin block" 
+              <Input
+                label="Nearby Landmark"
+                value={shipping.landmark}
+                onChangeText={(t) => setShip("landmark", t)}
+                placeholder="Near canteen, hostel gate, admin block"
               />
 
               <View className="mt-2 mb-6 rounded-2xl border border-blue-100 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-950/20 px-4 py-4">
@@ -306,7 +269,7 @@ export default function CartScreen() {
                   Checkout is campus-specific, so location will be recorded under Gauhati University, Guwahati, Assam.
                 </Text>
               </View>
-              
+
               <View className="h-32" />
             </ScrollView>
 

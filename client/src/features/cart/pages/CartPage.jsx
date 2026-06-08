@@ -25,7 +25,6 @@ const CartPage = () => {
     setIsAddressModalOpen,
     setShippingDetails,
     removeItem,
-    updateQuantity,
     handleCheckout,
     refetch,
   } = useCartLogic();
@@ -118,7 +117,6 @@ const CartPage = () => {
                     key={item._id || `${item.product?._id || 'unknown'}-${index}`}
                     item={item}
                     onRemove={removeItem}
-                    onUpdateQuantity={updateQuantity}
                   />
                 ))}
               </div>

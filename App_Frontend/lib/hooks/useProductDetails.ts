@@ -20,7 +20,7 @@ export function useProductDetails(id: string) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
 
-  const [quantity, setQuantity] = useState(1);
+
   const [reportForm, setReportForm] = useState({ targetType: 'product', reason: '', details: '' });
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
 
@@ -97,7 +97,7 @@ export function useProductDetails(id: string) {
   const addCartM = useMutation({
     mutationFn: () => {
       if (isOwner) return Promise.reject(new Error('You cannot add your own listing to your cart'));
-      return addToCart(id, quantity);
+      return addToCart(id, 1);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
@@ -174,8 +174,6 @@ export function useProductDetails(id: string) {
     isOwner,
     isWishlisted,
     isInCart,
-    quantity,
-    setQuantity,
     reportForm,
     setReportForm,
     reviewForm,

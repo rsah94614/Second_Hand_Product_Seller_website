@@ -172,7 +172,7 @@ describe('SalesDashboardPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Category Breakdown')).toBeInTheDocument();
-      expect(screen.getByText('Electronics')).toBeInTheDocument();
+      expect(screen.getAllByText('Electronics').length).toBeGreaterThan(0);
     });
   });
 

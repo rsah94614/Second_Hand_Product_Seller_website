@@ -88,9 +88,11 @@ export default function SalesDashboardScreen() {
     setExporting(true);
     try {
       await exportReportPDF({
-        type: "sales-dashboard",
-        startDate: dateParams.startDate,
-        endDate: dateParams.endDate,
+        reportType: "dashboard",
+        dateRange: {
+          startDate: dateParams.startDate,
+          endDate: dateParams.endDate,
+        }
       });
       Alert.alert("Export Requested", "Your PDF report will be sent to your email shortly.");
     } catch {
@@ -123,7 +125,7 @@ export default function SalesDashboardScreen() {
       <FlatList
         data={[{ id: "content" }]}
         keyExtractor={(item) => item.id}
-        scrollEnabled={false}
+
         refreshControl={
           <RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />
         }
@@ -188,7 +190,7 @@ export default function SalesDashboardScreen() {
               <TopItemsWidget
                 title="Top 5 Products"
                 items={topProducts.map((product: any, index: number) => ({
-                  id: product._id || product.id,
+                  id: product._id || product.id || String(index),
                   title: product.title,
                   subtitle: product.category,
                   value: product.revenue,
@@ -206,7 +208,7 @@ export default function SalesDashboardScreen() {
               <TopItemsWidget
                 title="Top 5 Sellers"
                 items={sellers.map((seller: any, index: number) => ({
-                  id: seller._id || seller.id,
+                  id: seller._id || seller.id || String(index),
                   title: seller.sellerName,
                   subtitle: `${seller.completedOrders} orders`,
                   value: seller.totalRevenue,
@@ -248,18 +250,6 @@ export default function SalesDashboardScreen() {
 
   return (
     <Screen className="bg-slate-50 dark:bg-slate-950" safeAreaTop={false}>
-      <View className="flex-row items-center justify-between px-4 py-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
-        <Text className="text-[20px] font-outfit-sb text-slate-900 dark:text-white">
-          Sales Dashboard
-        </Text>
-        <Pressable onPress={handleRefresh} disabled={isLoading}>
-          <Ionicons
-            name="refresh"
-            size={20}
-            color={isLoading ? "#cbd5e1" : "#64748b"}
-          />
-        </Pressable>
-      </View>
 
       {renderContent()}
     </Screen>

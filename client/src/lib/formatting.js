@@ -213,7 +213,7 @@ export function parseDate(dateString) {
  */
 export function getPresetDateRange(preset) {
   const endDate = new Date();
-  endDate.setHours(23, 59, 59, 999);
+  endDate.setHours(0, 0, 0, 0);
 
   const startDate = new Date(endDate);
 
@@ -231,8 +231,6 @@ export function getPresetDateRange(preset) {
       startDate.setDate(startDate.getDate() - 365);
       break;
   }
-
-  startDate.setHours(0, 0, 0, 0);
 
   return { startDate, endDate };
 }

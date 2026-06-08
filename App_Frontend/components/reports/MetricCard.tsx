@@ -43,13 +43,13 @@ export function MetricCard({
       )}
 
       {change !== undefined && !loading && (
-        <View className={`flex-row items-center gap-1 px-2 py-1 rounded-lg ${trendBgColor} w-fit`}>
+        <View className={`flex-row items-center gap-1 px-2 py-1 rounded-lg ${trendBgColor} self-start`}>
           <Ionicons
             name={trend === "up" ? "arrow-up" : trend === "down" ? "arrow-down" : "remove"}
             size={12}
             color={trend === "up" ? "#10b981" : trend === "down" ? "#ef4444" : "#64748b"}
           />
-          <Text className={`text-[11px] font-outfit-sb ${trendColor}`}>
+          <Text className={`text-[11px] font-outfit-sb ${trendColor}`} numberOfLines={1} adjustsFontSizeToFit>
             {Math.abs(change).toFixed(1)}% {changeLabel}
           </Text>
         </View>

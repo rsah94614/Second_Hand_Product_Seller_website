@@ -129,7 +129,7 @@ export default function OrdersScreen() {
   return (
     <Screen className="bg-slate-50 dark:bg-slate-950">
       <View className="px-5 pt-4 pb-2">
-        <Text className="text-[28px] font-outfit-bl text-slate-900 dark:text-white mb-6">My Orders</Text>
+        {/* <Text className="text-[28px] font-outfit-bl text-slate-900 dark:text-white mb-6">My Orders</Text> */}
 
         {/* Tab bar + Info button row */}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 }}>
@@ -242,9 +242,9 @@ export default function OrdersScreen() {
         visible={!!disputeOrderId}
         onClose={() => setDisputeOrderId(null)}
         loading={disputeM.isPending}
-        onSubmit={(reason) => {
+        onSubmit={(payload) => {
           if (disputeOrderId) {
-            disputeM.mutate({ orderId: disputeOrderId, reason });
+            disputeM.mutate({ orderId: disputeOrderId, ...payload });
             setDisputeOrderId(null);
           }
         }}
