@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -17,8 +17,6 @@ const SignInPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const from = '/';
-
   const handleChange = (e) => {
     setFormData((prev) => ({
       ...prev,
@@ -28,9 +26,6 @@ const SignInPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Debugging form data
-    console.log('[DEBUG] SignIn Submit:', { email: formData.email, password: !!formData.password });
 
     if (!formData.email || !formData.email.trim()) {
       toast.error('Email address is required');
@@ -44,17 +39,17 @@ const SignInPage = () => {
     setIsLoading(true);
 
     try {
-      // Call unified login function
       const result = await login(formData.email.trim(), formData.password);
 
       if (result.success) {
         toast.success('Login successful!');
-        navigate(from, { replace: true });
+        // Redirect based on role: admin → admin dashboard, user → homepage
+        const destination = result.user?.role === 'admin' ? '/admin-dashboard' : '/';
+        navigate(destination, { replace: true });
       } else {
         toast.error(result.message || 'Invalid credentials');
       }
-    } catch (err) {
-      console.error('[ERROR] SignIn Exception:', err);
+    } catch {
       toast.error('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);

@@ -64,7 +64,7 @@ vi.mock('../utils/notificationMeta', () => ({
   ],
 }));
 
-const { useMutation, useQuery, useQueryClient } = await import('@tanstack/react-query');
+const { useMutation, useQueryClient } = await import('@tanstack/react-query');
 const { useNotificationsLogic } = await import('../hooks/useNotificationsLogic');
 
 const renderPage = () => {

@@ -8,7 +8,7 @@ import {
   AlertCircle,
   Filter,
 } from 'lucide-react';
-import Header from '../../../components/Header';
+import AdminHeader from '../../../components/AdminHeader';
 import Footer from '../../../components/Footer';
 import { ReportsNavigation } from '../components/ReportsNavigation';
 import { Button } from '../../../components/ui/Button';
@@ -91,7 +91,7 @@ export default function TransactionMetricsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <AdminHeader />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <ReportsNavigation />
         <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 mb-8">
@@ -167,7 +167,7 @@ export default function TransactionMetricsPage() {
           <Card className="mb-8 border-red-200 bg-red-50">
             <CardContent className="p-6">
               <div className="flex items-start gap-4">
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                 <div>
                   <h3 className="font-semibold text-red-900">Failed to load data</h3>
                   <p className="text-sm text-red-700 mt-1">

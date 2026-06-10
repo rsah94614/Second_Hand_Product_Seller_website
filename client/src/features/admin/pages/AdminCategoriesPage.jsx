@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { FolderTree, Plus, ShieldCheck, Trash2 } from 'lucide-react';
-import Header from '../../../components/Header';
+import AdminHeader from '../../../components/AdminHeader';
 import Footer from '../../../components/Footer';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
@@ -41,7 +41,7 @@ class AdminCategoriesErrorBoundary extends React.Component {
     if (this.state.error) {
       return (
         <div className="min-h-screen bg-gray-50">
-          <Header />
+          <AdminHeader />
           <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
             <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-8">
               <p className="text-sm font-medium uppercase tracking-[0.2em] text-red-600">
@@ -134,7 +134,7 @@ const AdminCategoriesContent = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <AdminHeader />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 mb-8 animate-fade-in">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">

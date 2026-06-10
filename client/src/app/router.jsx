@@ -1,4 +1,3 @@
-import React from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import HomePage from '../features/home/pages/HomePage';
 import SignInPage from '../features/auth/pages/Sign-In';
@@ -18,11 +17,8 @@ import SettingsPage from '../features/users/pages/settings/SettingsPage';
 import BlockedUsersPage from '../features/users/pages/settings/BlockedUsersPage';
 import DeleteAccountPage from '../features/users/pages/settings/DeleteAccountPage';
 import ActiveDevicesPage from '../features/users/pages/settings/ActiveDevicesPage';
-
-
 import HelpCenterPage from '../features/users/pages/settings/HelpCenterPage';
 import LegalPage from '../features/users/pages/settings/LegalPage';
-
 import CreateProductPage from '../features/products/pages/CreateProductPage';
 import EditProductPage from '../features/products/pages/EditProductPage';
 import MyProductsPage from '../features/products/pages/MyProductsPage';
@@ -54,6 +50,7 @@ import PeriodComparisonPage from '../features/admin/pages/PeriodComparisonPage';
 
 const AppRouter = () => (
   <Routes>
+    {/* ── Public routes ── */}
     <Route path="/" element={<HomePage />} />
     <Route path="/products" element={<ProductListPage />} />
     <Route path="/products/:id" element={<ProductDetailPage />} />
@@ -62,13 +59,33 @@ const AppRouter = () => (
     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
     <Route path="/reset-password" element={<ResetPasswordPage />} />
     <Route path="/verify-email" element={<VerifyEmailPage />} />
-    <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
     <Route path="/users/:id" element={<PublicProfilePage />} />
-    <Route path="/wishlist" element={<ProtectedRoute><WishlistPage /></ProtectedRoute>} />
-    <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
-    <Route path="/notifications/preferences" element={<ProtectedRoute><NotificationPreferencesPage /></ProtectedRoute>} />
+    <Route path="/help" element={<HelpCenterPage />} />
+    <Route path="/terms" element={<LegalPage />} />
+    <Route path="/privacy" element={<LegalPage />} />
+
+    {/* ── User-only routes ── */}
+    <Route path="/profile" element={<ProtectedRoute allowedRoles={['user']}><ProfilePage /></ProtectedRoute>} />
+    <Route path="/wishlist" element={<ProtectedRoute allowedRoles={['user']}><WishlistPage /></ProtectedRoute>} />
+    <Route path="/notifications" element={<ProtectedRoute allowedRoles={['user']}><NotificationsPage /></ProtectedRoute>} />
+    <Route path="/notifications/preferences" element={<ProtectedRoute allowedRoles={['user']}><NotificationPreferencesPage /></ProtectedRoute>} />
     <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['user']}><DashboardPage /></ProtectedRoute>} />
     <Route path="/seller-dashboard" element={<Navigate to="/dashboard" replace />} />
+    <Route path="/create-product" element={<ProtectedRoute allowedRoles={['user']}><CreateProductPage /></ProtectedRoute>} />
+    <Route path="/edit-product/:id" element={<ProtectedRoute allowedRoles={['user']}><EditProductPage /></ProtectedRoute>} />
+    <Route path="/my-products" element={<ProtectedRoute allowedRoles={['user']}><MyProductsPage /></ProtectedRoute>} />
+    <Route path="/order/:id" element={<ProtectedRoute allowedRoles={['user']}><PlaceOrderPage /></ProtectedRoute>} />
+    <Route path="/cart" element={<ProtectedRoute allowedRoles={['user']}><CartPage /></ProtectedRoute>} />
+    <Route path="/orders" element={<ProtectedRoute allowedRoles={['user']}><OrderHistoryPage /></ProtectedRoute>} />
+    <Route path="/review/:sellerId" element={<ProtectedRoute allowedRoles={['user']}><ReviewSellerPage /></ProtectedRoute>} />
+    <Route path="/settings" element={<ProtectedRoute allowedRoles={['user']}><SettingsPage /></ProtectedRoute>} />
+    <Route path="/settings/blocked-users" element={<ProtectedRoute allowedRoles={['user']}><BlockedUsersPage /></ProtectedRoute>} />
+    <Route path="/settings/devices" element={<ProtectedRoute allowedRoles={['user']}><ActiveDevicesPage /></ProtectedRoute>} />
+    <Route path="/settings/delete-account" element={<ProtectedRoute allowedRoles={['user']}><DeleteAccountPage /></ProtectedRoute>} />
+    <Route path="/chat" element={<ProtectedRoute allowedRoles={['user']}><ChatPage /></ProtectedRoute>} />
+    <Route path="/chat/:userId" element={<ProtectedRoute allowedRoles={['user']}><ChatPage /></ProtectedRoute>} />
+
+    {/* ── Admin-only routes ── */}
     <Route path="/admin-dashboard" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboardPage /></ProtectedRoute>} />
     <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><AdminUsersPage /></ProtectedRoute>} />
     <Route path="/admin/products" element={<ProtectedRoute allowedRoles={['admin']}><AdminProductsPage /></ProtectedRoute>} />
@@ -88,23 +105,6 @@ const AppRouter = () => (
     <Route path="/admin/reports/payments" element={<ProtectedRoute allowedRoles={['admin']}><PaymentMetricsPage /></ProtectedRoute>} />
     <Route path="/admin/reports/transactions" element={<ProtectedRoute allowedRoles={['admin']}><TransactionMetricsPage /></ProtectedRoute>} />
     <Route path="/admin/reports/comparison" element={<ProtectedRoute allowedRoles={['admin']}><PeriodComparisonPage /></ProtectedRoute>} />
-    <Route path="/create-product" element={<ProtectedRoute allowedRoles={['user']}><CreateProductPage /></ProtectedRoute>} />
-    <Route path="/edit-product/:id" element={<ProtectedRoute allowedRoles={['user']}><EditProductPage /></ProtectedRoute>} />
-    <Route path="/my-products" element={<ProtectedRoute allowedRoles={['user']}><MyProductsPage /></ProtectedRoute>} />
-    <Route path="/order/:id" element={<ProtectedRoute><PlaceOrderPage /></ProtectedRoute>} />
-    <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
-    <Route path="/orders" element={<ProtectedRoute><OrderHistoryPage /></ProtectedRoute>} />
-    <Route path="/review/:sellerId" element={<ProtectedRoute><ReviewSellerPage /></ProtectedRoute>} />
-    <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-    <Route path="/settings/blocked-users" element={<ProtectedRoute><BlockedUsersPage /></ProtectedRoute>} />
-    <Route path="/settings/devices" element={<ProtectedRoute><ActiveDevicesPage /></ProtectedRoute>} />
-    <Route path="/settings/delete-account" element={<ProtectedRoute><DeleteAccountPage /></ProtectedRoute>} />
-
-    <Route path="/help" element={<HelpCenterPage />} />
-    <Route path="/terms" element={<LegalPage />} />
-    <Route path="/privacy" element={<LegalPage />} />
-    <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
-    <Route path="/chat/:userId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
   </Routes>
 );
 

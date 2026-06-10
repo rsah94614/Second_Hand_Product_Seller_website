@@ -1,11 +1,11 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { globalSearch, getSearchSuggestions } from '../features/search/api/searchApi';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
-import { Search, Plus, User, LogOut, Menu, Briefcase, ShoppingCart, History, MessageCircle, LayoutDashboard, ShieldCheck, Users, FolderTree, Package, Heart, Flag, Bell, CheckCheck, Clock, TrendingUp, Settings, AlertTriangle } from 'lucide-react';
+import { Search, Plus, User, LogOut, Menu, Briefcase, ShoppingCart, History, MessageCircle, LayoutDashboard, Package, Heart, Bell, CheckCheck, Clock, TrendingUp, Settings } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Badge } from './ui/Badge';
@@ -43,7 +43,7 @@ import {
 } from './ui/Sheet';
 
 const Header = () => {
-  const { user, logout, isUser, isAdmin } = useAuth();
+  const { user, logout } = useAuth();
   const socket = useSocket();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -255,19 +255,12 @@ const Header = () => {
     setIsLogoutDialogOpen(false);
   };
 
-  const roleTone = user?.role === 'admin' ? 'destructive' : 'success';
   const desktopHeaderIconClass = 'relative inline-flex h-10 w-10 items-center justify-center rounded-xl text-white/75 transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/20';
   const mobileHeaderIconClass = 'h-9 w-9 rounded-xl text-white/75 hover:bg-white/10 hover:text-white';
 
-  const primaryLinks = isAdmin
-    ? [
-      { to: '/admin-dashboard', label: 'Overview', icon: ShieldCheck },
-    ]
-    : isUser
-      ? [
-        { to: '/products', label: 'Products', icon: Package },
-      ]
-      : [];
+  const primaryLinks = [
+    { to: '/products', label: 'Products', icon: Package },
+  ];
 
   const userMenuLinks = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -276,32 +269,14 @@ const Header = () => {
     { to: '/orders', label: 'Orders', icon: History },
   ];
 
-  const adminManageLinks = [
-    { to: '/admin/users', label: 'Users', icon: Users },
-    { to: '/admin/products', label: 'Products', icon: Package },
-    { to: '/admin/categories', label: 'Categories', icon: FolderTree },
-    { to: '/admin/orders', label: 'Orders', icon: History },
-    { to: '/admin/disputes', label: 'Disputes', icon: AlertTriangle },
-    { to: '/admin/reports', label: 'Reports', icon: Flag },
-    { to: '/admin/moderation-queue', label: 'Mod Queue', icon: ShieldCheck },
-    { to: '/admin/seller-verifications', label: 'Verifications', icon: ShieldCheck },
+  const utilityLinks = [
+    { to: '/chat', label: 'Chat', icon: MessageCircle },
+    { to: '/notifications', label: 'Notifications', icon: Bell },
+    { to: '/settings', label: 'Settings', icon: Settings },
+    { to: '/profile', label: 'Profile', icon: User },
   ];
 
-  const utilityLinks = isAdmin
-    ? [
-      { to: '/notifications', label: 'Notifications', icon: Bell },
-      { to: '/settings', label: 'Settings', icon: Settings },
-      { to: '/profile', label: 'Profile', icon: User },
-    ]
-    : [
-      { to: '/chat', label: 'Chat', icon: MessageCircle },
-      { to: '/notifications', label: 'Notifications', icon: Bell },
-      { to: '/settings', label: 'Settings', icon: Settings },
-      { to: '/profile', label: 'Profile', icon: User },
-    ];
-
   const renderUnifiedProfileDropdown = () => {
-    const topLinks = isAdmin ? adminManageLinks : userMenuLinks;
     const bottomLinks = [
       ...utilityLinks,
       { isSeparator: true },
@@ -322,10 +297,10 @@ const Header = () => {
         <DropdownMenuContent align="end" className="w-64 rounded-2xl p-2 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border border-gray-100 animate-soft-pop mt-2">
           <div className="px-3 py-3 mb-1 bg-gray-50/80 rounded-xl">
             <p className="font-semibold text-gray-900 truncate">{user?.name || 'Account'}</p>
-            <p className="text-xs text-gray-500 font-medium truncate capitalize mt-0.5">{user?.email || (user?.role && `${user.role} Account`)}</p>
+            <p className="text-xs text-gray-500 font-medium truncate capitalize mt-0.5">{user?.email}</p>
           </div>
 
-          {[...topLinks, { isSeparator: true }, ...bottomLinks].map((item, index) => {
+          {[...userMenuLinks, { isSeparator: true }, ...bottomLinks].map((item, index) => {
             if (item.isSeparator) {
               return <DropdownMenuSeparator key={`sep-${index}`} className="my-1.5 opacity-50" />;
             }
@@ -572,30 +547,26 @@ const Header = () => {
                   })}
                 </nav>
 
-                {isUser && (
-                  <Link to="/create-product" className="mr-1">
-                    <Button
-                      className="gap-2 rounded-full bg-linear-to-r from-primary-600 to-indigo-500 hover:from-primary-700 hover:to-indigo-600 text-white shadow-lg shadow-primary-600/20 hover:shadow-primary-600/30 hover:-translate-y-0.5 transition-all duration-300 border-none"
-                      size="sm"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span className="font-semibold text-[14px]">List Item</span>
-                    </Button>
-                  </Link>
-                )}
+                <Link to="/create-product" className="mr-1">
+                  <Button
+                    className="gap-2 rounded-full bg-linear-to-r from-primary-600 to-indigo-500 hover:from-primary-700 hover:to-indigo-600 text-white shadow-lg shadow-primary-600/20 hover:shadow-primary-600/30 hover:-translate-y-0.5 transition-all duration-300 border-none"
+                    size="sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span className="font-semibold text-[14px]">List Item</span>
+                  </Button>
+                </Link>
 
                 <div className="flex items-center gap-3 xl:gap-4 pl-1">
-                  {!isAdmin && (
-                    <Link to="/cart">
-                      <button
-                        type="button"
-                        className={desktopHeaderIconClass}
-                        title="Your Cart"
-                      >
-                        <ShoppingCart className="h-4 w-4" />
-                      </button>
-                    </Link>
-                  )}
+                  <Link to="/cart">
+                    <button
+                      type="button"
+                      className={desktopHeaderIconClass}
+                      title="Your Cart"
+                    >
+                      <ShoppingCart className="h-4 w-4" />
+                    </button>
+                  </Link>
                   {renderNotificationsDropdown()}
                   {renderUnifiedProfileDropdown()}
                 </div>
@@ -615,13 +586,11 @@ const Header = () => {
           <div className="flex md:hidden items-center gap-4">
             {user && (
               <>
-                {!isAdmin && (
-                  <Link to="/cart">
-                    <Button variant="ghost" size="icon" className={mobileHeaderIconClass}>
-                      <ShoppingCart className="w-5 h-5" />
-                    </Button>
-                  </Link>
-                )}
+                <Link to="/cart">
+                  <Button variant="ghost" size="icon" className={mobileHeaderIconClass}>
+                    <ShoppingCart className="w-5 h-5" />
+                  </Button>
+                </Link>
                 <Link to="/notifications" className="relative">
                   <Button variant="ghost" size="icon" className={mobileHeaderIconClass}>
                     <Bell className="w-5 h-5" />
@@ -658,14 +627,14 @@ const Header = () => {
                           <p className="font-medium text-gray-900 truncate">{user.name}</p>
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm text-gray-500 truncate">{user.email}</p>
-                            <Badge variant={roleTone} className="uppercase tracking-wide">
+                            <Badge variant="success" className="uppercase tracking-wide">
                               {user.role}
                             </Badge>
                           </div>
                         </div>
                       </div>
 
-                      {[...primaryLinks, ...(isUser ? userMenuLinks : []), ...(isAdmin ? adminManageLinks : []), ...(isUser ? [{ to: '/create-product', label: 'List Product', icon: Plus }] : []), ...utilityLinks].map((link) => {
+                      {[...primaryLinks, ...userMenuLinks, { to: '/create-product', label: 'List Product', icon: Plus }, ...utilityLinks].map((link) => {
                         const Icon = link.icon;
                         const isActive = location.pathname === link.to;
                         return (

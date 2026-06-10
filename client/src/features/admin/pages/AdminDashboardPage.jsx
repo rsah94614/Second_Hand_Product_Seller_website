@@ -21,7 +21,7 @@ import {
   BadgeCheck,
 } from 'lucide-react';
 import { Badge } from '../../../components/ui/Badge';
-import Header from '../../../components/Header';
+import AdminHeader from '../../../components/AdminHeader';
 import Footer from '../../../components/Footer';
 import { PRODUCT_FALLBACK_IMAGE, setFallbackImage } from '../../../lib/fallbackImages';
 import { getAdminOverview } from '../api/adminApi';
@@ -184,7 +184,7 @@ const AdminDashboardPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <AdminHeader />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <section className="bg-white rounded-4xl border border-gray-100 shadow-xl shadow-gray-200/50 p-6 sm:p-10 mb-8 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-red-50/50 rounded-full -mr-32 -mt-32 blur-3xl" />

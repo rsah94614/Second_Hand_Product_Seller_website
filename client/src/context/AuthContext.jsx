@@ -83,7 +83,7 @@ export const AuthProvider = ({ children }) => {
       await storage.setTokens(token, refreshToken || '');
       setUser(user);
 
-      return { success: true };
+      return { success: true, user };
     } catch (error) {
       return {
         success: false,

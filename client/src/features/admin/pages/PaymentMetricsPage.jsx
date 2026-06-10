@@ -10,7 +10,7 @@ import {
   XCircle,
   TrendingUp,
 } from 'lucide-react';
-import Header from '../../../components/Header';
+import AdminHeader from '../../../components/AdminHeader';
 import Footer from '../../../components/Footer';
 import { ReportsNavigation } from '../components/ReportsNavigation';
 import { Button } from '../../../components/ui/Button';
@@ -73,7 +73,7 @@ export default function PaymentMetricsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <AdminHeader />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <ReportsNavigation />
         {/* Header Section */}

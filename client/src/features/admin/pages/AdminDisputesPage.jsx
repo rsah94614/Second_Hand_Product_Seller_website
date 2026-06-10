@@ -4,7 +4,7 @@ import { getDisputes, resolveDispute, rejectDispute } from '../../orders/api/ord
 import { Search, Filter, MessageSquare, AlertTriangle, CheckCircle, XCircle, ShieldCheck } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 import toast from 'react-hot-toast';
-import Header from '../../../components/Header';
+import AdminHeader from '../../../components/AdminHeader';
 import Footer from '../../../components/Footer';
 
 export default function AdminDisputesPage() {
@@ -97,7 +97,7 @@ export default function AdminDisputesPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
+        <AdminHeader />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="p-8 text-center text-slate-500">Loading disputes...</div>
         </main>
@@ -108,7 +108,7 @@ export default function AdminDisputesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <AdminHeader />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
         <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 mb-8 animate-fade-in">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">

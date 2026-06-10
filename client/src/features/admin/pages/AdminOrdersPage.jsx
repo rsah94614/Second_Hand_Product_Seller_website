@@ -9,7 +9,7 @@ import {
   User,
   Loader2,
 } from 'lucide-react';
-import Header from '../../../components/Header';
+import AdminHeader from '../../../components/AdminHeader';
 import Footer from '../../../components/Footer';
 import { Badge } from '../../../components/ui/Badge';
 import { Card, CardContent } from '../../../components/ui/Card';
@@ -107,7 +107,7 @@ const AdminOrdersPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <AdminHeader />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 mb-8 animate-fade-in">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
